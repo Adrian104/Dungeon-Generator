@@ -21,7 +21,7 @@
     <ClCompile Include="src\dgen.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="Debug\vport.cpp">
+    <ClCompile Include="src\vport.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
   </ItemGroup>

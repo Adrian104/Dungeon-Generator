@@ -175,9 +175,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Debug\vport.cpp" />
     <ClCompile Include="src\dgen.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\vport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\btree.hpp" />
