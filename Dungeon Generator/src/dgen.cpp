@@ -5,7 +5,11 @@ Dungeon::~Dungeon() {}
 
 void Dungeon::Draw()
 {
+	SDL_Rect rect;
+	mgr -> vPort.RectToScreen(0, 0, xSize / 2.0f, ySize / 2.0f, rect);
 
+	SDL_SetRenderDrawColor(mgr -> renderer, 0, 0xFF, 0, 0xFF);
+	SDL_RenderFillRect(mgr -> renderer, &rect);
 }
 
 void Dungeon::Generate()
@@ -40,7 +44,7 @@ void DGManager::Run()
 	{
 		Draw();
 		Update();
-		SDL_Delay(50);
+		SDL_Delay(20);
 	}
 }
 
@@ -48,6 +52,8 @@ void DGManager::Draw()
 {
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
 	SDL_RenderClear(renderer);
+
+	dg.Draw();
 	SDL_RenderPresent(renderer);
 }
 

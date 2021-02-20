@@ -42,6 +42,21 @@ void Viewport::Update(SDL_Event &sdlEvent)
 		xOffset += xBefore - xAfter;
 		yOffset += yBefore - yAfter;
 	}
+	else if (sdlEvent.type == SDL_KEYDOWN)
+	{
+		if (sdlEvent.key.keysym.sym == SDLK_F1)
+		{
+			scale = 1;
+			xOffset = 0;
+			yOffset = 0;
+		}
+	}
+}
+
+void Viewport::Scale(float wFrom, float hFrom, int &wTo, int &hTo) const
+{
+	wTo = int(wFrom * scale);
+	hTo = int(hFrom * scale);
 }
 
 void Viewport::ToWorld(int xScreen, int yScreen, float &xWorld, float &yWorld) const
@@ -54,4 +69,10 @@ void Viewport::ToScreen(float xWorld, float yWorld, int &xScreen, int &yScreen) 
 {
 	xScreen = int((xWorld - xOffset) * scale);
 	yScreen = int((yWorld - yOffset) * scale);
+}
+
+void Viewport::RectToScreen(float xWorld, float yWorld, float width, float height, SDL_Rect &rect)
+{
+	ToScreen(xWorld, yWorld, rect.x, rect.y);
+	Scale(width, height, rect.w, rect.h);
 }

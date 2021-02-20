@@ -15,6 +15,9 @@ class Viewport
 
 	float Scale(float toScale);
 	void Update(SDL_Event &sdlEvent);
+
+	void Scale(float wFrom, float hFrom, int &wTo, int &hTo) const;
 	void ToWorld(int xScreen, int yScreen, float &xWorld, float &yWorld) const;
 	void ToScreen(float xWorld, float yWorld, int &xScreen, int &yScreen) const;
+	void RectToScreen(float xWorld, float yWorld, float width, float height, SDL_Rect &rect);
 };
