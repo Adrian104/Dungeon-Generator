@@ -1,0 +1,6 @@
+.vs/
+Debug/
+Release/
+Dungeon Generator/Debug/
+Dungeon Generator/Release/
+*.dll
