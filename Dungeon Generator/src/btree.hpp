@@ -11,10 +11,24 @@ class Node
 	Node *left;
 	Node *right;
 
+	public:
 	Node(Node *const pParent, const Type &ref = Type());
 	~Node();
 
+	inline bool IsRoot() const { return parent == nullptr; }
+	inline bool IsLast() const { return left == nullptr && right == nullptr; }
+
 	template <typename T> friend class BTree;
+};
+
+template <typename Type>
+struct ExeHelper
+{
+	bool rev;
+	int depth;
+	bool (*chkFunc)(int, Node<Type>*);
+
+	ExeHelper(bool pReverse, int pDepth, bool (*pFunc)(int, Node<Type>*)) : rev(pReverse), depth(pDepth), chkFunc(pFunc) {}
 };
 
 template <typename Type>
@@ -38,10 +52,10 @@ class BTree
 	uchar AddNode(const Type &ref = Type(), uchar sides = LEFT | RIGHT);
 
 	template <typename FP, typename ...Args>
-	void Execute(int depth, FP *fPtr, Args ...args);
+	void Execute(ExeHelper<Type> helper, FP *fPtr, Args ...args);
 
 	template <typename FP, typename OP, typename ...Args>
-	void ExecuteObj(int depth, FP OP::*fPtr, OP *oPtr, Args ...args);
+	void ExecuteObj(ExeHelper<Type> helper, FP OP::*fPtr, OP *oPtr, Args ...args);
 
 	inline Type &Get() const { return crr -> data; }
 	inline void ToRoot() { crr = &root; }
@@ -117,53 +131,77 @@ uchar BTree<Type>::AddNode(const Type &ref, uchar sides)
 }
 
 template <typename Type> template <typename FP, typename ...Args>
-void BTree<Type>::Execute(int depth, FP *fPtr, Args ...args)
+void BTree<Type>::Execute(ExeHelper<Type> helper, FP *fPtr, Args ...args)
 {
-	if (depth <= 0)
+	if (!helper.rev)
 	{
-		Node<Type> *const temp = crr;
-		(*fPtr)(args...);
-		crr = temp;
-
-		if (depth == 0) return;
+		if ((*helper.chkFunc)(helper.depth, crr))
+		{
+			Node<Type> *const temp = crr;
+			(*fPtr)(args...);
+			crr = temp;
+		}
 	}
-	else depth--;
 
+	helper.depth--;
 	if (GoLeft())
 	{
-		Execute(depth, fPtr, args...);
+		Execute(helper, fPtr, args...);
 		GoUp();
 	}
 
 	if (GoRight())
 	{
-		Execute(depth, fPtr, args...);
+		Execute(helper, fPtr, args...);
 		GoUp();
+	}
+
+	if (helper.rev)
+	{
+		helper.depth++;
+		if ((*helper.chkFunc)(helper.depth, crr))
+		{
+			Node<Type> *const temp = crr;
+			(*fPtr)(args...);
+			crr = temp;
+		}
 	}
 }
 
 template <typename Type> template <typename FP, typename OP, typename ...Args>
-void BTree<Type>::ExecuteObj(int depth, FP OP::*fPtr, OP *oPtr, Args ...args)
+void BTree<Type>::ExecuteObj(ExeHelper<Type> helper, FP OP::*fPtr, OP *oPtr, Args ...args)
 {
-	if (depth <= 0)
+	if (!helper.rev)
 	{
-		Node<Type> *const temp = crr;
-		(oPtr ->* fPtr)(args...);
-		crr = temp;
-
-		if (depth == 0) return;
+		if ((*helper.chkFunc)(helper.depth, crr))
+		{
+			Node<Type> *const temp = crr;
+			(oPtr ->* fPtr)(args...);
+			crr = temp;
+		}
 	}
-	else depth--;
 
+	helper.depth--;
 	if (GoLeft())
 	{
-		ExecuteObj(depth, fPtr, oPtr, args...);
+		ExecuteObj(helper, fPtr, oPtr, args...);
 		GoUp();
 	}
 
 	if (GoRight())
 	{
-		ExecuteObj(depth, fPtr, oPtr, args...);
+		ExecuteObj(helper, fPtr, oPtr, args...);
 		GoUp();
+	}
+
+	if (helper.rev)
+	{
+		helper.depth++;
+		if ((*helper.chkFunc)(helper.depth, crr))
+		{
+			Node<Type> *const temp = crr;
+			(oPtr ->* fPtr)(args...);
+			crr = temp;
+		}
 	}
 }
