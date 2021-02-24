@@ -17,14 +17,15 @@ void Dungeon::Generate()
 
 }
 
-DGManager::DGManager() : quit(false), dg(this), vPort(0.1f)
+DGManager::DGManager() : quit(false), needRedraw(true), dg(this), vPort(0.1f)
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
 
 	SDL_DisplayMode dm;
 	SDL_GetCurrentDisplayMode(0, &dm);
 
-	window = SDL_CreateWindow("Dungeon Generator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w - 30, dm.h - 30, SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN);
+	//window = SDL_CreateWindow("Dungeon Generator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w, dm.h, SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN);
+	window = SDL_CreateWindow("Dungeon Generator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w - 30, dm.h - 60, SDL_WINDOW_SHOWN);
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
 	dg.SetSize(dm.w, dm.h);
@@ -42,9 +43,9 @@ void DGManager::Run()
 	dg.Generate();
 	while (!quit)
 	{
-		Draw();
+		if (needRedraw) Draw();
 		Update();
-		SDL_Delay(20);
+		SDL_Delay(5);
 	}
 }
 
@@ -55,6 +56,8 @@ void DGManager::Draw()
 
 	dg.Draw();
 	SDL_RenderPresent(renderer);
+
+	needRedraw = false;
 }
 
 void DGManager::Update()
@@ -64,5 +67,7 @@ void DGManager::Update()
 	{
 		if (sdlEvent.type == SDL_QUIT) quit = true;
 		else vPort.Update(sdlEvent);
+
+		needRedraw = true;
 	}
 }

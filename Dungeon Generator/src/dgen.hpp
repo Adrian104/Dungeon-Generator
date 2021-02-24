@@ -37,6 +37,7 @@ struct Dungeon
 struct DGManager
 {
 	bool quit;
+	bool needRedraw;
 
 	Dungeon dg;
 	Viewport vPort;
