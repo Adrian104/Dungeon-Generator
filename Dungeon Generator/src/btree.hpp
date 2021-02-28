@@ -15,6 +15,10 @@ class Node
 	Node(Node *const pParent, const Type &ref = Type());
 	~Node();
 
+	inline Type *Up() { return parent; }
+	inline Type *Left() { return left; }
+	inline Type *Right() { return right; }
+
 	inline bool IsRoot() const { return parent == nullptr; }
 	inline bool IsLast() const { return left == nullptr && right == nullptr; }
 
@@ -71,6 +75,10 @@ class BTree
 	inline Type &Get() const { return crr -> data; }
 	inline void ToRoot() { crr = &root; }
 	inline bool IsRoot() const { return crr == &root; }
+
+	inline Type *Up() { return crr -> parent; }
+	inline Type *Left() { return crr -> left; }
+	inline Type *Right() { return crr -> right; }
 };
 
 template <typename Type>
