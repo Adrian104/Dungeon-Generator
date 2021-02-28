@@ -1,4 +1,6 @@
 #pragma once
+#include <cstdlib>
+#include <time.h>
 #include "vport.hpp"
 #include "btree.hpp"
 
@@ -10,28 +12,39 @@ typedef BTree<Cell> Tree;
 
 struct Cell
 {
-	int xPoint;
-	int yPoint;
-
 	SDL_Rect room;
 	SDL_Rect space;
+	SDL_Point point;
 
-	Cell() : xPoint(0), yPoint(0), room{}, space{} {}
+	Cell() : room{}, space{}, point{} {}
+};
+
+struct GenInfo
+{
+	int xSize, ySize;
+	int maxDepth, minDepth;
+	int spaceSizeRandomness;
+};
+
+struct DrawInfo
+{
+	bool spaceVisibility;
 };
 
 struct Dungeon
 {
-	int xSize, ySize;
-	DGManager *const mgr;
-
 	Tree tree;
+	DGManager &mgr;
+	GenInfo &gInfo;
+	DrawInfo &dInfo;
 
-	Dungeon(DGManager *const mgrPtr);
+	void Divide(int left);
+
+	Dungeon(DGManager &pMgr, GenInfo &pGInfo, DrawInfo &pDInfo);
 	~Dungeon();
 
 	void Draw();
 	void Generate();
-	void SetSize(int x, int y) { xSize = x; ySize = y; }
 };
 
 struct DGManager
@@ -40,6 +53,8 @@ struct DGManager
 	bool needRedraw;
 
 	Dungeon dg;
+	GenInfo gInfo;
+	DrawInfo dInfo;
 	Viewport vPort;
 
 	SDL_Window *window;
