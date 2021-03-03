@@ -19,6 +19,12 @@ struct Cell
 	Cell() : space{}, point{} {}
 };
 
+struct Path
+{
+	SDL_Point xLines[3];
+	SDL_Point yLines[3];
+};
+
 struct GenInfo
 {
 	int xSize, ySize;
@@ -43,6 +49,7 @@ struct Dungeon
 	GenInfo &gInfo;
 	DrawInfo &dInfo;
 
+	void GeneratePaths();
 	void Divide(int left);
 
 	Dungeon(DGManager &pMgr, GenInfo &pGInfo, DrawInfo &pDInfo);

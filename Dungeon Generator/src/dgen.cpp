@@ -3,6 +3,17 @@
 Dungeon::Dungeon(DGManager &pMgr, GenInfo &pGInfo, DrawInfo &pDInfo) : mgr(pMgr), gInfo(pGInfo), dInfo(pDInfo) {}
 Dungeon::~Dungeon() {}
 
+void Dungeon::GeneratePaths()
+{
+	Cell *const aCell = tree.Left();
+	Cell *const bCell = tree.Right();
+
+	if (aCell == nullptr || bCell == nullptr) return;
+
+	SDL_Point &aPoint = aCell -> point;
+	SDL_Point &bPoint = bCell -> point;
+}
+
 void Dungeon::Divide(int left)
 {
 	if (left <= 0)
@@ -116,6 +127,9 @@ void Dungeon::Generate()
 	tree.Get().space.h = gInfo.ySize;
 
 	Divide(gInfo.maxDepth);
+
+	ExeHelper<Cell> helper(true, 0, [](const ExeInfo<Cell> &info) -> bool { return true; });
+	tree.ExecuteObj(helper, &Dungeon::GeneratePaths, this);
 }
 
 DGManager::DGManager() : quit(false), needRedraw(true), dg(*this, gInfo, dInfo), vPort(0.1f)
@@ -176,6 +190,7 @@ void DGManager::Update()
 	SDL_Event sdlEvent;
 	while (SDL_PollEvent(&sdlEvent))
 	{
+		needRedraw = true;
 		if (sdlEvent.type == SDL_QUIT) quit = true;
 		else if (sdlEvent.type == SDL_KEYDOWN)
 		{
@@ -206,7 +221,5 @@ void DGManager::Update()
 			}
 		}
 		else vPort.Update(sdlEvent);
-
-		needRedraw = true;
 	}
 }
