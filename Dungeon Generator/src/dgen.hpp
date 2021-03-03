@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdlib>
 #include <time.h>
+#include <map>
 #include "vport.hpp"
 #include "btree.hpp"
 
@@ -12,11 +13,10 @@ typedef BTree<Cell> Tree;
 
 struct Cell
 {
-	SDL_Rect room;
 	SDL_Rect space;
 	SDL_Point point;
 
-	Cell() : room{}, space{}, point{} {}
+	Cell() : space{}, point{} {}
 };
 
 struct GenInfo
@@ -24,16 +24,21 @@ struct GenInfo
 	int xSize, ySize;
 	int maxDepth, minDepth;
 	int spaceSizeRandomness;
+	int maxRoomSize, minRoomSize;
 };
 
 struct DrawInfo
 {
 	bool spaceVisibility;
+	bool roomsVisibility;
+	bool pointsVisibility;
 };
 
 struct Dungeon
 {
 	Tree tree;
+	std::multimap<Cell*, SDL_Rect> rooms;
+
 	DGManager &mgr;
 	GenInfo &gInfo;
 	DrawInfo &dInfo;

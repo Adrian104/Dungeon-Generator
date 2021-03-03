@@ -7,7 +7,23 @@ void Dungeon::Divide(int left)
 {
 	if (left <= 0)
 	{
-		// TODO: Make rooms.
+		Cell &crrCell = tree.Get();
+		SDL_Rect room = crrCell.space;
+
+		const int maxmin = gInfo.maxRoomSize - gInfo.minRoomSize;
+		const int dX = int(room.w * ((gInfo.minRoomSize + rand() % maxmin) / 100.0f));
+		const int dY = int(room.h * ((gInfo.minRoomSize + rand() % maxmin) / 100.0f));
+
+		room.w -= dX;
+		room.h -= dY;
+
+		room.x += int(dX * (rand() % 100) / 100.0f);
+		room.y += int(dY * (rand() % 100) / 100.0f);
+
+		crrCell.point.x = room.x + int(room.w * (rand() % 100) / 100.0f);
+		crrCell.point.y = room.y + int(room.h * (rand() % 100) / 100.0f);
+
+		rooms.insert(std::make_pair(&crrCell, room));
 		return;
 	}
 
@@ -54,6 +70,15 @@ void Dungeon::Draw()
 		SDL_RenderDrawRect(dg -> mgr.renderer, &rect);
 	};
 
+	auto DrawPoints = [](Dungeon *dg) -> void
+	{
+		SDL_Point &point = dg -> tree.Get().point;
+		SDL_Rect rect = { point.x - 2, point.y - 2, 4, 4 };
+
+		dg -> mgr.vPort.RectToScreen(rect, rect);
+		SDL_RenderFillRect(dg -> mgr.renderer, &rect);
+	};
+
 	ExeHelper<Cell> helper(false, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); });
 
 	if (dInfo.spaceVisibility)
@@ -61,10 +86,29 @@ void Dungeon::Draw()
 		SDL_SetRenderDrawColor(mgr.renderer, 0xFF, 0, 0, 0xFF);
 		tree.Execute(helper, &DrawSpace, this);
 	}
+
+	if (dInfo.roomsVisibility)
+	{
+		SDL_SetRenderDrawColor(mgr.renderer, 0, 0xAA, 0xAA, 0xFF);
+		for (auto &[key, room] : rooms)
+		{
+			SDL_Rect rect = room;
+			mgr.vPort.RectToScreen(rect, rect);
+			SDL_RenderDrawRect(mgr.renderer, &rect);
+		}
+	}
+
+	if (dInfo.pointsVisibility)
+	{
+		SDL_SetRenderDrawColor(mgr.renderer, 0, 0xFF, 0, 0xFF);
+		tree.Execute(helper, &DrawPoints, this);
+	}
 }
 
 void Dungeon::Generate()
 {
+	rooms.clear();
+
 	tree.ToRoot();
 	tree.DeleteNode();
 
@@ -89,9 +133,13 @@ DGManager::DGManager() : quit(false), needRedraw(true), dg(*this, gInfo, dInfo),
 	gInfo.ySize = dm.h;
 	gInfo.maxDepth = 4;
 	gInfo.minDepth = 4; // TODO
+	gInfo.maxRoomSize = 75;
+	gInfo.minRoomSize = 25;
 	gInfo.spaceSizeRandomness = 35;
 
 	dInfo.spaceVisibility = true;
+	dInfo.roomsVisibility = true;
+	dInfo.pointsVisibility = true;
 }
 
 DGManager::~DGManager()
@@ -139,6 +187,14 @@ void DGManager::Update()
 
 			case SDLK_F2:
 				dInfo.spaceVisibility = !dInfo.spaceVisibility;
+				break;
+
+			case SDLK_F3:
+				dInfo.roomsVisibility = !dInfo.roomsVisibility;
+				break;
+
+			case SDLK_F4:
+				dInfo.pointsVisibility = !dInfo.pointsVisibility;
 				break;
 
 			case SDLK_g:
