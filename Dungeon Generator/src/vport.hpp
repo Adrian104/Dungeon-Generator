@@ -20,6 +20,13 @@ class Viewport
 	void ToWorld(int xScreen, int yScreen, float &xWorld, float &yWorld) const;
 	void ToScreen(float xWorld, float yWorld, int &xScreen, int &yScreen) const;
 
+	void Scale(float wFrom, float hFrom, float &wTo, float &hTo) const;
+	void ToWorld(float xScreen, float yScreen, float &xWorld, float &yWorld) const;
+	void ToScreen(float xWorld, float yWorld, float &xScreen, float &yScreen) const;
+
 	void RectToScreen(SDL_Rect &from, SDL_Rect &to) const;
+	void RectToScreen(SDL_FRect &from, SDL_FRect &to) const;
+
 	void RectToScreen(float xWorld, float yWorld, float width, float height, SDL_Rect &rect) const;
+	void RectToScreen(float xWorld, float yWorld, float width, float height, SDL_FRect &rect) const;
 };

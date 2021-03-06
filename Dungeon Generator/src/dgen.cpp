@@ -10,8 +10,8 @@ void Dungeon::GeneratePaths()
 
 	if (aCell == nullptr || bCell == nullptr) return;
 
-	SDL_Point &aPoint = aCell -> point;
-	SDL_Point &bPoint = bCell -> point;
+	SDL_FPoint &aPoint = aCell -> point;
+	SDL_FPoint &bPoint = bCell -> point;
 }
 
 void Dungeon::Divide(int left)
@@ -20,20 +20,20 @@ void Dungeon::Divide(int left)
 	{
 		end:
 		Cell &crrCell = tree.Get();
-		SDL_Rect room = crrCell.space;
+		SDL_FRect room = crrCell.space;
 
 		const int maxmin = gInfo.maxRoomSize - gInfo.minRoomSize;
-		const int dX = int(room.w * ((gInfo.minRoomSize + rand() % maxmin) / 100.0f));
-		const int dY = int(room.h * ((gInfo.minRoomSize + rand() % maxmin) / 100.0f));
+		const float dX = room.w * ((gInfo.minRoomSize + rand() % maxmin) / 100.0f);
+		const float dY = room.h * ((gInfo.minRoomSize + rand() % maxmin) / 100.0f);
 
 		room.w -= dX;
 		room.h -= dY;
 
-		room.x += int(dX * (rand() % 100) / 100.0f);
-		room.y += int(dY * (rand() % 100) / 100.0f);
+		room.x += dX * (rand() % 100) / 100.0f;
+		room.y += dY * (rand() % 100) / 100.0f;
 
-		crrCell.point.x = room.x + int(room.w * (rand() % 100) / 100.0f);
-		crrCell.point.y = room.y + int(room.h * (rand() % 100) / 100.0f);
+		crrCell.point.x = room.x + room.w * (rand() % 100) / 100.0f;
+		crrCell.point.y = room.y + room.h * (rand() % 100) / 100.0f;
 
 		rooms.insert(std::make_pair(&crrCell, room));
 		return;
@@ -45,19 +45,19 @@ void Dungeon::Divide(int left)
 
 	left--;
 
-	int SDL_Rect::*xy;
-	int SDL_Rect::*wh;
+	float SDL_FRect::*xy;
+	float SDL_FRect::*wh;
 
-	SDL_Rect *crrSpace = &tree.Get().space;
+	SDL_FRect *crrSpace = &tree.Get().space;
 
-	if (crrSpace -> w > crrSpace -> h) { xy = &SDL_Rect::x; wh = &SDL_Rect::w; }
-	else { xy = &SDL_Rect::y; wh = &SDL_Rect::h; }
+	if (crrSpace -> w > crrSpace -> h) { xy = &SDL_FRect::x; wh = &SDL_FRect::w; }
+	else { xy = &SDL_FRect::y; wh = &SDL_FRect::h; }
 
-	int randSize;
-	const int totalSize = crrSpace ->* wh;
+	float randSize;
+	const float totalSize = crrSpace ->* wh;
 
-	if (gInfo.spaceSizeRandomness > 0) randSize = totalSize / 2 - int(totalSize * ((gInfo.spaceSizeRandomness >> 1) / 100.0f)) + int(totalSize * ((rand() % gInfo.spaceSizeRandomness) / 100.0f));
-	else randSize = totalSize / 2;
+	if (gInfo.spaceSizeRandomness > 0) randSize = totalSize / 2.0f - totalSize * ((gInfo.spaceSizeRandomness >> 1) / 100.0f) + totalSize * ((rand() % gInfo.spaceSizeRandomness) / 100.0f);
+	else randSize = totalSize / 2.0f;
 
 	tree.AddNode(tree.Get());
 	tree.GoLeft();
@@ -81,18 +81,18 @@ void Dungeon::Draw()
 {
 	auto DrawSpace = [](Dungeon *dg) -> void
 	{
-		SDL_Rect rect = dg -> tree.Get().space;
+		SDL_FRect rect = dg -> tree.Get().space;
 		dg -> mgr.vPort.RectToScreen(rect, rect);
-		SDL_RenderDrawRect(dg -> mgr.renderer, &rect);
+		SDL_RenderDrawRectF(dg -> mgr.renderer, &rect);
 	};
 
 	auto DrawPoints = [](Dungeon *dg) -> void
 	{
-		SDL_Point &point = dg -> tree.Get().point;
-		SDL_Rect rect = { point.x - 2, point.y - 2, 4, 4 };
+		SDL_FPoint &point = dg -> tree.Get().point;
+		SDL_FRect rect = { point.x - 2, point.y - 2, 4, 4 };
 
 		dg -> mgr.vPort.RectToScreen(rect, rect);
-		SDL_RenderFillRect(dg -> mgr.renderer, &rect);
+		SDL_RenderFillRectF(dg -> mgr.renderer, &rect);
 	};
 
 	ExeHelper<Cell> helper(false, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); });
@@ -108,9 +108,9 @@ void Dungeon::Draw()
 		SDL_SetRenderDrawColor(mgr.renderer, 0, 0xAA, 0xAA, 0xFF);
 		for (auto &[key, room] : rooms)
 		{
-			SDL_Rect rect = room;
+			SDL_FRect rect = room;
 			mgr.vPort.RectToScreen(rect, rect);
-			SDL_RenderDrawRect(mgr.renderer, &rect);
+			SDL_RenderDrawRectF(mgr.renderer, &rect);
 		}
 	}
 
@@ -128,8 +128,8 @@ void Dungeon::Generate()
 	tree.ToRoot();
 	tree.DeleteNode();
 
-	tree.Get().space.w = gInfo.xSize;
-	tree.Get().space.h = gInfo.ySize;
+	tree.Get().space.w = float(gInfo.xSize);
+	tree.Get().space.h = float(gInfo.ySize);
 
 	Divide(gInfo.maxDepth);
 

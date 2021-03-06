@@ -71,13 +71,43 @@ void Viewport::ToScreen(float xWorld, float yWorld, int &xScreen, int &yScreen) 
 	yScreen = int((yWorld - yOffset) * scale);
 }
 
+void Viewport::Scale(float wFrom, float hFrom, float &wTo, float &hTo) const
+{
+	wTo = wFrom * scale;
+	hTo = hFrom * scale;
+}
+
+void Viewport::ToWorld(float xScreen, float yScreen, float &xWorld, float &yWorld) const
+{
+	xWorld = xScreen / scale + xOffset;
+	yWorld = yScreen / scale + yOffset;
+}
+
+void Viewport::ToScreen(float xWorld, float yWorld, float &xScreen, float &yScreen) const
+{
+	xScreen = (xWorld - xOffset) * scale;
+	yScreen = (yWorld - yOffset) * scale;
+}
+
 void Viewport::RectToScreen(SDL_Rect &from, SDL_Rect &to) const
 {
 	ToScreen(float(from.x), float(from.y), to.x, to.y);
 	Scale(float(from.w), float(from.h), to.w, to.h);
 }
 
+void Viewport::RectToScreen(SDL_FRect &from, SDL_FRect &to) const
+{
+	ToScreen(from.x, from.y, to.x, to.y);
+	Scale(from.w, from.h, to.w, to.h);
+}
+
 void Viewport::RectToScreen(float xWorld, float yWorld, float width, float height, SDL_Rect &rect) const
+{
+	ToScreen(xWorld, yWorld, rect.x, rect.y);
+	Scale(width, height, rect.w, rect.h);
+}
+
+void Viewport::RectToScreen(float xWorld, float yWorld, float width, float height, SDL_FRect &rect) const
 {
 	ToScreen(xWorld, yWorld, rect.x, rect.y);
 	Scale(width, height, rect.w, rect.h);

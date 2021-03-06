@@ -13,8 +13,8 @@ typedef BTree<Cell> Tree;
 
 struct Cell
 {
-	SDL_Rect space;
-	SDL_Point point;
+	SDL_FRect space;
+	SDL_FPoint point;
 
 	Cell() : space{}, point{} {}
 };
@@ -37,7 +37,7 @@ struct DrawInfo
 struct Dungeon
 {
 	Tree tree;
-	std::multimap<Cell*, SDL_Rect> rooms;
+	std::multimap<Cell*, SDL_FRect> rooms;
 
 	DGManager &mgr;
 	GenInfo &gInfo;
