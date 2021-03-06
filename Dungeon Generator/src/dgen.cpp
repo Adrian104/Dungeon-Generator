@@ -18,6 +18,7 @@ void Dungeon::Divide(int left)
 {
 	if (left <= 0)
 	{
+		end:
 		Cell &crrCell = tree.Get();
 		SDL_Rect room = crrCell.space;
 
@@ -36,6 +37,10 @@ void Dungeon::Divide(int left)
 
 		rooms.insert(std::make_pair(&crrCell, room));
 		return;
+	}
+	else if (int delta = gInfo.maxDepth - gInfo.minDepth; left <= delta)
+	{
+		if (rand() % (delta + 1) >= left) goto end;
 	}
 
 	left--;
@@ -145,8 +150,8 @@ DGManager::DGManager() : quit(false), needRedraw(true), dg(*this, gInfo, dInfo),
 
 	gInfo.xSize = dm.w;
 	gInfo.ySize = dm.h;
-	gInfo.maxDepth = 4;
-	gInfo.minDepth = 4; // TODO
+	gInfo.maxDepth = 5;
+	gInfo.minDepth = 4;
 	gInfo.maxRoomSize = 75;
 	gInfo.minRoomSize = 25;
 	gInfo.spaceSizeRandomness = 35;

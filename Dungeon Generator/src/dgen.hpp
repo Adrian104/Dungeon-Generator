@@ -19,12 +19,6 @@ struct Cell
 	Cell() : space{}, point{} {}
 };
 
-struct Path
-{
-	SDL_Point xLines[3];
-	SDL_Point yLines[3];
-};
-
 struct GenInfo
 {
 	int xSize, ySize;
