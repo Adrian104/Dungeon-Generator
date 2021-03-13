@@ -31,6 +31,7 @@ struct Cell
 struct GenInfo
 {
 	int xSize, ySize;
+	int doubleRoomProb;
 	int maxDepth, minDepth;
 	int spaceSizeRandomness;
 	int maxRoomSize, minRoomSize;
@@ -50,6 +51,7 @@ struct Dungeon
 	GenInfo &gInfo;
 	DrawInfo &dInfo;
 
+	void MakeRoom();
 	void Divide(int left);
 
 	Dungeon(DGManager &pMgr, GenInfo &pGInfo, DrawInfo &pDInfo);
