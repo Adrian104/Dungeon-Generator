@@ -3,17 +3,6 @@
 Dungeon::Dungeon(DGManager &pMgr, GenInfo &pGInfo, DrawInfo &pDInfo) : mgr(pMgr), gInfo(pGInfo), dInfo(pDInfo) {}
 Dungeon::~Dungeon() {}
 
-void Dungeon::GeneratePaths()
-{
-	Cell *const aCell = tree.Left();
-	Cell *const bCell = tree.Right();
-
-	if (aCell == nullptr || bCell == nullptr) return;
-
-	SDL_FPoint &aPoint = aCell -> point;
-	SDL_FPoint &bPoint = bCell -> point;
-}
-
 void Dungeon::Divide(int left)
 {
 	if (left <= 0)
@@ -32,10 +21,9 @@ void Dungeon::Divide(int left)
 		room.x += dX * (rand() % 100) / 100.0f;
 		room.y += dY * (rand() % 100) / 100.0f;
 
-		crrCell.point.x = room.x + room.w * (rand() % 100) / 100.0f;
-		crrCell.point.y = room.y + room.h * (rand() % 100) / 100.0f;
+		crrCell.roomList = new Room;
+		crrCell.roomList -> room = room;
 
-		rooms.insert(std::make_pair(&crrCell, room));
 		return;
 	}
 	else if (int delta = gInfo.maxDepth - gInfo.minDepth; left <= delta)
@@ -50,7 +38,8 @@ void Dungeon::Divide(int left)
 
 	SDL_FRect *crrSpace = &tree.Get().space;
 
-	if (crrSpace -> w > crrSpace -> h) { xy = &SDL_FRect::x; wh = &SDL_FRect::w; }
+	const bool vert = crrSpace -> w > crrSpace -> h;
+	if (vert) { xy = &SDL_FRect::x; wh = &SDL_FRect::w; }
 	else { xy = &SDL_FRect::y; wh = &SDL_FRect::h; }
 
 	float randSize;
@@ -86,13 +75,14 @@ void Dungeon::Draw()
 		SDL_RenderDrawRectF(dg -> mgr.renderer, &rect);
 	};
 
-	auto DrawPoints = [](Dungeon *dg) -> void
+	auto DrawRooms = [](Dungeon *dg) -> void
 	{
-		SDL_FPoint &point = dg -> tree.Get().point;
-		SDL_FRect rect = { point.x - 2, point.y - 2, 4, 4 };
-
-		dg -> mgr.vPort.RectToScreen(rect, rect);
-		SDL_RenderFillRectF(dg -> mgr.renderer, &rect);
+		for (Room *room = dg -> tree.Get().roomList; room != nullptr; room = room -> nextRoom)
+		{
+			SDL_FRect rect = room -> room;
+			dg -> mgr.vPort.RectToScreen(rect, rect);
+			SDL_RenderDrawRectF(dg -> mgr.renderer, &rect);
+		}
 	};
 
 	ExeHelper<Cell> helper(false, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); });
@@ -106,25 +96,12 @@ void Dungeon::Draw()
 	if (dInfo.roomsVisibility)
 	{
 		SDL_SetRenderDrawColor(mgr.renderer, 0, 0xAA, 0xAA, 0xFF);
-		for (auto &[key, room] : rooms)
-		{
-			SDL_FRect rect = room;
-			mgr.vPort.RectToScreen(rect, rect);
-			SDL_RenderDrawRectF(mgr.renderer, &rect);
-		}
-	}
-
-	if (dInfo.pointsVisibility)
-	{
-		SDL_SetRenderDrawColor(mgr.renderer, 0, 0xFF, 0, 0xFF);
-		tree.Execute(helper, &DrawPoints, this);
+		tree.Execute(helper, &DrawRooms, this);
 	}
 }
 
 void Dungeon::Generate()
 {
-	rooms.clear();
-
 	tree.ToRoot();
 	tree.DeleteNode();
 
@@ -132,9 +109,6 @@ void Dungeon::Generate()
 	tree.Get().space.h = float(gInfo.ySize);
 
 	Divide(gInfo.maxDepth);
-
-	ExeHelper<Cell> helper(true, 0, [](const ExeInfo<Cell> &info) -> bool { return true; });
-	tree.ExecuteObj(helper, &Dungeon::GeneratePaths, this);
 }
 
 DGManager::DGManager() : quit(false), needRedraw(true), dg(*this, gInfo, dInfo), vPort(0.1f)
@@ -150,15 +124,14 @@ DGManager::DGManager() : quit(false), needRedraw(true), dg(*this, gInfo, dInfo),
 
 	gInfo.xSize = dm.w;
 	gInfo.ySize = dm.h;
-	gInfo.maxDepth = 5;
-	gInfo.minDepth = 4;
+	gInfo.maxDepth = 9;
+	gInfo.minDepth = 8;
 	gInfo.maxRoomSize = 75;
 	gInfo.minRoomSize = 25;
 	gInfo.spaceSizeRandomness = 35;
 
 	dInfo.spaceVisibility = true;
 	dInfo.roomsVisibility = true;
-	dInfo.pointsVisibility = true;
 }
 
 DGManager::~DGManager()
@@ -205,16 +178,12 @@ void DGManager::Update()
 				quit = true;
 				break;
 
-			case SDLK_F2:
+			case SDLK_F1:
 				dInfo.spaceVisibility = !dInfo.spaceVisibility;
 				break;
 
-			case SDLK_F3:
+			case SDLK_F2:
 				dInfo.roomsVisibility = !dInfo.roomsVisibility;
-				break;
-
-			case SDLK_F4:
-				dInfo.pointsVisibility = !dInfo.pointsVisibility;
 				break;
 
 			case SDLK_g:

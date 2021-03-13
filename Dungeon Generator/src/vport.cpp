@@ -44,7 +44,7 @@ void Viewport::Update(SDL_Event &sdlEvent)
 	}
 	else if (sdlEvent.type == SDL_KEYDOWN)
 	{
-		if (sdlEvent.key.keysym.sym == SDLK_F1)
+		if (sdlEvent.key.keysym.sym == SDLK_TAB)
 		{
 			scale = 1;
 			xOffset = 0;
