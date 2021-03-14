@@ -1,4 +1,5 @@
 #include "dgen.hpp"
+//#define FULL_SCREEN
 
 Dungeon::Dungeon(DGManager &pMgr, GenInfo &pGInfo, DrawInfo &pDInfo) : mgr(pMgr), gInfo(pGInfo), dInfo(pDInfo) {}
 Dungeon::~Dungeon() {}
@@ -7,7 +8,7 @@ void Dungeon::MakeRoom()
 {
 	Cell &crrCell = tree.Get();
 	SDL_FRect room = crrCell.space;
-	SDL_FRect room2 = {};
+	SDL_FRect room2;
 
 	const int maxmin = gInfo.maxRoomSize - gInfo.minRoomSize;
 	const bool doubleRoom = (rand() % 100) < gInfo.doubleRoomProb;
@@ -24,7 +25,7 @@ void Dungeon::MakeRoom()
 
 		if (dX > dY)
 		{
-			float extra = dX * ((rand() % 100) / 100.0f);
+			const float extra = dX * ((rand() % 100) / 100.0f);
 
 			room2.h /= 2.0f;
 			room2.w += extra;
@@ -34,7 +35,7 @@ void Dungeon::MakeRoom()
 		}
 		else
 		{
-			float extra = dY * ((rand() % 100) / 100.0f);
+			const float extra = dY * ((rand() % 100) / 100.0f);
 
 			room2.w /= 2.0f;
 			room2.h += extra;
@@ -113,6 +114,8 @@ void Dungeon::Divide(int left)
 
 void Dungeon::Draw()
 {
+	ExeHelper<Cell> helper(false, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); });
+
 	auto DrawSpace = [](Dungeon *dg) -> void
 	{
 		SDL_FRect rect = dg -> tree.Get().space;
@@ -129,8 +132,6 @@ void Dungeon::Draw()
 			SDL_RenderDrawRectF(dg -> mgr.renderer, &rect);
 		}
 	};
-
-	ExeHelper<Cell> helper(false, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); });
 
 	if (dInfo.spaceVisibility)
 	{
@@ -163,12 +164,18 @@ DGManager::DGManager() : quit(false), needRedraw(true), dg(*this, gInfo, dInfo),
 	SDL_DisplayMode dm;
 	SDL_GetCurrentDisplayMode(0, &dm);
 
-	//window = SDL_CreateWindow("Dungeon Generator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w, dm.h, SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN);
-	window = SDL_CreateWindow("Dungeon Generator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w - 30, dm.h - 60, SDL_WINDOW_SHOWN);
+	#ifdef FULL_SCREEN
+		window = SDL_CreateWindow("Dungeon Generator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w, dm.h, SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN);
+		gInfo.xSize = dm.w;
+		gInfo.ySize = dm.h;
+	#else
+		window = SDL_CreateWindow("Dungeon Generator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w - 30, dm.h - 100, SDL_WINDOW_SHOWN);
+		gInfo.xSize = dm.w - 30;
+		gInfo.ySize = dm.h - 100;
+	#endif
+	
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-	gInfo.xSize = dm.w;
-	gInfo.ySize = dm.h;
 	gInfo.maxDepth = 9;
 	gInfo.minDepth = 8;
 	gInfo.maxRoomSize = 75;
