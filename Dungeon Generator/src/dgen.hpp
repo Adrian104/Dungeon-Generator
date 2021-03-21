@@ -4,6 +4,8 @@
 #include "vport.hpp"
 #include "btree.hpp"
 
+float Round(float num, float step);
+
 struct Cell;
 struct Dungeon;
 struct DGManager;
@@ -58,6 +60,7 @@ struct Dungeon
 	~Dungeon();
 
 	void Draw();
+	void Clear();
 	void Generate();
 };
 

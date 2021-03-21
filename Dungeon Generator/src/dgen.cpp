@@ -1,11 +1,33 @@
 #include "dgen.hpp"
-//#define FULL_SCREEN
+
+#ifndef _DEBUG
+#define FULL_SCREEN
+#endif
+
+float Round(float num, float step)
+{
+	float div = num / step;
+	int i = int(div);
+
+	return step * (i + ((div - float(i)) >= 0.5f));
+}
 
 Dungeon::Dungeon(DGManager &pMgr, GenInfo &pGInfo, DrawInfo &pDInfo) : mgr(pMgr), gInfo(pGInfo), dInfo(pDInfo) {}
-Dungeon::~Dungeon() {}
+Dungeon::~Dungeon() { Clear(); }
 
 void Dungeon::MakeRoom()
 {
+	// ---------------
+
+	SDL_FRect &space = tree.Get().space;
+
+	space.x += 2;
+	space.y += 2;
+	space.w -= 4;
+	space.h -= 4;
+
+	// ---------------
+
 	Cell &crrCell = tree.Get();
 	SDL_FRect room = crrCell.space;
 	SDL_FRect room2;
@@ -68,13 +90,13 @@ void Dungeon::Divide(int left)
 {
 	if (left <= 0)
 	{
-		mkroom:
+		nomore:
 		MakeRoom();
 		return;
 	}
 	else if (int delta = gInfo.maxDepth - gInfo.minDepth; left <= delta)
 	{
-		if (rand() % (delta + 1) >= left) goto mkroom;
+		if (rand() % (delta + 1) >= left) goto nomore;
 	}
 
 	left--;
@@ -146,10 +168,15 @@ void Dungeon::Draw()
 	}
 }
 
-void Dungeon::Generate()
+void Dungeon::Clear()
 {
 	tree.ToRoot();
 	tree.DeleteNode();
+}
+
+void Dungeon::Generate()
+{
+	Clear();
 
 	tree.Get().space.w = float(gInfo.xSize);
 	tree.Get().space.h = float(gInfo.ySize);
