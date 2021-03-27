@@ -44,6 +44,13 @@ struct Cell
 	~Cell() { delete roomList; }
 };
 
+struct Cache
+{
+	int deltaDepth;
+	int deltaRoomSize;
+	float tileSize3, tileSize4, tileSize5;
+};
+
 struct GenInfo
 {
 	float tileSize;
@@ -57,8 +64,10 @@ struct GenInfo
 struct Dungeon
 {
 	Tree tree;
+	Cache cache;
 	GenInfo *gInfo;
 
+	void Prepare();
 	void MakeRoom();
 	void Divide(int left);
 

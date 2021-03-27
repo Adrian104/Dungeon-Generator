@@ -1,5 +1,5 @@
 #include "manager.hpp"
-#define SHOW_GRID
+//#define SHOW_GRID
 
 DGManager::DGManager() : quit(false), needRedraw(true), vPort(0.1f)
 {

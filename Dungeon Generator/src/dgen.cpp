@@ -4,8 +4,23 @@
 #define FULL_SCREEN
 #endif
 
-Dungeon::Dungeon() : gInfo(nullptr) {}
+Dungeon::Dungeon() : cache{}, gInfo(nullptr) {}
 Dungeon::~Dungeon() { Clear(); }
+
+void Dungeon::Prepare()
+{
+	gInfo -> xSize = int(RoundTo(float(gInfo -> xSize), gInfo -> tileSize));
+	gInfo -> ySize = int(RoundTo(float(gInfo -> ySize), gInfo -> tileSize));
+
+	tree.Get().space.w = float(gInfo -> xSize) - cache.tileSize3;
+	tree.Get().space.h = float(gInfo -> ySize) - cache.tileSize3;
+
+	cache.tileSize3 = gInfo -> tileSize * 3;
+	cache.tileSize4 = gInfo -> tileSize * 4;
+	cache.tileSize5 = gInfo -> tileSize * 5;
+	cache.deltaDepth = gInfo -> maxDepth - gInfo -> minDepth;
+	cache.deltaRoomSize = gInfo -> maxRoomSize - gInfo -> minRoomSize;
+}
 
 void Dungeon::MakeRoom()
 {
@@ -13,11 +28,10 @@ void Dungeon::MakeRoom()
 	SDL_FRect room = crrCell.space;
 	SDL_FRect room2;
 
-	const int maxmin = gInfo -> maxRoomSize - gInfo -> minRoomSize;
 	const bool doubleRoom = (rand() % 100) < gInfo -> doubleRoomProb;
 
-	float dX = RoundTo(room.w * ((gInfo -> minRoomSize + rand() % maxmin) / 100.0f), gInfo -> tileSize);
-	float dY = RoundTo(room.h * ((gInfo -> minRoomSize + rand() % maxmin) / 100.0f), gInfo -> tileSize);
+	float dX = RoundTo(room.w * ((gInfo -> minRoomSize + rand() % cache.deltaRoomSize) / 100.0f), gInfo -> tileSize);
+	float dY = RoundTo(room.h * ((gInfo -> minRoomSize + rand() % cache.deltaRoomSize) / 100.0f), gInfo -> tileSize);
 
 	room.w -= dX;
 	room.h -= dY;
@@ -74,20 +88,17 @@ void Dungeon::Divide(int left)
 		nomore:
 		SDL_FRect &space = tree.Get().space;
 
-		const float xyOffset = gInfo -> tileSize * 4;
-		const float whOffset = gInfo -> tileSize * 5;
-
-		space.x += xyOffset;
-		space.y += xyOffset;
-		space.w -= whOffset;
-		space.h -= whOffset;
+		space.x += cache.tileSize4;
+		space.y += cache.tileSize4;
+		space.w -= cache.tileSize5;
+		space.h -= cache.tileSize5;
 
 		MakeRoom();
 		return;
 	}
-	else if (int delta = gInfo -> maxDepth - gInfo -> minDepth; left <= delta)
+	else if (left <= cache.deltaDepth)
 	{
-		if (rand() % (delta + 1) >= left) goto nomore;
+		if (rand() % (cache.deltaDepth + 1) >= left) goto nomore;
 	}
 
 	left--;
@@ -138,11 +149,6 @@ void Dungeon::Generate(GenInfo *genInfo)
 	Clear();
 	gInfo = genInfo;
 
-	gInfo -> xSize = int(RoundTo(float(gInfo -> xSize), gInfo -> tileSize));
-	gInfo -> ySize = int(RoundTo(float(gInfo -> ySize), gInfo -> tileSize));
-
-	tree.Get().space.w = float(gInfo -> xSize) - 3 * gInfo -> tileSize;
-	tree.Get().space.h = float(gInfo -> ySize) - 3 * gInfo -> tileSize;
-
+	Prepare();
 	Divide(gInfo -> maxDepth);
 }
