@@ -1,14 +1,28 @@
 #pragma once
+#include <unordered_map>
+#include <forward_list>
 #include <cstdlib>
 #include <time.h>
 #include "vport.hpp"
 #include "btree.hpp"
 
-float Round(float num, float step);
+inline float RoundTo(float num, float step)
+{
+	const float div = num / step;
+	const int i = int(div);
 
+	return step * (i + ((div - float(i)) >= 0.5f));
+}
+
+inline bool IsInside(SDL_FRect &rect, SDL_FPoint &point)
+{
+	return rect.x < point.x && (rect.x + rect.w) > point.x && rect.y < point.y && (rect.y + rect.h) > point.y;
+}
+
+struct Room;
 struct Cell;
+struct GenInfo;
 struct Dungeon;
-struct DGManager;
 
 typedef BTree<Cell> Tree;
 
@@ -39,48 +53,17 @@ struct GenInfo
 	int maxRoomSize, minRoomSize;
 };
 
-struct DrawInfo
-{
-	bool spaceVisibility;
-	bool roomsVisibility;
-};
-
 struct Dungeon
 {
 	Tree tree;
-
-	DGManager &mgr;
-	GenInfo &gInfo;
-	DrawInfo &dInfo;
+	GenInfo *gInfo;
 
 	void MakeRoom();
 	void Divide(int left);
 
-	Dungeon(DGManager &pMgr, GenInfo &pGInfo, DrawInfo &pDInfo);
+	Dungeon();
 	~Dungeon();
 
-	void Draw();
 	void Clear();
-	void Generate();
-};
-
-struct DGManager
-{
-	bool quit;
-	bool needRedraw;
-
-	Dungeon dg;
-	GenInfo gInfo;
-	DrawInfo dInfo;
-	Viewport vPort;
-
-	SDL_Window *window;
-	SDL_Renderer *renderer;
-
-	DGManager();
-	~DGManager();
-
-	void Run();
-	void Draw();
-	void Update();
+	void Generate(GenInfo *genInfo);
 };

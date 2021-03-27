@@ -177,11 +177,13 @@
   <ItemGroup>
     <ClCompile Include="src\dgen.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\manager.cpp" />
     <ClCompile Include="src\vport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\btree.hpp" />
     <ClInclude Include="src\dgen.hpp" />
+    <ClInclude Include="src\manager.hpp" />
     <ClInclude Include="src\vport.hpp" />
   </ItemGroup>
   <ItemGroup>

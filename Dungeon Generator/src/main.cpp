@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include "dgen.hpp"
+#include "manager.hpp"
 
 int main(int argc, char **argv)
 {
