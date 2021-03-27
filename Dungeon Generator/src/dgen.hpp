@@ -46,6 +46,7 @@ struct Cell
 
 struct GenInfo
 {
+	float tileSize;
 	int xSize, ySize;
 	int doubleRoomProb;
 	int maxDepth, minDepth;

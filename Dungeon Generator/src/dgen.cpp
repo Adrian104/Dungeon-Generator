@@ -9,17 +9,6 @@ Dungeon::~Dungeon() { Clear(); }
 
 void Dungeon::MakeRoom()
 {
-	// ---------------
-
-	SDL_FRect &space = tree.Get().space;
-
-	space.x += 2;
-	space.y += 2;
-	space.w -= 4;
-	space.h -= 4;
-
-	// ---------------
-
 	Cell &crrCell = tree.Get();
 	SDL_FRect room = crrCell.space;
 	SDL_FRect room2;
@@ -27,8 +16,8 @@ void Dungeon::MakeRoom()
 	const int maxmin = gInfo -> maxRoomSize - gInfo -> minRoomSize;
 	const bool doubleRoom = (rand() % 100) < gInfo -> doubleRoomProb;
 
-	float dX = room.w * ((gInfo -> minRoomSize + rand() % maxmin) / 100.0f);
-	float dY = room.h * ((gInfo -> minRoomSize + rand() % maxmin) / 100.0f);
+	float dX = RoundTo(room.w * ((gInfo -> minRoomSize + rand() % maxmin) / 100.0f), gInfo -> tileSize);
+	float dY = RoundTo(room.h * ((gInfo -> minRoomSize + rand() % maxmin) / 100.0f), gInfo -> tileSize);
 
 	room.w -= dX;
 	room.h -= dY;
@@ -39,28 +28,28 @@ void Dungeon::MakeRoom()
 
 		if (dX > dY)
 		{
-			const float extra = dX * ((rand() % 100) / 100.0f);
+			const float extra = RoundTo(dX * ((rand() % 100) / 100.0f), gInfo -> tileSize);
 
-			room2.h /= 2.0f;
+			room2.h = RoundTo(room2.h / 2.0f, gInfo -> tileSize);
 			room2.w += extra;
 			dX -= extra;
 
-			if (rand() & 1) room2.y += room2.h;
+			if (rand() & 1) room2.y = room.y + room.h - room2.h;
 		}
 		else
 		{
-			const float extra = dY * ((rand() % 100) / 100.0f);
+			const float extra = RoundTo(dY * ((rand() % 100) / 100.0f), gInfo -> tileSize);
 
-			room2.w /= 2.0f;
+			room2.w = RoundTo(room2.w / 2.0f, gInfo -> tileSize);
 			room2.h += extra;
 			dY -= extra;
 
-			if (rand() & 1) room2.x += room2.w;
+			if (rand() & 1) room2.x = room.x + room.w - room2.w;
 		}
 	}
 
-	const float xOffset = dX * (rand() % 100) / 100.0f;
-	const float yOffset = dY * (rand() % 100) / 100.0f;
+	const float xOffset = RoundTo(dX * (rand() % 100) / 100.0f, gInfo -> tileSize);
+	const float yOffset = RoundTo(dY * (rand() % 100) / 100.0f, gInfo -> tileSize);
 
 	room.x += xOffset;
 	room.y += yOffset;
@@ -83,6 +72,16 @@ void Dungeon::Divide(int left)
 	if (left <= 0)
 	{
 		nomore:
+		SDL_FRect &space = tree.Get().space;
+
+		const float xyOffset = gInfo -> tileSize * 4;
+		const float whOffset = gInfo -> tileSize * 5;
+
+		space.x += xyOffset;
+		space.y += xyOffset;
+		space.w -= whOffset;
+		space.h -= whOffset;
+
 		MakeRoom();
 		return;
 	}
@@ -107,6 +106,8 @@ void Dungeon::Divide(int left)
 
 	if (gInfo -> spaceSizeRandomness > 0) randSize = totalSize / 2.0f - totalSize * ((gInfo -> spaceSizeRandomness >> 1) / 100.0f) + totalSize * ((rand() % gInfo -> spaceSizeRandomness) / 100.0f);
 	else randSize = totalSize / 2.0f;
+
+	randSize = RoundTo(randSize, gInfo -> tileSize);
 
 	tree.AddNode(tree.Get());
 	tree.GoLeft();
@@ -137,8 +138,11 @@ void Dungeon::Generate(GenInfo *genInfo)
 	Clear();
 	gInfo = genInfo;
 
-	tree.Get().space.w = float(gInfo -> xSize);
-	tree.Get().space.h = float(gInfo -> ySize);
+	gInfo -> xSize = int(RoundTo(float(gInfo -> xSize), gInfo -> tileSize));
+	gInfo -> ySize = int(RoundTo(float(gInfo -> ySize), gInfo -> tileSize));
+
+	tree.Get().space.w = float(gInfo -> xSize) - 3 * gInfo -> tileSize;
+	tree.Get().space.h = float(gInfo -> ySize) - 3 * gInfo -> tileSize;
 
 	Divide(gInfo -> maxDepth);
 }

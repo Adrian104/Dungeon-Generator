@@ -1,4 +1,5 @@
 #include "manager.hpp"
+#define SHOW_GRID
 
 DGManager::DGManager() : quit(false), needRedraw(true), vPort(0.1f)
 {
@@ -19,6 +20,7 @@ DGManager::DGManager() : quit(false), needRedraw(true), vPort(0.1f)
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
+	gInfo.tileSize = 1;
 	gInfo.maxDepth = 9;
 	gInfo.minDepth = 8;
 	gInfo.maxRoomSize = 75;
@@ -83,6 +85,33 @@ void DGManager::Draw()
 		SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
 		dg.tree.Execute(helper, &DrawRooms, this);
 	}
+
+	#ifdef SHOW_GRID
+	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0x33);
+	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+	for (float x = 0; x <= gInfo.xSize; x += gInfo.tileSize)
+	{
+		SDL_FPoint a = { x, 0 };
+		SDL_FPoint b = { x, float(gInfo.ySize) };
+
+		vPort.ToScreen(a.x, a.y, a.x, a.y);
+		vPort.ToScreen(b.x, b.y, b.x, b.y);
+
+		SDL_RenderDrawLineF(renderer, a.x, a.y, b.x, b.y);
+	}
+
+	for (float y = 0; y <= gInfo.ySize; y += gInfo.tileSize)
+	{
+		SDL_FPoint a = { 0, y };
+		SDL_FPoint b = { float(gInfo.xSize), y };
+
+		vPort.ToScreen(a.x, a.y, a.x, a.y);
+		vPort.ToScreen(b.x, b.y, b.x, b.y);
+
+		SDL_RenderDrawLineF(renderer, a.x, a.y, b.x, b.y);
+	}
+	#endif
 
 	SDL_RenderPresent(renderer);
 	needRedraw = false;
