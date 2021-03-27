@@ -20,6 +20,7 @@ inline bool IsInside(SDL_FRect &rect, SDL_FPoint &point)
 }
 
 struct Room;
+struct PNode;
 struct Cell;
 struct GenInfo;
 struct Dungeon;
@@ -35,20 +36,25 @@ struct Room
 	~Room() { delete nextRoom; }
 };
 
+struct PNode
+{
+	static PNode null;
+	enum : uchar { NORTH, EAST, SOUTH, WEST };
+
+	SDL_FPoint pos;
+	PNode *links[4];
+
+	PNode(const SDL_FPoint &pPos) : pos(pPos), links{ &null, &null, &null, &null } {}
+};
+
 struct Cell
 {
 	Room *roomList;
 	SDL_FRect space;
+	PNode *entryNode;
 
-	Cell() : roomList(nullptr), space{} {}
+	Cell() : roomList(nullptr), space{}, entryNode(nullptr) {}
 	~Cell() { delete roomList; }
-};
-
-struct Cache
-{
-	int deltaDepth;
-	int deltaRoomSize;
-	float tileSize3, tileSize4, tileSize5;
 };
 
 struct GenInfo
@@ -63,9 +69,20 @@ struct GenInfo
 
 struct Dungeon
 {
+	struct Cache
+	{
+		int deltaDepth;
+		int deltaRoomSize;
+		float tileSize4, tileSize5;
+	};
+
 	Tree tree;
 	Cache cache;
 	GenInfo *gInfo;
+
+	std::forward_list<PNode> pNodes;
+	std::unordered_multimap<float, PNode*> *pXNodes;
+	std::unordered_multimap<float, PNode*> *pYNodes;
 
 	void Prepare();
 	void MakeRoom();

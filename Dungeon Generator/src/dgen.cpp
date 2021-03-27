@@ -4,18 +4,28 @@
 #define FULL_SCREEN
 #endif
 
-Dungeon::Dungeon() : cache{}, gInfo(nullptr) {}
+PNode PNode::null = PNode({ 0, 0 });
+
+Dungeon::Dungeon() : cache{}, gInfo(nullptr), pXNodes(nullptr), pYNodes(nullptr) {}
 Dungeon::~Dungeon() { Clear(); }
 
 void Dungeon::Prepare()
 {
+	const float tileSize3 = gInfo -> tileSize * 3;
+	const size_t toReserve = 1 << (size_t(gInfo -> maxDepth) + 2);
+
+	pXNodes = new std::unordered_multimap<float, PNode*>(toReserve);
+	pYNodes = new std::unordered_multimap<float, PNode*>(toReserve);
+
+	pXNodes -> max_load_factor(8);
+	pYNodes -> max_load_factor(8);
+
 	gInfo -> xSize = int(RoundTo(float(gInfo -> xSize), gInfo -> tileSize));
 	gInfo -> ySize = int(RoundTo(float(gInfo -> ySize), gInfo -> tileSize));
 
-	tree.Get().space.w = float(gInfo -> xSize) - cache.tileSize3;
-	tree.Get().space.h = float(gInfo -> ySize) - cache.tileSize3;
+	tree.Get().space.w = float(gInfo -> xSize) - tileSize3;
+	tree.Get().space.h = float(gInfo -> ySize) - tileSize3;
 
-	cache.tileSize3 = gInfo -> tileSize * 3;
 	cache.tileSize4 = gInfo -> tileSize * 4;
 	cache.tileSize5 = gInfo -> tileSize * 5;
 	cache.deltaDepth = gInfo -> maxDepth - gInfo -> minDepth;
@@ -140,6 +150,14 @@ void Dungeon::Divide(int left)
 
 void Dungeon::Clear()
 {
+	delete pYNodes;
+	pYNodes = nullptr;
+
+	delete pXNodes;
+	pXNodes = nullptr;
+
+	pNodes.clear();
+
 	tree.ToRoot();
 	tree.DeleteNode();
 }
