@@ -32,13 +32,15 @@ void Dungeon::MakeRoom()
 	SDL_Rect room = crrCell.space;
 	SDL_Rect room2;
 
-	const bool doubleRoom = (rand() % 100) < gInfo -> doubleRoomProb;
+	bool doubleRoom = (rand() % 100) < gInfo -> doubleRoomProb;
 
 	int dX = int(room.w * ((gInfo -> minRoomSize + rand() % cache.deltaRoomSize) / 100.0f));
 	int dY = int(room.h * ((gInfo -> minRoomSize + rand() % cache.deltaRoomSize) / 100.0f));
 
 	room.w -= dX;
 	room.h -= dY;
+
+	if (room.w < 4 || room.h < 4) return;
 
 	if (doubleRoom)
 	{
@@ -64,6 +66,8 @@ void Dungeon::MakeRoom()
 
 			if (rand() & 1) room2.x = room.x + room.w - room2.w;
 		}
+
+		if (room2.w < 4 || room2.h < 4) doubleRoom = false;
 	}
 
 	const int xOffset = int(dX * (rand() % 100) / 100.0f);
@@ -83,7 +87,7 @@ void Dungeon::MakeRoom()
 	}
 }
 
-void Dungeon::Divide(int left)
+bool Dungeon::Divide(int left)
 {
 	if (left <= 0)
 	{
@@ -93,8 +97,7 @@ void Dungeon::Divide(int left)
 		space.x += 4; space.y += 4;
 		space.w -= 5; space.h -= 5;
 
-		MakeRoom();
-		return;
+		return space.w >= 5 && space.h >= 5;
 	}
 	else if (left <= cache.deltaDepth)
 	{
@@ -123,7 +126,7 @@ void Dungeon::Divide(int left)
 
 	crrSpace ->* wh = randSize;
 
-	Divide(left);
+	bool ok = Divide(left);
 	tree.GoUp();
 	tree.GoRight();
 	crrSpace = &tree.Get().space;
@@ -131,8 +134,16 @@ void Dungeon::Divide(int left)
 	crrSpace ->* xy += randSize;
 	crrSpace ->* wh -= randSize;
 
-	Divide(left);
+	ok &= Divide(left);
 	tree.GoUp();
+
+	if (!ok)
+	{
+		tree.DeleteNode();
+		goto nomore;
+	}
+
+	return true;
 }
 
 void Dungeon::Clear()
@@ -151,9 +162,13 @@ void Dungeon::Clear()
 
 void Dungeon::Generate(GenInfo *genInfo)
 {
+	ExeHelper<Cell> helper(true, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); });
+
 	Clear();
 	gInfo = genInfo;
 
 	Prepare();
 	Divide(gInfo -> maxDepth);
+
+	tree.ExecuteObj(helper, &Dungeon::MakeRoom, this);
 }

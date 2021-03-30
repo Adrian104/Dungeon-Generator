@@ -80,7 +80,7 @@ struct Dungeon
 	
 	void Prepare();
 	void MakeRoom();
-	void Divide(int left);
+	bool Divide(int left);
 
 	Dungeon();
 	~Dungeon();

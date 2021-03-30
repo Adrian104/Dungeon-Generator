@@ -20,8 +20,8 @@ DGManager::DGManager() : quit(false), needRedraw(true)
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-	gInfo.maxDepth = 9;
-	gInfo.minDepth = 8;
+	gInfo.minDepth = 9;
+	gInfo.maxDepth = 10;
 	gInfo.maxRoomSize = 75;
 	gInfo.minRoomSize = 25;
 	gInfo.doubleRoomProb = 25;
