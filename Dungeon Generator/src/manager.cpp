@@ -1,7 +1,7 @@
 #include "manager.hpp"
-//#define SHOW_GRID
+#define SHOW_GRID
 
-DGManager::DGManager() : quit(false), needRedraw(true), vPort(0.1f)
+DGManager::DGManager() : quit(false), needRedraw(true)
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -55,7 +55,7 @@ void DGManager::Draw()
 
 	auto DrawSpace = [](DGManager *mgr) -> void
 	{
-		SDL_FRect rect = mgr -> dg.tree.Get().space;
+		SDL_FRect rect = ToFRect(mgr -> dg.tree.Get().space);
 		mgr -> vPort.RectToScreen(rect, rect);
 		SDL_RenderDrawRectF(mgr -> renderer, &rect);
 	};
@@ -64,7 +64,7 @@ void DGManager::Draw()
 	{
 		for (Room *room = mgr -> dg.tree.Get().roomList; room != nullptr; room = room -> nextRoom)
 		{
-			SDL_FRect rect = room -> room;
+			SDL_FRect rect = ToFRect(room -> room);
 			mgr -> vPort.RectToScreen(rect, rect);
 			SDL_RenderDrawRectF(mgr -> renderer, &rect);
 		}
@@ -86,7 +86,7 @@ void DGManager::Draw()
 	}
 
 	#ifdef SHOW_GRID
-	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0x33);
+	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0x16);
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
 	for (float x = 0; x <= gInfo.xSize; x++)

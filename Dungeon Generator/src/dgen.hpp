@@ -6,10 +6,13 @@
 #include "vport.hpp"
 #include "btree.hpp"
 
-inline bool IsInside(SDL_FRect &rect, SDL_FPoint &point)
+inline bool IsInside(SDL_Rect &rect, SDL_Point &point)
 {
 	return rect.x < point.x && (rect.x + rect.w) > point.x && rect.y < point.y && (rect.y + rect.h) > point.y;
 }
+
+inline SDL_FPoint ToFPoint(SDL_Point &point) { return { float(point.x), float(point.y) }; }
+inline SDL_FRect ToFRect(SDL_Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
 
 struct Room;
 struct Cell;
@@ -21,20 +24,21 @@ typedef BTree<Cell> Tree;
 
 struct Room
 {
+	SDL_Rect room;
 	Room *nextRoom;
-	SDL_FRect room;
 
-	Room() : nextRoom(nullptr), room{} {}
+	Room() : room{}, nextRoom(nullptr) {}
+	Room(SDL_Rect &rect) : room(rect), nextRoom(nullptr) {}
 	~Room() { delete nextRoom; }
 };
 
 struct Cell
 {
+	SDL_Rect space;
 	Room *roomList;
-	SDL_FRect space;
 	PNode *entryNode;
 
-	Cell() : roomList(nullptr), space{}, entryNode(nullptr) {}
+	Cell() : space{}, roomList(nullptr), entryNode(nullptr) {}
 	~Cell() { delete roomList; }
 };
 
@@ -43,10 +47,10 @@ struct PNode
 	static PNode null;
 	enum : uchar { NORTH, EAST, SOUTH, WEST };
 
-	SDL_FPoint pos;
+	SDL_Point pos;
 	PNode *links[4];
 
-	PNode(const SDL_FPoint &pPos) : pos(pPos), links{ &null, &null, &null, &null } {}
+	PNode(const SDL_Point &pPos) : pos(pPos), links{ &null, &null, &null, &null } {}
 };
 
 struct GenInfo
@@ -71,8 +75,8 @@ struct Dungeon
 	GenInfo *gInfo;
 
 	std::forward_list<PNode> pNodes;
-	std::unordered_multimap<float, PNode*> *pXNodes;
-	std::unordered_multimap<float, PNode*> *pYNodes;
+	std::unordered_multimap<int, PNode*> *pXNodes;
+	std::unordered_multimap<int, PNode*> *pYNodes;
 	
 	void Prepare();
 	void MakeRoom();

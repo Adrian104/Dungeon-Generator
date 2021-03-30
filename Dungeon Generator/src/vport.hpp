@@ -11,7 +11,7 @@ class Viewport
 	float scaleStep;
 
 	public:
-	Viewport(const float pScaleStep) : scale(1), xOffset(0), yOffset(0), scaleStep(pScaleStep) {}
+	Viewport(const float pScaleStep = 0.1f) : scale(1), xOffset(0), yOffset(0), scaleStep(pScaleStep) {}
 
 	float Scale(float toScale);
 	void Update(SDL_Event &sdlEvent);
