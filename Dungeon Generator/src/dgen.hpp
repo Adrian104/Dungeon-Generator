@@ -80,7 +80,11 @@ struct Dungeon
 	
 	void Prepare();
 	void MakeRoom();
+	void LinkNodes();
+	void CreateNodes();
 	bool Divide(int left);
+
+	PNode &AddNode(int x, int y);
 
 	Dungeon();
 	~Dungeon();

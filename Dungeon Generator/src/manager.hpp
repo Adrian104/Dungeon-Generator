@@ -5,6 +5,8 @@ struct DrawInfo
 {
 	bool spaceVisibility;
 	bool roomsVisibility;
+	bool nodesVisibility;
+	int pathsVisibilityMode;
 };
 
 struct DGManager
