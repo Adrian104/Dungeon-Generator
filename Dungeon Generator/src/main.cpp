@@ -1,5 +1,3 @@
-#include <iostream>
-#include <string>
 #include "manager.hpp"
 
 int main(int argc, char **argv)

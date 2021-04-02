@@ -1,4 +1,5 @@
 #pragma once
+#include "macros.hpp"
 #include "dgen.hpp"
 
 struct DrawInfo

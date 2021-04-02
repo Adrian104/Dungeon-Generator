@@ -1,4 +1,5 @@
 #pragma once
+#include "macros.hpp"
 
 template <typename Type>
 class BTNode

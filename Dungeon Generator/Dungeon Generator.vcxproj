@@ -183,6 +183,7 @@
   <ItemGroup>
     <ClInclude Include="src\btree.hpp" />
     <ClInclude Include="src\dgen.hpp" />
+    <ClInclude Include="src\macros.hpp" />
     <ClInclude Include="src\manager.hpp" />
     <ClInclude Include="src\vport.hpp" />
   </ItemGroup>

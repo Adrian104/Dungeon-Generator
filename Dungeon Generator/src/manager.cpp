@@ -1,6 +1,4 @@
 #include "manager.hpp"
-#define SHOW_GRID
-#define RANDOM_COLORS
 
 DGManager::DGManager() : quit(false), needRedraw(true)
 {

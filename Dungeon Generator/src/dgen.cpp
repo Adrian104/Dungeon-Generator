@@ -1,9 +1,5 @@
 #include "dgen.hpp"
 
-#ifndef _DEBUG
-#define FULL_SCREEN
-#endif
-
 PNode PNode::null = PNode({ 0, 0 });
 
 Dungeon::Dungeon() : cache{}, gInfo(nullptr), pXNodes(nullptr), pYNodes(nullptr) {}

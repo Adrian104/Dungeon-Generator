@@ -3,6 +3,7 @@
 #include <forward_list>
 #include <cstdlib>
 #include <time.h>
+#include "macros.hpp"
 #include "vport.hpp"
 #include "btree.hpp"
 
