@@ -1,8 +1,10 @@
 #include "vport.hpp"
 
-float Viewport::Scale(float toScale)
+void Viewport::Reset()
 {
-	return toScale * scale;
+	xOffset = 0;
+	yOffset = 0;
+	scale = defScale;
 }
 
 void Viewport::Update(SDL_Event &sdlEvent)
@@ -44,13 +46,18 @@ void Viewport::Update(SDL_Event &sdlEvent)
 	}
 	else if (sdlEvent.type == SDL_KEYDOWN)
 	{
-		if (sdlEvent.key.keysym.sym == SDLK_TAB)
-		{
-			scale = 1;
-			xOffset = 0;
-			yOffset = 0;
-		}
+		if (sdlEvent.key.keysym.sym == SDLK_TAB) Reset();
 	}
+}
+
+void Viewport::SetScaleStep(float pScaleStep)
+{
+	scaleStep = pScaleStep;
+}
+
+void Viewport::SetDefaultScale(float pDefScale)
+{
+	if (pDefScale != 0) defScale = pDefScale;
 }
 
 void Viewport::Scale(float wFrom, float hFrom, int &wTo, int &hTo) const

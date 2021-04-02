@@ -2,7 +2,7 @@
 
 PNode PNode::null = PNode({ 0, 0 });
 
-Dungeon::Dungeon() : cache{}, gInfo(nullptr), pXNodes(nullptr), pYNodes(nullptr) {}
+Dungeon::Dungeon() : cache{}, gInfo(nullptr), pXNodes(nullptr), pYNodes(nullptr) { LOGGER_LOG_HEADER("Dungeon Generator"); }
 Dungeon::~Dungeon() { Clear(); }
 
 void Dungeon::Prepare()
@@ -385,14 +385,25 @@ void Dungeon::Clear()
 
 void Dungeon::Generate(GenInfo *genInfo)
 {
+	LOGGER_LOG("Generation started");
+	LOGGER_LOG_ENDL();
+
+	gInfo = genInfo;
 	ExeHelper<Cell> helper(true, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); });
 
+	LOGGER_LOG_TIME("Preparing");
 	Clear();
-	gInfo = genInfo;
-
 	Prepare();
+
+	LOGGER_LOG_TIME("Partitioning space");
 	Divide(gInfo -> maxDepth);
 
+	LOGGER_LOG_TIME("Generating rooms");
 	tree.ExecuteObj(helper, &Dungeon::MakeRoom, this);
+
+	LOGGER_LOG_TIME("Linking nodes");
 	LinkNodes();
+
+	LOGGER_LOG("Done!");
+	LOGGER_LOG_ENDL();
 }

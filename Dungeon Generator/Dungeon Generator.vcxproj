@@ -176,6 +176,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\dgen.cpp" />
+    <ClCompile Include="src\logger.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\manager.cpp" />
     <ClCompile Include="src\vport.cpp" />
@@ -183,6 +184,7 @@
   <ItemGroup>
     <ClInclude Include="src\btree.hpp" />
     <ClInclude Include="src\dgen.hpp" />
+    <ClInclude Include="src\logger.hpp" />
     <ClInclude Include="src\macros.hpp" />
     <ClInclude Include="src\manager.hpp" />
     <ClInclude Include="src\vport.hpp" />

@@ -1,6 +1,6 @@
 #include "manager.hpp"
 
-DGManager::DGManager() : quit(false), needRedraw(true)
+DGManager::DGManager() : quit(false), needRedraw(true), xSize(0), ySize(0)
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -9,15 +9,18 @@ DGManager::DGManager() : quit(false), needRedraw(true)
 
 	#ifdef FULL_SCREEN
 		window = SDL_CreateWindow("Dungeon Generator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w, dm.h, SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN);
-		gInfo.xSize = dm.w;
-		gInfo.ySize = dm.h;
+		xSize = dm.w;
+		ySize = dm.h;
 	#else
 		window = SDL_CreateWindow("Dungeon Generator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w - 30, dm.h - 100, SDL_WINDOW_SHOWN);
-		gInfo.xSize = dm.w - 30;
-		gInfo.ySize = dm.h - 100;
+		xSize = dm.w - 30;
+		ySize = dm.h - 100;
 	#endif
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+	gInfo.xSize = xSize;
+	gInfo.ySize = ySize;
 
 	gInfo.minDepth = 9;
 	gInfo.maxDepth = 10;
@@ -227,4 +230,13 @@ void DGManager::Update()
 		}
 		else vPort.Update(sdlEvent);
 	}
+}
+
+void DGManager::ApplyFactor(const float factor)
+{
+	gInfo.xSize = int(xSize * factor);
+	gInfo.ySize = int(ySize * factor);
+
+	vPort.SetDefaultScale(1 / factor);
+	vPort.Reset();
 }

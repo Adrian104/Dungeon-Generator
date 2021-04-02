@@ -7,13 +7,16 @@ class Viewport
 	float scale;
 	float xOffset;
 	float yOffset;
+	float defScale;
 	float scaleStep;
 
 	public:
-	Viewport(const float pScaleStep = 0.1f) : scale(1), xOffset(0), yOffset(0), scaleStep(pScaleStep) {}
+	Viewport() : scale(1), xOffset(0), yOffset(0), defScale(1), scaleStep(0.1f) {}
 
-	float Scale(float toScale);
+	void Reset();
 	void Update(SDL_Event &sdlEvent);
+	void SetScaleStep(float pScaleStep);
+	void SetDefaultScale(float pDefScale);
 
 	void Scale(float wFrom, float hFrom, int &wTo, int &hTo) const;
 	void ToWorld(int xScreen, int yScreen, float &xWorld, float &yWorld) const;
@@ -28,4 +31,8 @@ class Viewport
 
 	void RectToScreen(float xWorld, float yWorld, float width, float height, SDL_Rect &rect) const;
 	void RectToScreen(float xWorld, float yWorld, float width, float height, SDL_FRect &rect) const;
+	
+	inline float GetScale() const { return scale; }
+	inline float GetXOffset() const { return xOffset; }
+	inline float GetYOffset() const { return yOffset; }
 };

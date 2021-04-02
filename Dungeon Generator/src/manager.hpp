@@ -15,6 +15,9 @@ struct DGManager
 	bool quit;
 	bool needRedraw;
 
+	int xSize;
+	int ySize;
+
 	Dungeon dg;
 	GenInfo gInfo;
 	DrawInfo dInfo;
@@ -29,4 +32,6 @@ struct DGManager
 	void Run();
 	void Draw();
 	void Update();
+
+	void ApplyFactor(const float factor);
 };
