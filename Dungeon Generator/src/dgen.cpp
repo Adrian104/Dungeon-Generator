@@ -368,7 +368,7 @@ bool Dungeon::Divide(int left)
 
 	if (!ok)
 	{
-		tree.DeleteNode();
+		tree.DeleteNodes();
 		goto nomore;
 	}
 
@@ -384,9 +384,7 @@ void Dungeon::Clear()
 	pXNodes = nullptr;
 
 	pNodes.clear();
-
-	tree.ToRoot();
-	tree.DeleteNode();
+	tree.Clear();
 }
 
 void Dungeon::Generate(GenInfo *genInfo)

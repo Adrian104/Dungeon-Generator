@@ -1,19 +1,17 @@
 #pragma once
 
-typedef unsigned char uchar;
-
 template <typename Type>
-class Node
+class BTNode
 {
 	Type data;
-	Node *const parent;
+	BTNode *const parent;
 
-	Node *left;
-	Node *right;
+	BTNode *left;
+	BTNode *right;
 
 	public:
-	Node(Node *const pParent, const Type &ref = Type());
-	~Node();
+	BTNode(BTNode *const pParent, const Type &ref = Type());
+	~BTNode();
 
 	inline Type *Up() { return parent != nullptr ? &parent -> data : nullptr; }
 	inline Type *Left() { return left != nullptr ? &left -> data : nullptr; }
@@ -22,7 +20,7 @@ class Node
 	inline bool IsRoot() const { return parent == nullptr; }
 	inline bool IsLast() const { return left == nullptr && right == nullptr; }
 
-	template <typename T> friend class BTree;
+	template <typename T> friend class BinTree;
 };
 
 template <typename Type>
@@ -30,9 +28,9 @@ struct ExeInfo
 {
 	int depth;
 	void *resource;
-	Node<Type> &node;
+	BTNode<Type> &node;
 
-	ExeInfo(const int d, void *res, Node<Type> &crr) : depth(d), resource(res), node(crr) {}
+	ExeInfo(const int d, void *res, BTNode<Type> &crr) : depth(d), resource(res), node(crr) {}
 };
 
 template <typename Type>
@@ -47,24 +45,26 @@ struct ExeHelper
 };
 
 template <typename Type>
-class BTree
+class BinTree
 {
 	public:
-	enum : uchar { LEFT = 0b1, RIGHT = 0b10 };
+	enum : uint8_t { LEFT = 0b1, RIGHT = 0b10 };
 
 	private:
-	Node<Type> root;
-	Node<Type> *crr;
+	BTNode<Type> *crr;
+	BTNode<Type> *root;
 
 	public:
-	BTree();
+	BinTree();
+	~BinTree();
 
 	bool GoUp();
 	bool GoLeft();
 	bool GoRight();
 
-	void DeleteNode() const;
-	uchar AddNode(const Type &ref = Type(), uchar sides = LEFT | RIGHT);
+	void Clear();
+	void DeleteNodes() const;
+	uint8_t AddNode(const Type &ref = Type(), uint8_t sides = LEFT | RIGHT);
 
 	template <typename FP, typename ...Args>
 	void Execute(const ExeHelper<Type> &helper, FP *fPtr, Args ...args);
@@ -73,8 +73,8 @@ class BTree
 	void ExecuteObj(const ExeHelper<Type> &helper, FP OP::*fPtr, OP *oPtr, Args ...args);
 
 	inline Type &Get() const { return crr -> data; }
-	inline void ToRoot() { crr = &root; }
-	inline bool IsRoot() const { return crr == &root; }
+	inline void ToRoot() { crr = root; }
+	inline bool IsRoot() const { return crr == root; }
 
 	inline Type *Up() { return crr -> Up(); }
 	inline Type *Left() { return crr -> Left(); }
@@ -82,20 +82,23 @@ class BTree
 };
 
 template <typename Type>
-Node<Type>::Node(Node *const pParent, const Type &ref) : data(ref), parent(pParent), left(nullptr), right(nullptr) {}
+BTNode<Type>::BTNode(BTNode *const pParent, const Type &ref) : data(ref), parent(pParent), left(nullptr), right(nullptr) {}
 
 template <typename Type>
-Node<Type>::~Node()
+BTNode<Type>::~BTNode()
 {
 	delete right;
 	delete left;
 }
 
 template <typename Type>
-BTree<Type>::BTree() : root(nullptr), crr(&root) {}
+BinTree<Type>::BinTree() : crr(nullptr), root(nullptr) { Clear(); }
 
 template <typename Type>
-bool BTree<Type>::GoUp()
+BinTree<Type>::~BinTree() { delete root; }
+
+template <typename Type>
+bool BinTree<Type>::GoUp()
 {
 	if (crr -> parent == nullptr) return false;
 
@@ -104,7 +107,7 @@ bool BTree<Type>::GoUp()
 }
 
 template <typename Type>
-bool BTree<Type>::GoLeft()
+bool BinTree<Type>::GoLeft()
 {
 	if (crr -> left == nullptr) return false;
 
@@ -113,7 +116,7 @@ bool BTree<Type>::GoLeft()
 }
 
 template <typename Type>
-bool BTree<Type>::GoRight()
+bool BinTree<Type>::GoRight()
 {
 	if (crr -> right == nullptr) return false;
 
@@ -122,7 +125,15 @@ bool BTree<Type>::GoRight()
 }
 
 template <typename Type>
-void BTree<Type>::DeleteNode() const
+void BinTree<Type>::Clear()
+{
+	delete root;
+	root = new BTNode<Type>(nullptr);
+	crr = root;
+}
+
+template <typename Type>
+void BinTree<Type>::DeleteNodes() const
 {
 	delete crr -> right;
 	crr -> right = nullptr;
@@ -132,17 +143,17 @@ void BTree<Type>::DeleteNode() const
 }
 
 template <typename Type>
-uchar BTree<Type>::AddNode(const Type &ref, uchar sides)
+uint8_t BinTree<Type>::AddNode(const Type &ref, uint8_t sides)
 {
 	if (sides & LEFT)
 	{
-		if (crr -> left == nullptr) crr -> left = new Node<Type>(crr, ref);
+		if (crr -> left == nullptr) crr -> left = new BTNode<Type>(crr, ref);
 		else sides &= ~LEFT;
 	}
 
 	if (sides & RIGHT)
 	{
-		if (crr -> right == nullptr) crr -> right = new Node<Type>(crr, ref);
+		if (crr -> right == nullptr) crr -> right = new BTNode<Type>(crr, ref);
 		else sides &= ~RIGHT;
 	}
 
@@ -150,13 +161,13 @@ uchar BTree<Type>::AddNode(const Type &ref, uchar sides)
 }
 
 template <typename Type> template <typename FP, typename ...Args>
-void BTree<Type>::Execute(const ExeHelper<Type> &helper, FP *fPtr, Args ...args)
+void BinTree<Type>::Execute(const ExeHelper<Type> &helper, FP *fPtr, Args ...args)
 {
 	if (!helper.rev)
 	{
 		if ((*helper.chkFunc)(ExeInfo<Type>(helper.depth, helper.resource, *crr)))
 		{
-			Node<Type> *const temp = crr;
+			BTNode<Type> *const temp = crr;
 			(*fPtr)(args...);
 			crr = temp;
 		}
@@ -180,7 +191,7 @@ void BTree<Type>::Execute(const ExeHelper<Type> &helper, FP *fPtr, Args ...args)
 	{
 		if ((*helper.chkFunc)(ExeInfo<Type>(helper.depth, helper.resource, *crr)))
 		{
-			Node<Type> *const temp = crr;
+			BTNode<Type> *const temp = crr;
 			(*fPtr)(args...);
 			crr = temp;
 		}
@@ -188,13 +199,13 @@ void BTree<Type>::Execute(const ExeHelper<Type> &helper, FP *fPtr, Args ...args)
 }
 
 template <typename Type> template <typename FP, typename OP, typename ...Args>
-void BTree<Type>::ExecuteObj(const ExeHelper<Type> &helper, FP OP::*fPtr, OP *oPtr, Args ...args)
+void BinTree<Type>::ExecuteObj(const ExeHelper<Type> &helper, FP OP::*fPtr, OP *oPtr, Args ...args)
 {
 	if (!helper.rev)
 	{
 		if ((*helper.chkFunc)(ExeInfo<Type>(helper.depth, helper.resource, *crr)))
 		{
-			Node<Type> *const temp = crr;
+			BTNode<Type> *const temp = crr;
 			(oPtr ->* fPtr)(args...);
 			crr = temp;
 		}
@@ -218,7 +229,7 @@ void BTree<Type>::ExecuteObj(const ExeHelper<Type> &helper, FP OP::*fPtr, OP *oP
 	{
 		if ((*helper.chkFunc)(ExeInfo<Type>(helper.depth, helper.resource, *crr)))
 		{
-			Node<Type> *const temp = crr;
+			BTNode<Type> *const temp = crr;
 			(oPtr ->* fPtr)(args...);
 			crr = temp;
 		}

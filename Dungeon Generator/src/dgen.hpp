@@ -20,7 +20,7 @@ struct PNode;
 struct GenInfo;
 struct Dungeon;
 
-typedef BTree<Cell> Tree;
+typedef BinTree<Cell> Tree;
 
 struct Room
 {
@@ -45,7 +45,7 @@ struct Cell
 struct PNode
 {
 	static PNode null;
-	enum : uchar { NORTH, EAST, SOUTH, WEST };
+	enum : uint8_t { NORTH, EAST, SOUTH, WEST };
 
 	SDL_Point pos;
 	PNode *links[4];
