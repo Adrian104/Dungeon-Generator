@@ -12,8 +12,8 @@ inline bool IsInside(SDL_Rect &rect, SDL_Point &point)
 	return rect.x < point.x && (rect.x + rect.w) > point.x && rect.y < point.y && (rect.y + rect.h) > point.y;
 }
 
-inline SDL_FPoint ToFPoint(SDL_Point &point) { return { float(point.x), float(point.y) }; }
-inline SDL_FRect ToFRect(SDL_Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
+inline SDL_FPoint ToFPoint(const SDL_Point &point) { return { float(point.x), float(point.y) }; }
+inline SDL_FRect ToFRect(const SDL_Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
 
 struct Room;
 struct Cell;
@@ -35,11 +35,12 @@ struct Room
 
 struct Cell
 {
+	bool horizontal;
 	SDL_Rect space;
 	Room *roomList;
 	PNode *entryNode;
 
-	Cell() : space{}, roomList(nullptr), entryNode(nullptr) {}
+	Cell() : horizontal(false), space{}, roomList(nullptr), entryNode(nullptr) {}
 	~Cell() { delete roomList; }
 };
 

@@ -86,11 +86,17 @@ void Dungeon::MakeRoom()
 		if (rand() & 1) selectedRoom = &crrCell.roomList -> nextRoom -> room;
 	}
 
-	retry:
-	const bool xMod = rand() & 1;
-	const bool xInv = rand() & 1;
-	const bool yInv = rand() & 1;
+	tree.GoUp();
+	const bool xMod = tree.Get().horizontal;
 
+	tree.GoRight();
+	const bool isRight = &tree.Get() == &crrCell;
+
+	bool xInv, yInv;
+	if (xMod) { yInv = !isRight; xInv = false; }
+	else { xInv = !isRight; yInv = false; }
+
+	retry:
 	int x = int(selectedRoom -> x + (selectedRoom -> w - 1) * xInv);
 	int y = int(selectedRoom -> y + (selectedRoom -> h - 1) * yInv);
 
@@ -175,7 +181,7 @@ void Dungeon::LinkNodes()
 {
 	auto Link = [this](PNode &thisNode, int SDL_Point::*pointVar) -> void
 	{
-		SDL_Point &pos = thisNode.pos;
+		const SDL_Point &pos = thisNode.pos;
 		int SDL_Point::*opposite = pointVar == &SDL_Point::x ? &SDL_Point::y : &SDL_Point::x;
 
 		PNode *plus = nullptr;
@@ -335,10 +341,11 @@ bool Dungeon::Divide(int left)
 	int SDL_Rect::*wh;
 
 	SDL_Rect *crrSpace = &tree.Get().space;
-	const bool vert = crrSpace -> w > crrSpace -> h;
+	const bool horizontal = crrSpace -> w < crrSpace -> h;
 
-	if (vert) { xy = &SDL_Rect::x; wh = &SDL_Rect::w; }
-	else { xy = &SDL_Rect::y; wh = &SDL_Rect::h; }
+	tree.Get().horizontal = horizontal;
+	if (horizontal) { xy = &SDL_Rect::y; wh = &SDL_Rect::h; }
+	else { xy = &SDL_Rect::x; wh = &SDL_Rect::w; }
 
 	const int totalSize = crrSpace ->* wh;
 	int randSize = totalSize >> 1;
