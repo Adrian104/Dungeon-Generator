@@ -1,6 +1,48 @@
 #include "dgen.hpp"
 
 PNode PNode::null = PNode({ 0, 0 });
+PNode *PNode::stop = nullptr;
+
+void PNode::Reset()
+{
+	gCost = 0;
+	prevNode = nullptr;
+	mode = Mode::UNVISITED;
+}
+
+bool PNode::Open(PNode *prev)
+{
+	int xDiff = prev -> pos.x - pos.x;
+	int yDiff = prev -> pos.y - pos.y;
+
+	if (xDiff < 0) xDiff = -xDiff;
+	if (yDiff < 0) yDiff = -yDiff;
+
+	int &diff = (xDiff > yDiff) ? xDiff : yDiff;
+	int newGCost = prev -> gCost + diff;
+
+	const bool unvisited = mode == Mode::UNVISITED;
+	if (unvisited)
+	{
+		SDL_Point diff = { stop -> pos.x - pos.x, stop -> pos.y - pos.y };
+		hCost = int(sqrtf(float(diff.x * diff.x + diff.y * diff.y)));
+		mode = Mode::OPEN;
+
+		goto next;
+	}
+
+	if (newGCost < gCost)
+	{
+		next:
+		prevNode = prev;
+		gCost = newGCost;
+		fCost = gCost + hCost;
+
+		return unvisited;
+	}
+
+	return false;
+}
 
 Dungeon::Dungeon() : cache{}, gInfo(nullptr), pXNodes(nullptr), pYNodes(nullptr) { LOGGER_LOG_HEADER("Dungeon Generator"); }
 Dungeon::~Dungeon() { Clear(); }
@@ -18,6 +60,7 @@ void Dungeon::Prepare()
 	tree.Get().space.w = gInfo -> xSize - 3;
 	tree.Get().space.h = gInfo -> ySize - 3;
 
+	cache.nodesCount = 0;
 	cache.deltaDepth = gInfo -> maxDepth - gInfo -> minDepth;
 	cache.deltaRoomSize = gInfo -> maxRoomSize - gInfo -> minRoomSize;
 }
@@ -126,7 +169,6 @@ void Dungeon::MakeRoom()
 	}
 
 	SDL_Point brokerPoint = entryPoint;
-
 	if (xMod)
 	{
 		if (yInv) brokerPoint.y = crrCell.space.y + crrCell.space.h + 2;
@@ -264,6 +306,7 @@ void Dungeon::LinkNodes()
 
 	for (auto iter = pNodes.begin(); iter != end; iter++)
 	{
+		cache.nodesCount++;
 		PNode **links = iter -> links;
 
 		if (links[PNode::NORTH] == &PNode::null) links[PNode::NORTH] = nullptr;
@@ -277,6 +320,87 @@ void Dungeon::LinkNodes()
 
 	delete pXNodes;
 	pXNodes = nullptr;
+}
+
+void Dungeon::FindPaths()
+{
+	PNode *start = tree.Left() -> entryNode;
+	PNode::stop = tree.Right() -> entryNode;
+
+	const bool startNullptr = start == nullptr;
+	const bool stopNullptr = PNode::stop == nullptr;
+
+	if (start == PNode::stop) return;
+	PNode **entryNode = &tree.Get().entryNode;
+
+	if (!startNullptr && stopNullptr) { *entryNode = start; return; }
+	if (startNullptr && !stopNullptr) { *entryNode = PNode::stop; return; }
+
+	int length = 1, index;
+	PNode *crrNode = start;
+	std::forward_list<PNode*> opened;
+
+	do
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			PNode *const neighbor = crrNode -> links[i];
+
+			if (neighbor == nullptr) continue;
+			if (neighbor -> mode == PNode::Mode::CLOSED) continue;
+			if (neighbor -> Open(crrNode)) opened.push_front(neighbor);
+		}
+
+		if (opened.empty()) goto clear;
+		PNode *minCost = opened.front();
+
+		auto end = opened.end();
+		for (auto iter = opened.begin(); iter != end; iter++)
+		{
+			PNode *const node = *iter;
+
+			if (node -> fCost < minCost -> fCost) minCost = node;
+			else if (node -> fCost == minCost -> fCost) if (node -> hCost < minCost -> hCost) minCost = node;
+		}
+
+		crrNode -> mode = PNode::Mode::CLOSED;
+		usedNodes.push_back(crrNode);
+		opened.remove(crrNode);
+		crrNode = minCost;
+
+	} while (crrNode != PNode::stop);
+	
+	do
+	{
+		PNode *prevNode = crrNode -> prevNode;
+
+		int xDiff = prevNode -> pos.x - crrNode -> pos.x;
+		int yDiff = prevNode -> pos.y - crrNode -> pos.y;
+
+		if (yDiff < 0) crrNode -> path |= 1 << PNode::NORTH;
+		else if (xDiff > 0) crrNode -> path |= 1 << PNode::EAST;
+		else if (yDiff > 0) crrNode -> path |= 1 << PNode::SOUTH;
+		else if (xDiff < 0) crrNode -> path |= 1 << PNode::WEST;
+
+		length++;
+		crrNode = prevNode;
+
+	} while (crrNode != start);
+
+	index = rand() % length;
+	crrNode = PNode::stop;
+
+	for (index; index > 0; index--) crrNode = crrNode -> prevNode;
+	*entryNode = crrNode;
+
+	clear:
+	auto end1 = opened.end();
+	for (auto iter = opened.begin(); iter != end1; iter++) (*iter) -> Reset();
+
+	auto end2 = usedNodes.end();
+	for (auto iter = usedNodes.begin(); iter != end2; iter++) (*iter) -> Reset();
+
+	usedNodes.clear();
 }
 
 void Dungeon::CreateNodes()
@@ -387,6 +511,8 @@ void Dungeon::Clear()
 	pXNodes = nullptr;
 
 	pNodes.clear();
+	usedNodes.clear();
+
 	tree.Clear();
 }
 
@@ -410,6 +536,12 @@ void Dungeon::Generate(GenInfo *genInfo)
 
 	LOGGER_LOG_TIME("Linking nodes");
 	LinkNodes();
+
+	usedNodes.reserve(cache.nodesCount);
+	helper.chkFunc = [](const ExeInfo<Cell> &info) -> bool { return !info.node.IsLast(); };
+
+	LOGGER_LOG_TIME("Finding paths");
+	tree.ExecuteObj(helper, &Dungeon::FindPaths, this);
 
 	LOGGER_LOG("Done!");
 	LOGGER_LOG_ENDL();

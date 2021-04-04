@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #include <unordered_map>
 #include <forward_list>
 #include <cstdlib>
@@ -47,12 +48,26 @@ struct Cell
 struct PNode
 {
 	static PNode null;
+	static PNode *stop;
+
 	enum : uint8_t { NORTH, EAST, SOUTH, WEST };
+	enum class Mode : uint8_t { UNVISITED, OPEN, CLOSED };
 
-	SDL_Point pos;
+	int gCost;
+	int hCost;
+	int fCost;
+
+	Mode mode;
+	uint8_t path;
+
 	PNode *links[4];
+	PNode *prevNode;
+	const SDL_Point pos;
 
-	PNode(const SDL_Point &pPos) : pos(pPos), links{ &null, &null, &null, &null } {}
+	PNode(const SDL_Point &pPos) : gCost(0), hCost(0), fCost(0), mode(Mode::UNVISITED), path(0), links{ &null, &null, &null, &null }, prevNode(nullptr), pos(pPos) {}
+	
+	void Reset();
+	bool Open(PNode *prev);
 };
 
 struct GenInfo
@@ -68,6 +83,7 @@ struct Dungeon
 {
 	struct Cache
 	{
+		int nodesCount;
 		int deltaDepth;
 		int deltaRoomSize;
 	};
@@ -76,6 +92,7 @@ struct Dungeon
 	Cache cache;
 	GenInfo *gInfo;
 
+	std::vector<PNode*> usedNodes;
 	std::forward_list<PNode> pNodes;
 	std::unordered_multimap<int, PNode*> *pXNodes;
 	std::unordered_multimap<int, PNode*> *pYNodes;
@@ -83,6 +100,7 @@ struct Dungeon
 	void Prepare();
 	void MakeRoom();
 	void LinkNodes();
+	void FindPaths();
 	void CreateNodes();
 	bool Divide(int left);
 

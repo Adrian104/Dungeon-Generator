@@ -123,6 +123,29 @@ void DGManager::Draw()
 		}
 	};
 
+	auto DrawPaths = [](DGManager *mgr) -> void
+	{
+		auto end = mgr -> dg.pNodes.end();
+		for (auto iter = mgr -> dg.pNodes.begin(); iter != end; iter++)
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				if (!(iter -> path & (1 << i))) continue;
+
+				SDL_FPoint p1 = ToFPoint(iter -> pos);
+				SDL_FPoint p2 = ToFPoint(iter -> links[i] -> pos);
+
+				p1.x += 0.5f; p1.y += 0.5f;
+				p2.x += 0.5f; p2.y += 0.5f;
+
+				mgr -> vPort.ToScreen(p1.x, p1.y, p1.x, p1.y);
+				mgr -> vPort.ToScreen(p2.x, p2.y, p2.x, p2.y);
+
+				SDL_RenderDrawLineF(mgr -> renderer, p1.x, p1.y, p2.x, p2.y);
+			}
+		}
+	};
+
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
 	SDL_RenderClear(renderer);
 
@@ -147,7 +170,7 @@ void DGManager::Draw()
 	if (dInfo.pathsVisibilityMode == 2)
 	{
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-		DrawLinks(this);
+		DrawPaths(this);
 	}
 
 	if (dInfo.nodesVisibility)
