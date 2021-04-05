@@ -49,15 +49,16 @@ struct PNode
 {
 	static PNode null;
 	static PNode *stop;
+	static std::vector<std::pair<int, PNode*>> *heap;
 
-	enum Mode { UNVISITED, OPEN, CLOSED };
+	enum : uint8_t { UNVISITED, OPEN, CLOSED };
 	enum : uint8_t { NORTH, EAST, SOUTH, WEST };
 
 	int gCost;
 	int hCost;
 	int fCost;
 
-	int mode;
+	uint8_t mode;
 	uint8_t path;
 
 	PNode *links[4];
@@ -67,7 +68,7 @@ struct PNode
 	PNode(const SDL_Point &pPos) : gCost(0), hCost(0), fCost(0), mode(UNVISITED), path(0), links{ &null, &null, &null, &null }, prevNode(nullptr), pos(pPos) {}
 	
 	void Reset();
-	bool Open(PNode *prev);
+	void Open(PNode *prev);
 };
 
 struct GenInfo
@@ -92,7 +93,7 @@ struct Dungeon
 	GenInfo *gInfo;
 
 	std::vector<PNode*> usedNodes;
-	std::forward_list<PNode*> openNodes;
+	std::vector<std::pair<int, PNode*>> openNodes;
 
 	std::forward_list<PNode> pNodes;
 	std::unordered_multimap<int, PNode*> *pXNodes;

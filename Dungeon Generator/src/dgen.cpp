@@ -1,7 +1,10 @@
+#include <algorithm>
+#include <functional>
 #include "dgen.hpp"
 
 PNode PNode::null = PNode({ 0, 0 });
 PNode *PNode::stop = nullptr;
+std::vector<std::pair<int, PNode*>> *PNode::heap = nullptr;
 
 void PNode::Reset()
 {
@@ -10,7 +13,7 @@ void PNode::Reset()
 	prevNode = nullptr;
 }
 
-bool PNode::Open(PNode *prev)
+void PNode::Open(PNode *prev)
 {
 	int xDiff = prev -> pos.x - pos.x;
 	int yDiff = prev -> pos.y - pos.y;
@@ -21,8 +24,7 @@ bool PNode::Open(PNode *prev)
 	int &diff = (xDiff > yDiff) ? xDiff : yDiff;
 	int newGCost = prev -> gCost + diff;
 
-	const bool unvisited = mode == UNVISITED;
-	if (unvisited)
+	if (mode == UNVISITED)
 	{
 		SDL_Point diff = { stop -> pos.x - pos.x, stop -> pos.y - pos.y };
 		hCost = int(sqrtf(float(diff.x * diff.x + diff.y * diff.y)));
@@ -33,15 +35,19 @@ bool PNode::Open(PNode *prev)
 
 	if (newGCost < gCost)
 	{
+		{
+			std::pair<int, PNode*> pair(fCost, this);
+			heap -> erase(std::remove_if(heap -> begin(), heap -> end(), [pair](std::pair<int, PNode*> &in) -> bool { return pair == in; }), heap -> end());
+		}
+
 		next:
 		prevNode = prev;
 		gCost = newGCost;
 		fCost = gCost + hCost;
 
-		return unvisited;
+		heap -> push_back(std::make_pair(fCost, this));
+		std::push_heap(heap -> begin(), heap -> end(), std::greater<std::pair<int, PNode*>>());
 	}
-
-	return false;
 }
 
 Dungeon::Dungeon() : cache{}, gInfo(nullptr), pXNodes(nullptr), pYNodes(nullptr) { LOGGER_LOG_HEADER("Dungeon Generator"); }
@@ -344,29 +350,20 @@ void Dungeon::FindPaths()
 			PNode *const neighbor = crrNode -> links[i];
 
 			if (neighbor == nullptr) continue;
-			if (neighbor -> mode == PNode::CLOSED) continue;
-			if (neighbor -> Open(crrNode)) openNodes.push_front(neighbor);
+			if (neighbor -> mode != PNode::CLOSED) neighbor -> Open(crrNode);
 		}
 
 		if (openNodes.empty()) goto clear;
-		PNode *minCost = openNodes.front();
-
-		auto end = openNodes.end();
-		for (auto iter = openNodes.begin(); iter != end; iter++)
-		{
-			PNode *const node = *iter;
-
-			if (node -> fCost < minCost -> fCost) minCost = node;
-			else if (node -> fCost == minCost -> fCost) if (node -> hCost < minCost -> hCost) minCost = node;
-		}
 
 		crrNode -> mode = PNode::CLOSED;
 		usedNodes.push_back(crrNode);
-		openNodes.remove(crrNode);
-		crrNode = minCost;
+
+		crrNode = openNodes.at(0).second;
+		std::pop_heap(openNodes.begin(), openNodes.end(), std::greater<std::pair<int, PNode*>>());
+		openNodes.pop_back();
 
 	} while (crrNode != PNode::stop);
-	
+
 	do
 	{
 		PNode *prevNode = crrNode -> prevNode;
@@ -377,7 +374,7 @@ void Dungeon::FindPaths()
 		if (yDiff < 0) crrNode -> path |= 1 << PNode::NORTH;
 		else if (xDiff > 0) crrNode -> path |= 1 << PNode::EAST;
 		else if (yDiff > 0) crrNode -> path |= 1 << PNode::SOUTH;
-		else if (xDiff < 0) crrNode -> path |= 1 << PNode::WEST;
+		else crrNode -> path |= 1 << PNode::WEST;
 
 		length++;
 		crrNode = prevNode;
@@ -391,8 +388,10 @@ void Dungeon::FindPaths()
 	*entryNode = crrNode;
 
 	clear:
+	crrNode -> Reset();
+
 	auto end1 = openNodes.end();
-	for (auto iter = openNodes.begin(); iter != end1; iter++) (*iter) -> Reset();
+	for (auto iter = openNodes.begin(); iter != end1; iter++) iter -> second -> Reset();
 
 	auto end2 = usedNodes.end();
 	for (auto iter = usedNodes.begin(); iter != end2; iter++) (*iter) -> Reset();
@@ -536,6 +535,7 @@ void Dungeon::Generate(GenInfo *genInfo)
 	LOGGER_LOG_TIME("Linking nodes");
 	LinkNodes();
 
+	PNode::heap = &openNodes;
 	helper.chkFunc = [](const ExeInfo<Cell> &info) -> bool { return !info.node.IsLast(); };
 
 	LOGGER_LOG_TIME("Finding paths");
