@@ -6,8 +6,8 @@ PNode *PNode::stop = nullptr;
 void PNode::Reset()
 {
 	gCost = 0;
+	mode = UNVISITED;
 	prevNode = nullptr;
-	mode = Mode::UNVISITED;
 }
 
 bool PNode::Open(PNode *prev)
@@ -21,12 +21,12 @@ bool PNode::Open(PNode *prev)
 	int &diff = (xDiff > yDiff) ? xDiff : yDiff;
 	int newGCost = prev -> gCost + diff;
 
-	const bool unvisited = mode == Mode::UNVISITED;
+	const bool unvisited = mode == UNVISITED;
 	if (unvisited)
 	{
 		SDL_Point diff = { stop -> pos.x - pos.x, stop -> pos.y - pos.y };
 		hCost = int(sqrtf(float(diff.x * diff.x + diff.y * diff.y)));
-		mode = Mode::OPEN;
+		mode = OPEN;
 
 		goto next;
 	}
@@ -60,7 +60,6 @@ void Dungeon::Prepare()
 	tree.Get().space.w = gInfo -> xSize - 3;
 	tree.Get().space.h = gInfo -> ySize - 3;
 
-	cache.nodesCount = 0;
 	cache.deltaDepth = gInfo -> maxDepth - gInfo -> minDepth;
 	cache.deltaRoomSize = gInfo -> maxRoomSize - gInfo -> minRoomSize;
 }
@@ -306,7 +305,6 @@ void Dungeon::LinkNodes()
 
 	for (auto iter = pNodes.begin(); iter != end; iter++)
 	{
-		cache.nodesCount++;
 		PNode **links = iter -> links;
 
 		if (links[PNode::NORTH] == &PNode::null) links[PNode::NORTH] = nullptr;
@@ -338,7 +336,6 @@ void Dungeon::FindPaths()
 
 	int length = 1, index;
 	PNode *crrNode = start;
-	std::forward_list<PNode*> opened;
 
 	do
 	{
@@ -347,15 +344,15 @@ void Dungeon::FindPaths()
 			PNode *const neighbor = crrNode -> links[i];
 
 			if (neighbor == nullptr) continue;
-			if (neighbor -> mode == PNode::Mode::CLOSED) continue;
-			if (neighbor -> Open(crrNode)) opened.push_front(neighbor);
+			if (neighbor -> mode == PNode::CLOSED) continue;
+			if (neighbor -> Open(crrNode)) openNodes.push_front(neighbor);
 		}
 
-		if (opened.empty()) goto clear;
-		PNode *minCost = opened.front();
+		if (openNodes.empty()) goto clear;
+		PNode *minCost = openNodes.front();
 
-		auto end = opened.end();
-		for (auto iter = opened.begin(); iter != end; iter++)
+		auto end = openNodes.end();
+		for (auto iter = openNodes.begin(); iter != end; iter++)
 		{
 			PNode *const node = *iter;
 
@@ -363,9 +360,9 @@ void Dungeon::FindPaths()
 			else if (node -> fCost == minCost -> fCost) if (node -> hCost < minCost -> hCost) minCost = node;
 		}
 
-		crrNode -> mode = PNode::Mode::CLOSED;
+		crrNode -> mode = PNode::CLOSED;
 		usedNodes.push_back(crrNode);
-		opened.remove(crrNode);
+		openNodes.remove(crrNode);
 		crrNode = minCost;
 
 	} while (crrNode != PNode::stop);
@@ -394,13 +391,14 @@ void Dungeon::FindPaths()
 	*entryNode = crrNode;
 
 	clear:
-	auto end1 = opened.end();
-	for (auto iter = opened.begin(); iter != end1; iter++) (*iter) -> Reset();
+	auto end1 = openNodes.end();
+	for (auto iter = openNodes.begin(); iter != end1; iter++) (*iter) -> Reset();
 
 	auto end2 = usedNodes.end();
 	for (auto iter = usedNodes.begin(); iter != end2; iter++) (*iter) -> Reset();
 
 	usedNodes.clear();
+	openNodes.clear();
 }
 
 void Dungeon::CreateNodes()
@@ -512,6 +510,7 @@ void Dungeon::Clear()
 
 	pNodes.clear();
 	usedNodes.clear();
+	openNodes.clear();
 
 	tree.Clear();
 }
@@ -537,7 +536,6 @@ void Dungeon::Generate(GenInfo *genInfo)
 	LOGGER_LOG_TIME("Linking nodes");
 	LinkNodes();
 
-	usedNodes.reserve(cache.nodesCount);
 	helper.chkFunc = [](const ExeInfo<Cell> &info) -> bool { return !info.node.IsLast(); };
 
 	LOGGER_LOG_TIME("Finding paths");
