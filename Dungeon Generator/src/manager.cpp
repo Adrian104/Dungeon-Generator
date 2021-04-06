@@ -49,7 +49,10 @@ void DGManager::Run()
 	{
 		if (needRedraw) Draw();
 		Update();
+
+		#ifndef NO_DELAY
 		SDL_Delay(5);
+		#endif
 	}
 }
 
@@ -76,10 +79,9 @@ void DGManager::Draw()
 
 	auto DrawNodes = [](DGManager *mgr) -> void
 	{
-		auto end = mgr -> dg.pNodes.end();
-		for (auto iter = mgr -> dg.pNodes.begin(); iter != end; iter++)
+		for (PNode &node : mgr -> dg.pNodes)
 		{
-			SDL_FPoint point = ToFPoint(iter -> pos);
+			SDL_FPoint point = ToFPoint(node.pos);
 			SDL_FRect rect = { point.x, point.y, 1, 1 };
 
 			mgr -> vPort.RectToScreen(rect, rect);
@@ -89,8 +91,7 @@ void DGManager::Draw()
 
 	auto DrawLinks = [](DGManager *mgr) -> void
 	{
-		auto end = mgr -> dg.pNodes.end();
-		for (auto iter = mgr -> dg.pNodes.begin(); iter != end; iter++)
+		for (PNode &node : mgr -> dg.pNodes)
 		{
 			#ifdef RANDOM_COLORS
 			int r, g, b;
@@ -107,10 +108,10 @@ void DGManager::Draw()
 
 			for (int i = 0; i < 2; i++)
 			{
-				if (iter -> links[i] == nullptr) continue;
+				if (node.links[i] == nullptr) continue;
 
-				SDL_FPoint p1 = ToFPoint(iter -> pos);
-				SDL_FPoint p2 = ToFPoint(iter -> links[i] -> pos);
+				SDL_FPoint p1 = ToFPoint(node.pos);
+				SDL_FPoint p2 = ToFPoint(node.links[i] -> pos);
 
 				p1.x += 0.5f; p1.y += 0.5f;
 				p2.x += 0.5f; p2.y += 0.5f;
@@ -125,15 +126,14 @@ void DGManager::Draw()
 
 	auto DrawPaths = [](DGManager *mgr) -> void
 	{
-		auto end = mgr -> dg.pNodes.end();
-		for (auto iter = mgr -> dg.pNodes.begin(); iter != end; iter++)
+		for (PNode &node : mgr -> dg.pNodes)
 		{
 			for (int i = 0; i < 4; i++)
 			{
-				if (!(iter -> path & (1 << i))) continue;
+				if (!(node.path & (1 << i))) continue;
 
-				SDL_FPoint p1 = ToFPoint(iter -> pos);
-				SDL_FPoint p2 = ToFPoint(iter -> links[i] -> pos);
+				SDL_FPoint p1 = ToFPoint(node.pos);
+				SDL_FPoint p2 = ToFPoint(node.links[i] -> pos);
 
 				p1.x += 0.5f; p1.y += 0.5f;
 				p2.x += 0.5f; p2.y += 0.5f;

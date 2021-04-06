@@ -1,6 +1,6 @@
 #pragma once
+#include <map>
 #include <vector>
-#include <unordered_map>
 #include <forward_list>
 #include <cstdlib>
 #include <time.h>
@@ -92,12 +92,12 @@ struct Dungeon
 	Cache cache;
 	GenInfo *gInfo;
 
+	std::forward_list<PNode> pNodes;
+	std::multimap<int, PNode*> pXNodes;
+	std::multimap<int, PNode*> pYNodes;
+
 	std::vector<PNode*> usedNodes;
 	std::vector<std::pair<int, PNode*>> openNodes;
-
-	std::forward_list<PNode> pNodes;
-	std::unordered_multimap<int, PNode*> *pXNodes;
-	std::unordered_multimap<int, PNode*> *pYNodes;
 	
 	void Prepare();
 	void MakeRoom();

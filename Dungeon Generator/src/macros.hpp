@@ -5,6 +5,7 @@
 	#define RANDOM_COLORS
 	#define LOGGER_ENABLED
 #else
+	#define NO_DELAY
 	#define FULL_SCREEN
 #endif
 

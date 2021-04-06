@@ -65,7 +65,8 @@ class BinTree
 
 	void Clear();
 	void DeleteNodes() const;
-	uint8_t AddNode(const Type &ref = Type(), uint8_t sides = LEFT | RIGHT);
+	void AddNodes(const Type &ref = Type());
+	uint8_t AddNodes(uint8_t sides, const Type &ref = Type());
 
 	template <typename FP, typename ...Args>
 	void Execute(const ExeHelper<Type> &helper, FP *fPtr, Args ...args);
@@ -144,7 +145,14 @@ void BinTree<Type>::DeleteNodes() const
 }
 
 template <typename Type>
-uint8_t BinTree<Type>::AddNode(const Type &ref, uint8_t sides)
+void BinTree<Type>::AddNodes(const Type &ref)
+{
+	if (crr -> left == nullptr) crr -> left = new BTNode<Type>(crr, ref);
+	if (crr -> right == nullptr) crr -> right = new BTNode<Type>(crr, ref);
+}
+
+template <typename Type>
+uint8_t BinTree<Type>::AddNodes(uint8_t sides, const Type &ref)
 {
 	if (sides & LEFT)
 	{

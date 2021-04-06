@@ -50,19 +50,11 @@ void PNode::Open(PNode *prev)
 	}
 }
 
-Dungeon::Dungeon() : cache{}, gInfo(nullptr), pXNodes(nullptr), pYNodes(nullptr) { LOGGER_LOG_HEADER("Dungeon Generator"); }
+Dungeon::Dungeon() : cache{}, gInfo(nullptr) { LOGGER_LOG_HEADER("Dungeon Generator"); }
 Dungeon::~Dungeon() { Clear(); }
 
 void Dungeon::Prepare()
 {
-	const size_t toReserve = size_t(1) << (size_t(gInfo -> maxDepth) + 2);
-
-	pXNodes = new std::unordered_multimap<int, PNode*>(toReserve);
-	pYNodes = new std::unordered_multimap<int, PNode*>(toReserve);
-
-	pXNodes -> max_load_factor(8);
-	pYNodes -> max_load_factor(8);
-
 	tree.Get().space.w = gInfo -> xSize - 3;
 	tree.Get().space.h = gInfo -> ySize - 3;
 
@@ -240,9 +232,9 @@ void Dungeon::LinkNodes()
 		const int val = pos.*pointVar;
 		const int oppositeVal = pos.*opposite;
 
-		std::unordered_multimap<int, PNode*> *const map = opposite == &SDL_Point::x ? pXNodes : pYNodes;
+		std::multimap<int, PNode*> &map = opposite == &SDL_Point::x ? pXNodes : pYNodes;
 
-		auto range = map -> equal_range(oppositeVal);
+		auto range = map.equal_range(oppositeVal);
 		for (auto &i = range.first; i != range.second; i++)
 		{
 			PNode &node = *(i -> second);
@@ -299,19 +291,17 @@ void Dungeon::LinkNodes()
 		}
 	};
 
-	auto end = pNodes.end();
-	for (auto iter = pNodes.begin(); iter != end; iter++)
+	for (PNode &node : pNodes)
 	{
-		PNode &node = *iter;
 		PNode **links = node.links;
 
 		if (links[PNode::EAST] == nullptr || links[PNode::WEST] == nullptr) Link(node, &SDL_Point::x);
 		if (links[PNode::NORTH] == nullptr || links[PNode::SOUTH] == nullptr) Link(node, &SDL_Point::y);
 	}
 
-	for (auto iter = pNodes.begin(); iter != end; iter++)
+	for (PNode &node : pNodes)
 	{
-		PNode **links = iter -> links;
+		PNode **links = node.links;
 
 		if (links[PNode::NORTH] == &PNode::null) links[PNode::NORTH] = nullptr;
 		if (links[PNode::EAST] == &PNode::null) links[PNode::EAST] = nullptr;
@@ -319,11 +309,8 @@ void Dungeon::LinkNodes()
 		if (links[PNode::WEST] == &PNode::null) links[PNode::WEST] = nullptr;
 	}
 
-	delete pYNodes;
-	pYNodes = nullptr;
-
-	delete pXNodes;
-	pXNodes = nullptr;
+	pYNodes.clear();
+	pXNodes.clear();
 }
 
 void Dungeon::FindPaths()
@@ -345,10 +332,8 @@ void Dungeon::FindPaths()
 
 	do
 	{
-		for (int i = 0; i < 4; i++)
+		for (PNode *&neighbor : crrNode -> links)
 		{
-			PNode *const neighbor = crrNode -> links[i];
-
 			if (neighbor == nullptr) continue;
 			if (neighbor -> mode != PNode::CLOSED) neighbor -> Open(crrNode);
 		}
@@ -390,11 +375,8 @@ void Dungeon::FindPaths()
 	clear:
 	crrNode -> Reset();
 
-	auto end1 = openNodes.end();
-	for (auto iter = openNodes.begin(); iter != end1; iter++) iter -> second -> Reset();
-
-	auto end2 = usedNodes.end();
-	for (auto iter = usedNodes.begin(); iter != end2; iter++) (*iter) -> Reset();
+	for (PNode *&node : usedNodes) node -> Reset();
+	for (auto &[fCost, node] : openNodes) node -> Reset();
 
 	usedNodes.clear();
 	openNodes.clear();
@@ -423,7 +405,7 @@ void Dungeon::CreateNodes()
 
 PNode &Dungeon::AddNode(int x, int y)
 {
-	auto range = pXNodes -> equal_range(x);
+	auto range = pXNodes.equal_range(x);
 	for (auto &i = range.first; i != range.second; i++)
 	{
 		PNode &node = *(i -> second);
@@ -433,8 +415,8 @@ PNode &Dungeon::AddNode(int x, int y)
 	pNodes.push_front(PNode({ x, y }));
 	PNode &node = pNodes.front();
 
-	pXNodes -> insert(std::make_pair(x, &node));
-	pYNodes -> insert(std::make_pair(y, &node));
+	pXNodes.insert(std::make_pair(x, &node));
+	pYNodes.insert(std::make_pair(y, &node));
 
 	return node;
 }
@@ -473,7 +455,7 @@ bool Dungeon::Divide(int left)
 
 	if (gInfo -> spaceSizeRandomness > 0) randSize += int(totalSize * ((rand() % gInfo -> spaceSizeRandomness) / 100.0f) - totalSize * ((gInfo -> spaceSizeRandomness >> 1) / 100.0f));
 
-	tree.AddNode(tree.Get());
+	tree.AddNodes(tree.Get());
 	tree.GoLeft();
 	crrSpace = &tree.Get().space;
 
@@ -501,11 +483,8 @@ bool Dungeon::Divide(int left)
 
 void Dungeon::Clear()
 {
-	delete pYNodes;
-	pYNodes = nullptr;
-
-	delete pXNodes;
-	pXNodes = nullptr;
+	pYNodes.clear();
+	pXNodes.clear();
 
 	pNodes.clear();
 	usedNodes.clear();
