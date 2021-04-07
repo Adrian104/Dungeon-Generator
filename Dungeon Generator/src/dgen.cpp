@@ -15,14 +15,17 @@ void PNode::Reset()
 
 void PNode::Open(PNode *prev)
 {
-	int xDiff = prev -> pos.x - pos.x;
-	int yDiff = prev -> pos.y - pos.y;
+	int newGCost = prev -> gCost;
+	if (prev -> path == 0 || path == 0)
+	{
+		int xDiff = prev -> pos.x - pos.x;
+		int yDiff = prev -> pos.y - pos.y;
 
-	if (xDiff < 0) xDiff = -xDiff;
-	if (yDiff < 0) yDiff = -yDiff;
+		if (xDiff < 0) xDiff = -xDiff;
+		if (yDiff < 0) yDiff = -yDiff;
 
-	int &diff = (xDiff > yDiff) ? xDiff : yDiff;
-	int newGCost = prev -> gCost + diff;
+		newGCost += (xDiff > yDiff) ? xDiff : yDiff;
+	}
 
 	if (mode == UNVISITED)
 	{

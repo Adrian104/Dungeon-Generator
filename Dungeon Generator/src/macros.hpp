@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef _DEBUG
-	#define SHOW_GRID
+	//#define SHOW_GRID
 	#define RANDOM_COLORS
 	#define LOGGER_ENABLED
 #else

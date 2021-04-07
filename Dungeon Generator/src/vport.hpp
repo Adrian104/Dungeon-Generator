@@ -11,7 +11,7 @@ class Viewport
 	float scaleStep;
 
 	public:
-	Viewport() : scale(1), xOffset(0), yOffset(0), defScale(1), scaleStep(0.1f) {}
+	Viewport() : scale(1), xOffset(0), yOffset(0), defScale(1), scaleStep(0.2f) {}
 
 	void Reset();
 	void Update(SDL_Event &sdlEvent);
