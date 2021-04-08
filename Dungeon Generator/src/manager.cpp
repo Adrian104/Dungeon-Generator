@@ -19,15 +19,15 @@ DGManager::DGManager() : quit(false), needRedraw(true), xSize(0), ySize(0)
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-	gInfo.xSize = xSize;
-	gInfo.ySize = ySize;
+	gInput.xSize = xSize;
+	gInput.ySize = ySize;
 
-	gInfo.minDepth = 9;
-	gInfo.maxDepth = 10;
-	gInfo.maxRoomSize = 75;
-	gInfo.minRoomSize = 25;
-	gInfo.doubleRoomProb = 25;
-	gInfo.spaceSizeRandomness = 35;
+	gInput.minDepth = 9;
+	gInput.maxDepth = 10;
+	gInput.maxRoomSize = 75;
+	gInput.minRoomSize = 25;
+	gInput.doubleRoomProb = 25;
+	gInput.spaceSizeRandomness = 35;
 
 	dInfo.spaceVisibility = true;
 	dInfo.roomsVisibility = true;
@@ -44,7 +44,7 @@ DGManager::~DGManager()
 
 void DGManager::Run()
 {
-	dg.Generate(&gInfo);
+	dg.Generate(&gInput);
 	while (!quit)
 	{
 		if (needRedraw) Draw();
@@ -183,10 +183,10 @@ void DGManager::Draw()
 	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0x16);
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-	for (float x = 0; x <= gInfo.xSize; x++)
+	for (float x = 0; x <= gInput.xSize; x++)
 	{
 		SDL_FPoint a = { x, 0 };
-		SDL_FPoint b = { x, float(gInfo.ySize) };
+		SDL_FPoint b = { x, float(gInput.ySize) };
 
 		vPort.ToScreen(a.x, a.y, a.x, a.y);
 		vPort.ToScreen(b.x, b.y, b.x, b.y);
@@ -194,10 +194,10 @@ void DGManager::Draw()
 		SDL_RenderDrawLineF(renderer, a.x, a.y, b.x, b.y);
 	}
 
-	for (float y = 0; y <= gInfo.ySize; y++)
+	for (float y = 0; y <= gInput.ySize; y++)
 	{
 		SDL_FPoint a = { 0, y };
-		SDL_FPoint b = { float(gInfo.xSize), y };
+		SDL_FPoint b = { float(gInput.xSize), y };
 
 		vPort.ToScreen(a.x, a.y, a.x, a.y);
 		vPort.ToScreen(b.x, b.y, b.x, b.y);
@@ -243,7 +243,7 @@ void DGManager::Update()
 				break;
 
 			case SDLK_g:
-				dg.Generate(&gInfo);
+				dg.Generate(&gInput);
 				Draw();
 				break;
 
@@ -257,8 +257,8 @@ void DGManager::Update()
 
 void DGManager::ApplyFactor(const float factor)
 {
-	gInfo.xSize = int(xSize * factor);
-	gInfo.ySize = int(ySize * factor);
+	gInput.xSize = int(xSize * factor);
+	gInput.ySize = int(ySize * factor);
 
 	vPort.SetDefaultScale(1 / factor);
 	vPort.Reset();

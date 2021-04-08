@@ -1,9 +1,8 @@
 #pragma once
 #include <map>
 #include <vector>
+#include <random>
 #include <forward_list>
-#include <cstdlib>
-#include <time.h>
 #include "macros.hpp"
 #include "vport.hpp"
 #include "btree.hpp"
@@ -71,7 +70,7 @@ struct PNode
 	void Open(PNode *prev);
 };
 
-struct GenInfo
+struct GenInput
 {
 	int xSize, ySize;
 	int doubleRoomProb;
@@ -85,12 +84,21 @@ struct Dungeon
 	struct Cache
 	{
 		int deltaDepth;
-		int deltaRoomSize;
+
+		std::uniform_int_distribution<int> uni0to99;
+		std::uniform_int_distribution<int> uniDepth;
+		std::uniform_real_distribution<float> uni0to1f;
+		std::uniform_real_distribution<float> uniRoom;
+		std::uniform_real_distribution<float> uniSpace;
 	};
 
 	Tree tree;
 	Cache cache;
-	GenInfo *gInfo;
+	GenInput *gInput;
+
+	uint32_t seed;
+	std::mt19937 mtEngine;
+	std::random_device rd;
 
 	std::forward_list<PNode> pNodes;
 	std::multimap<int, PNode*> pXNodes;
@@ -99,12 +107,12 @@ struct Dungeon
 	std::vector<PNode*> usedNodes;
 	std::vector<std::pair<int, PNode*>> openNodes;
 	
-	void Prepare();
 	void MakeRoom();
 	void LinkNodes();
 	void FindPaths();
 	void CreateNodes();
 	bool Divide(int left);
+	void Prepare(const bool newSeed);
 
 	PNode &AddNode(int x, int y);
 
@@ -112,5 +120,5 @@ struct Dungeon
 	~Dungeon();
 
 	void Clear();
-	void Generate(GenInfo *genInfo);
+	void Generate(GenInput *genInput, const bool newSeed = true);
 };

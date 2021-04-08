@@ -19,9 +19,9 @@ struct DGManager
 	int ySize;
 
 	Dungeon dg;
-	GenInfo gInfo;
 	DrawInfo dInfo;
 	Viewport vPort;
+	GenInput gInput;
 
 	SDL_Window *window;
 	SDL_Renderer *renderer;
