@@ -350,10 +350,26 @@ void Dungeon::FindPaths()
 		int xDiff = prevNode -> pos.x - crrNode -> pos.x;
 		int yDiff = prevNode -> pos.y - crrNode -> pos.y;
 
-		if (yDiff < 0) crrNode -> path |= 1 << PNode::NORTH;
-		else if (xDiff > 0) crrNode -> path |= 1 << PNode::EAST;
-		else if (yDiff > 0) crrNode -> path |= 1 << PNode::SOUTH;
-		else crrNode -> path |= 1 << PNode::WEST;
+		if (yDiff < 0)
+		{
+			crrNode -> path |= 1 << PNode::NORTH;
+			prevNode -> path |= 1 << PNode::SOUTH;
+		}
+		else if (xDiff > 0)
+		{
+			crrNode -> path |= 1 << PNode::EAST;
+			prevNode -> path |= 1 << PNode::WEST;
+		}
+		else if (yDiff > 0)
+		{
+			crrNode -> path |= 1 << PNode::SOUTH;
+			prevNode -> path |= 1 << PNode::NORTH;
+		}
+		else if (xDiff < 0)
+		{
+			crrNode -> path |= 1 << PNode::WEST;
+			prevNode -> path |= 1 << PNode::EAST;
+		}
 
 		length++;
 		crrNode = prevNode;

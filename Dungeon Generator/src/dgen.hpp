@@ -18,8 +18,8 @@ inline SDL_FRect ToFRect(const SDL_Rect &rect) { return { float(rect.x), float(r
 struct Room;
 struct Cell;
 struct PNode;
-struct GenInfo;
 struct Dungeon;
+struct GenInput;
 
 typedef BinTree<Cell> Tree;
 
