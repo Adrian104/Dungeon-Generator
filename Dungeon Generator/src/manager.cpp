@@ -128,6 +128,7 @@ void DGManager::Draw()
 	{
 		for (PNode &node : mgr -> dg.pNodes)
 		{
+			if (node.path & (1 << 4)) continue;
 			for (int i = 0; i < 4; i++)
 			{
 				if (!(node.path & (1 << i))) continue;
@@ -244,6 +245,11 @@ void DGManager::Update()
 
 			case SDLK_g:
 				dg.Generate(&gInput);
+				Draw();
+				break;
+
+			case SDLK_r:
+				dg.Generate(&gInput, false);
 				Draw();
 				break;
 

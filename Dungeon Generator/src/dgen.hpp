@@ -7,11 +7,6 @@
 #include "vport.hpp"
 #include "btree.hpp"
 
-inline bool IsInside(SDL_Rect &rect, SDL_Point &point)
-{
-	return rect.x < point.x && (rect.x + rect.w) > point.x && rect.y < point.y && (rect.y + rect.h) > point.y;
-}
-
 inline SDL_FPoint ToFPoint(const SDL_Point &point) { return { float(point.x), float(point.y) }; }
 inline SDL_FRect ToFRect(const SDL_Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
 
@@ -35,12 +30,11 @@ struct Room
 
 struct Cell
 {
-	bool horizontal;
 	SDL_Rect space;
 	Room *roomList;
-	PNode *entryNode;
+	PNode *internalNode;
 
-	Cell() : horizontal(false), space{}, roomList(nullptr), entryNode(nullptr) {}
+	Cell() : space{}, roomList(nullptr), internalNode(nullptr) {}
 	~Cell() { delete roomList; }
 };
 
@@ -115,6 +109,9 @@ struct Dungeon
 	void Prepare(const bool newSeed);
 
 	PNode &AddNode(int x, int y);
+
+	template <uint8_t dir>
+	void AddEntryNode(Cell &cell);
 
 	Dungeon();
 	~Dungeon();

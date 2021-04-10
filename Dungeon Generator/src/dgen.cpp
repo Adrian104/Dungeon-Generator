@@ -109,7 +109,7 @@ void Dungeon::MakeRoom()
 	room.y += yOffset;
 
 	crrCell.roomList = new Room(room);
-	SDL_Rect *selectedRoom = &crrCell.roomList -> room;
+	SDL_Rect *selRoom = &crrCell.roomList -> room;
 
 	if (doubleRoom)
 	{
@@ -117,97 +117,20 @@ void Dungeon::MakeRoom()
 		room2.y += yOffset;
 
 		crrCell.roomList -> nextRoom = new Room(room2);
-		if (mtEngine() & 1) selectedRoom = &crrCell.roomList -> nextRoom -> room;
+		if (mtEngine() & 1) selRoom = &crrCell.roomList -> nextRoom -> room;
 	}
 
-	tree.GoUp();
-	const bool xMod = tree.Get().horizontal;
+	SDL_Point iPoint = { selRoom -> x, selRoom -> y };
+	iPoint.x += mtEngine() % selRoom -> w;
+	iPoint.y += mtEngine() % selRoom -> h;
 
-	tree.GoRight();
-	const bool isRight = &tree.Get() == &crrCell;
+	pNodes.push_front(PNode(iPoint));
+	crrCell.internalNode = &pNodes.front();
 
-	bool xInv, yInv;
-	if (xMod) { yInv = !isRight; xInv = false; }
-	else { xInv = !isRight; yInv = false; }
-
-	retry:
-	int x = int(selectedRoom -> x + (selectedRoom -> w - 1) * xInv);
-	int y = int(selectedRoom -> y + (selectedRoom -> h - 1) * yInv);
-
-	if (xMod)
-	{
-		int temp = int(selectedRoom -> w * cache.uni0to1f(mtEngine));
-		if (xInv) temp = -temp;
-		x += temp;
-	}
-	else
-	{
-		int temp = int(selectedRoom -> h * cache.uni0to1f(mtEngine));
-		if (yInv) temp = -temp;
-		y += temp;
-	}
-
-	SDL_Point entryPoint = { x, y };
-	if (doubleRoom)
-	{
-		SDL_Rect r1 = crrCell.roomList -> room;
-		SDL_Rect r2 = crrCell.roomList -> nextRoom -> room;
-
-		r1.w--; r1.h--;
-		r2.w--; r2.h--;
-
-		if (IsInside(r1, entryPoint) || IsInside(r2, entryPoint)) goto retry;
-	}
-
-	SDL_Point brokerPoint = entryPoint;
-	if (xMod)
-	{
-		if (yInv) brokerPoint.y = crrCell.space.y + crrCell.space.h + 2;
-		else brokerPoint.y = crrCell.space.y - 3;
-	}
-	else
-	{
-		if (xInv) brokerPoint.x = crrCell.space.x + crrCell.space.w + 2;
-		else brokerPoint.x = crrCell.space.x - 3;
-	}
-
-	pNodes.push_front(PNode(entryPoint));
-	PNode &entry = pNodes.front();
-	crrCell.entryNode = &entry;
-	PNode &broker = AddNode(brokerPoint.x, brokerPoint.y);
-
-	if (xMod)
-	{
-		if (yInv)
-		{
-			entry.links[PNode::SOUTH] = &broker;
-			broker.links[PNode::NORTH] = &entry;
-		}
-		else
-		{
-			entry.links[PNode::NORTH] = &broker;
-			broker.links[PNode::SOUTH] = &entry;
-		}
-
-		broker.links[PNode::EAST] = nullptr;
-		broker.links[PNode::WEST] = nullptr;
-	}
-	else
-	{
-		if (xInv)
-		{
-			entry.links[PNode::EAST] = &broker;
-			broker.links[PNode::WEST] = &entry;
-		}
-		else
-		{
-			entry.links[PNode::WEST] = &broker;
-			broker.links[PNode::EAST] = &entry;
-		}
-
-		broker.links[PNode::NORTH] = nullptr;
-		broker.links[PNode::SOUTH] = nullptr;
-	}
+	AddEntryNode<PNode::NORTH>(crrCell);
+	AddEntryNode<PNode::EAST>(crrCell);
+	AddEntryNode<PNode::SOUTH>(crrCell);
+	AddEntryNode<PNode::WEST>(crrCell);
 }
 
 void Dungeon::LinkNodes()
@@ -309,17 +232,17 @@ void Dungeon::LinkNodes()
 
 void Dungeon::FindPaths()
 {
-	PNode *start = tree.Left() -> entryNode;
-	PNode::stop = tree.Right() -> entryNode;
+	PNode *start = tree.Left() -> internalNode;
+	PNode::stop = tree.Right() -> internalNode;
 
 	const bool startNullptr = start == nullptr;
 	const bool stopNullptr = PNode::stop == nullptr;
 
 	if (start == PNode::stop) return;
-	PNode **entryNode = &tree.Get().entryNode;
+	PNode **internalNode = &tree.Get().internalNode;
 
-	if (!startNullptr && stopNullptr) { *entryNode = start; return; }
-	if (startNullptr && !stopNullptr) { *entryNode = PNode::stop; return; }
+	if (!startNullptr && stopNullptr) { *internalNode = start; return; }
+	if (startNullptr && !stopNullptr) { *internalNode = PNode::stop; return; }
 
 	int length = 1, index;
 	PNode *crrNode = start;
@@ -380,7 +303,7 @@ void Dungeon::FindPaths()
 	crrNode = PNode::stop;
 
 	for (index; index > 0; index--) crrNode = crrNode -> prevNode;
-	*entryNode = crrNode;
+	*internalNode = crrNode;
 
 	clear:
 	crrNode -> Reset();
@@ -438,7 +361,6 @@ bool Dungeon::Divide(int left)
 	SDL_Rect *crrSpace = &tree.Get().space;
 	const bool horizontal = crrSpace -> w < crrSpace -> h;
 
-	tree.Get().horizontal = horizontal;
 	if (horizontal) { xy = &SDL_Rect::y; wh = &SDL_Rect::h; }
 	else { xy = &SDL_Rect::x; wh = &SDL_Rect::w; }
 
@@ -506,6 +428,103 @@ PNode &Dungeon::AddNode(int x, int y)
 	pYNodes.insert(std::make_pair(y, &node));
 
 	return node;
+}
+
+template <uint8_t dir>
+void Dungeon::AddEntryNode(Cell &cell)
+{
+	PNode &iNode = *cell.internalNode;
+	const SDL_Point &iPoint = iNode.pos;
+
+	SDL_Rect *room = &cell.roomList -> room;
+	if (Room *nxRoom = cell.roomList -> nextRoom; nxRoom != nullptr)
+	{
+		SDL_Rect *room2 = &nxRoom -> room;
+
+		if (!SDL_PointInRect(&iNode.pos, room2)) goto skip;
+		if (!SDL_PointInRect(&iNode.pos, room)) { room = room2; goto skip; }
+
+		if constexpr (dir == PNode::NORTH)
+			if (room -> y > room2 -> y) room = room2;
+		else if constexpr (dir == PNode::EAST)
+			if (room -> x + room -> w < room2 -> x + room2 -> w) room = room2;
+		else if constexpr (dir == PNode::SOUTH)
+			if (room -> y + room -> h < room2 -> y + room2 -> h) room = room2;
+		else
+			if (room -> x > room2 -> x) room = room2;
+	}
+
+	skip:
+	SDL_Point ePoint = iPoint;
+	SDL_Point bPoint;
+
+	if constexpr (dir == PNode::NORTH)
+	{
+		ePoint.y = room -> y;
+		bPoint = { ePoint.x, cell.space.y - 3 };
+	}
+	else if constexpr (dir == PNode::EAST)
+	{
+		ePoint.x = room -> x + room -> w - 1;
+		bPoint = { cell.space.x + cell.space.w + 2, ePoint.y };
+	}
+	else if constexpr (dir == PNode::SOUTH)
+	{
+		ePoint.y = room -> y + room -> h - 1;
+		bPoint = { ePoint.x, cell.space.y + cell.space.h + 2 };
+	}
+	else
+	{
+		ePoint.x = room -> x;
+		bPoint = { cell.space.x - 3, ePoint.y };
+	}
+
+	pNodes.push_front(PNode(ePoint));
+	PNode &eNode = pNodes.front();
+	PNode &bNode = AddNode(bPoint.x, bPoint.y);
+
+	if constexpr (dir == PNode::NORTH)
+	{
+		iNode.links[PNode::NORTH] = &eNode;
+		eNode.links[PNode::NORTH] = &bNode;
+		eNode.links[PNode::SOUTH] = &iNode;
+		bNode.links[PNode::SOUTH] = &eNode;
+	}
+	else if constexpr (dir == PNode::EAST)
+	{
+		iNode.links[PNode::EAST] = &eNode;
+		eNode.links[PNode::EAST] = &bNode;
+		eNode.links[PNode::WEST] = &iNode;
+		bNode.links[PNode::WEST] = &eNode;
+	}
+	else if constexpr (dir == PNode::SOUTH)
+	{
+		iNode.links[PNode::SOUTH] = &eNode;
+		eNode.links[PNode::SOUTH] = &bNode;
+		eNode.links[PNode::NORTH] = &iNode;
+		bNode.links[PNode::NORTH] = &eNode;
+	}
+	else
+	{
+		iNode.links[PNode::WEST] = &eNode;
+		eNode.links[PNode::WEST] = &bNode;
+		eNode.links[PNode::EAST] = &iNode;
+		bNode.links[PNode::EAST] = &eNode;
+	}
+
+	if constexpr (dir == PNode::NORTH || dir == PNode::SOUTH)
+	{
+		bNode.links[PNode::EAST] = nullptr;
+		bNode.links[PNode::WEST] = nullptr;
+	}
+	else
+	{
+		bNode.links[PNode::NORTH] = nullptr;
+		bNode.links[PNode::SOUTH] = nullptr;
+	}
+
+	iNode.path |= 1 << 4;
+	eNode.path |= 1 << 4;
 }
 
 void Dungeon::Clear()
