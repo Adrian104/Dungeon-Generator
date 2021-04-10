@@ -445,13 +445,13 @@ void Dungeon::AddEntryNode(Cell &cell)
 		if (!SDL_PointInRect(&iNode.pos, room)) { room = room2; goto skip; }
 
 		if constexpr (dir == PNode::NORTH)
-			if (room -> y > room2 -> y) room = room2;
+			{ if (room -> y > room2 -> y) room = room2; }
 		else if constexpr (dir == PNode::EAST)
-			if (room -> x + room -> w < room2 -> x + room2 -> w) room = room2;
+			{ if (room -> x + room -> w < room2 -> x + room2 -> w) room = room2; }
 		else if constexpr (dir == PNode::SOUTH)
-			if (room -> y + room -> h < room2 -> y + room2 -> h) room = room2;
+			{ if (room -> y + room -> h < room2 -> y + room2 -> h) room = room2; }
 		else
-			if (room -> x > room2 -> x) room = room2;
+			{ if (room -> x > room2 -> x) room = room2; }
 	}
 
 	skip:
