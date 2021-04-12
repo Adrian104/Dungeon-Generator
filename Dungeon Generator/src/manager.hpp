@@ -6,7 +6,7 @@ struct DrawInfo
 {
 	bool spaceVisibility;
 	bool roomsVisibility;
-	bool nodesVisibility;
+	int nodesVisibilityMode;
 	int pathsVisibilityMode;
 };
 

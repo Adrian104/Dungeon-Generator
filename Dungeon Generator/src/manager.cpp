@@ -31,7 +31,7 @@ DGManager::DGManager() : quit(false), needRedraw(true), xSize(0), ySize(0)
 
 	dInfo.spaceVisibility = true;
 	dInfo.roomsVisibility = true;
-	dInfo.nodesVisibility = true;
+	dInfo.nodesVisibilityMode = 1;
 	dInfo.pathsVisibilityMode = 1;
 }
 
@@ -81,6 +81,20 @@ void DGManager::Draw()
 	{
 		for (PNode &node : mgr -> dg.pNodes)
 		{
+			SDL_FPoint point = ToFPoint(node.pos);
+			SDL_FRect rect = { point.x, point.y, 1, 1 };
+
+			mgr -> vPort.RectToScreen(rect, rect);
+			SDL_RenderFillRectF(mgr -> renderer, &rect);
+		}
+	};
+
+	auto DrawUsedNodes = [](DGManager *mgr) -> void
+	{
+		for (PNode &node : mgr -> dg.pNodes)
+		{
+			if ((node.path & ~(1 << 4)) == 0 || (node.path & (1 << 5))) continue;
+
 			SDL_FPoint point = ToFPoint(node.pos);
 			SDL_FRect rect = { point.x, point.y, 1, 1 };
 
@@ -167,17 +181,21 @@ void DGManager::Draw()
 		SDL_SetRenderDrawColor(renderer, 0x55, 0x55, 0x55, 0xFF);
 		DrawLinks(this);
 	}
-
-	if (dInfo.pathsVisibilityMode == 2)
+	else if (dInfo.pathsVisibilityMode == 2)
 	{
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 		DrawPaths(this);
 	}
 
-	if (dInfo.nodesVisibility)
+	if (dInfo.nodesVisibilityMode == 1)
 	{
 		SDL_SetRenderDrawColor(renderer, 0, 0xFF, 0, 0xFF);
 		DrawNodes(this);
+	}
+	else if (dInfo.nodesVisibilityMode == 2)
+	{
+		SDL_SetRenderDrawColor(renderer, 0xFF, 0xBB, 0, 0xFF);
+		DrawUsedNodes(this);
 	}
 
 	#ifdef SHOW_GRID
@@ -235,7 +253,8 @@ void DGManager::Update()
 				break;
 
 			case SDLK_F3:
-				dInfo.nodesVisibility = !dInfo.nodesVisibility;
+				dInfo.nodesVisibilityMode++;
+				if (dInfo.nodesVisibilityMode > 2) dInfo.nodesVisibilityMode = 0;
 				break;
 
 			case SDLK_F4:

@@ -1,6 +1,10 @@
 #include <algorithm>
-#include <functional>
 #include "dgen.hpp"
+
+struct HeapCompare
+{
+	bool operator() (const std::pair<int, PNode*> &p1, const std::pair<int, PNode*> &p2) { return p1.first > p2.first; }
+};
 
 PNode PNode::null = PNode({ 0, 0 });
 PNode *PNode::stop = nullptr;
@@ -40,7 +44,7 @@ void PNode::Open(PNode *prev)
 	{
 		{
 			std::pair<int, PNode*> pair(fCost, this);
-			heap -> erase(std::remove_if(heap -> begin(), heap -> end(), [pair](std::pair<int, PNode*> &in) -> bool { return pair == in; }), heap -> end());
+			heap -> erase(std::remove_if(heap -> begin(), heap -> end(), [pair](std::pair<int, PNode*> &in) -> bool { return pair.second == in.second; }), heap -> end());
 		}
 
 		next:
@@ -49,7 +53,7 @@ void PNode::Open(PNode *prev)
 		fCost = gCost + hCost;
 
 		heap -> push_back(std::make_pair(fCost, this));
-		std::push_heap(heap -> begin(), heap -> end(), std::greater<std::pair<int, PNode*>>());
+		std::push_heap(heap -> begin(), heap -> end(), HeapCompare());
 	}
 }
 
@@ -261,7 +265,7 @@ void Dungeon::FindPaths()
 		usedNodes.push_back(crrNode);
 
 		crrNode = openNodes.at(0).second;
-		std::pop_heap(openNodes.begin(), openNodes.end(), std::greater<std::pair<int, PNode*>>());
+		std::pop_heap(openNodes.begin(), openNodes.end(), HeapCompare());
 		openNodes.pop_back();
 
 	} while (crrNode != PNode::stop);
@@ -523,8 +527,8 @@ void Dungeon::AddEntryNode(Cell &cell)
 		bNode.links[PNode::SOUTH] = nullptr;
 	}
 
-	iNode.path |= 1 << 4;
 	eNode.path |= 1 << 4;
+	iNode.path |= (1 << 4) | (1 << 5);
 }
 
 void Dungeon::Clear()
