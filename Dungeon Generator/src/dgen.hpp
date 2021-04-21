@@ -42,10 +42,12 @@ struct PNode
 {
 	static PNode null;
 	static PNode *stop;
+
 	static std::vector<std::pair<int, PNode*>> *heap;
 
 	enum : uint8_t { UNVISITED, OPEN, CLOSED };
 	enum : uint8_t { NORTH, EAST, SOUTH, WEST };
+	enum : uint8_t { E_NODE = 1 << 4, I_NODE = 1 << 5 };
 
 	int gCost;
 	int hCost;

@@ -93,7 +93,7 @@ void DGManager::Draw()
 	{
 		for (PNode &node : mgr -> dg.pNodes)
 		{
-			if ((node.path & ~(1 << 4)) == 0 || (node.path & (1 << 5))) continue;
+			if ((node.path & 0b1111) == 0 || (node.path & PNode::I_NODE)) continue;
 
 			SDL_FPoint point = ToFPoint(node.pos);
 			SDL_FRect rect = { point.x, point.y, 1, 1 };
@@ -142,7 +142,7 @@ void DGManager::Draw()
 	{
 		for (PNode &node : mgr -> dg.pNodes)
 		{
-			if (node.path & (1 << 4)) continue;
+			if (node.path & (PNode::E_NODE | PNode::I_NODE)) continue;
 			for (int i = 0; i < 4; i++)
 			{
 				if (!(node.path & (1 << i))) continue;

@@ -248,7 +248,7 @@ void Dungeon::FindPaths()
 	if (!startNullptr && stopNullptr) { *internalNode = start; return; }
 	if (startNullptr && !stopNullptr) { *internalNode = PNode::stop; return; }
 
-	int length = 1, index;
+	int length = 0, index;
 	PNode *crrNode = start;
 
 	do
@@ -298,15 +298,22 @@ void Dungeon::FindPaths()
 			prevNode -> path |= 1 << PNode::EAST;
 		}
 
-		length++;
+		length += bool(!(crrNode -> path & PNode::E_NODE));
 		crrNode = prevNode;
 
 	} while (crrNode != start);
 
+	length += bool(!(crrNode -> path & PNode::E_NODE));
 	index = mtEngine() % length;
 	crrNode = PNode::stop;
 
-	for (index; index > 0; index--) crrNode = crrNode -> prevNode;
+	while (index > 0)
+	{
+		index -= bool(!(crrNode -> path & PNode::E_NODE));
+		crrNode = crrNode -> prevNode;
+	}
+
+	while (crrNode -> path & PNode::E_NODE) crrNode = crrNode -> prevNode;
 	*internalNode = crrNode;
 
 	clear:
@@ -527,8 +534,8 @@ void Dungeon::AddEntryNode(Cell &cell)
 		bNode.links[PNode::SOUTH] = nullptr;
 	}
 
-	eNode.path |= 1 << 4;
-	iNode.path |= (1 << 4) | (1 << 5);
+	eNode.path |= PNode::E_NODE;
+	iNode.path |= PNode::I_NODE;
 }
 
 void Dungeon::Clear()
