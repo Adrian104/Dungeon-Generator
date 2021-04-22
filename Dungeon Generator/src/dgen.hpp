@@ -7,6 +7,8 @@
 #include "vport.hpp"
 #include "btree.hpp"
 
+enum Dir : uint8_t { NORTH, EAST, SOUTH, WEST, INVALID };
+
 inline SDL_FPoint ToFPoint(const SDL_Point &point) { return { float(point.x), float(point.y) }; }
 inline SDL_FRect ToFRect(const SDL_Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
 
@@ -46,7 +48,6 @@ struct PNode
 	static std::vector<std::pair<int, PNode*>> *heap;
 
 	enum : uint8_t { UNVISITED, OPEN, CLOSED };
-	enum : uint8_t { NORTH, EAST, SOUTH, WEST };
 	enum : uint8_t { E_NODE = 1 << 4, I_NODE = 1 << 5 };
 
 	int gCost;
