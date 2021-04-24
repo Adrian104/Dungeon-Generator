@@ -137,104 +137,7 @@ void Dungeon::MakeRoom()
 	AddEntryNode<Dir::WEST>(crrCell);
 }
 
-void Dungeon::LinkNodes()
-{
-	auto Link = [this](PNode &thisNode, int SDL_Point::*pointVar) -> void
-	{
-		const SDL_Point &pos = thisNode.pos;
-		int SDL_Point::*opposite = pointVar == &SDL_Point::x ? &SDL_Point::y : &SDL_Point::x;
-
-		PNode *plus = nullptr;
-		PNode *minus = nullptr;
-
-		int plusDiff = 0;
-		int minusDiff = 0;
-
-		const int val = pos.*pointVar;
-		const int oppositeVal = pos.*opposite;
-
-		std::multimap<int, PNode*> &map = opposite == &SDL_Point::x ? pXNodes : pYNodes;
-
-		auto range = map.equal_range(oppositeVal);
-		for (auto &i = range.first; i != range.second; i++)
-		{
-			PNode &node = *(i -> second);
-			if (&thisNode == &node) continue;
-
-			const int crrVal = node.pos.*pointVar;
-			const int diff = crrVal - val;
-
-			if (diff > 0)
-			{
-				if (diff < plusDiff || plus == nullptr)
-				{
-					plus = &node;
-					plusDiff = diff;
-				}
-			}
-			else
-			{
-				if (diff > minusDiff || minus == nullptr)
-				{
-					minus = &node;
-					minusDiff = diff;
-				}
-			}
-		}
-
-		if (pointVar == &SDL_Point::x)
-		{
-			if (plus != nullptr && thisNode.links[Dir::EAST] == nullptr)
-			{
-				thisNode.links[Dir::EAST] = plus;
-				plus -> links[Dir::WEST] = &thisNode;
-			}
-
-			if (minus != nullptr && thisNode.links[Dir::WEST] == nullptr)
-			{
-				thisNode.links[Dir::WEST] = minus;
-				minus -> links[Dir::EAST] = &thisNode;
-			}
-		}
-		else
-		{
-			if (plus != nullptr && thisNode.links[Dir::SOUTH] == nullptr)
-			{
-				thisNode.links[Dir::SOUTH] = plus;
-				plus -> links[Dir::NORTH] = &thisNode;
-			}
-
-			if (minus != nullptr && thisNode.links[Dir::NORTH] == nullptr)
-			{
-				thisNode.links[Dir::NORTH] = minus;
-				minus -> links[Dir::SOUTH] = &thisNode;
-			}
-		}
-	};
-
-	for (PNode &node : pNodes)
-	{
-		PNode **links = node.links;
-
-		if (links[Dir::EAST] == nullptr || links[Dir::WEST] == nullptr) Link(node, &SDL_Point::x);
-		if (links[Dir::NORTH] == nullptr || links[Dir::SOUTH] == nullptr) Link(node, &SDL_Point::y);
-	}
-
-	for (PNode &node : pNodes)
-	{
-		PNode **links = node.links;
-
-		if (links[Dir::NORTH] == &PNode::null) links[Dir::NORTH] = nullptr;
-		if (links[Dir::EAST] == &PNode::null) links[Dir::EAST] = nullptr;
-		if (links[Dir::SOUTH] == &PNode::null) links[Dir::SOUTH] = nullptr;
-		if (links[Dir::WEST] == &PNode::null) links[Dir::WEST] = nullptr;
-	}
-
-	pYNodes.clear();
-	pXNodes.clear();
-}
-
-void Dungeon::FindPaths()
+void Dungeon::FindPath()
 {
 	PNode *start = tree.Left() -> internalNode;
 	PNode::stop = tree.Right() -> internalNode;
@@ -326,6 +229,101 @@ void Dungeon::FindPaths()
 	openNodes.clear();
 }
 
+void Dungeon::LinkNodes()
+{
+	PNode *plus;
+	PNode *minus;
+
+	std::map<std::pair<int, int>, PNode*>::iterator iter;
+	std::map<std::pair<int, int>, PNode*>::iterator crrIter;
+
+	const auto xBegin = pXNodes.begin();
+	const auto xEnd = pXNodes.end();
+
+	const auto yBegin = pYNodes.begin();
+	const auto yEnd = pYNodes.end();
+
+	for (PNode &node : pNodes)
+	{
+		PNode **links = node.links;
+		const SDL_Point &pos = node.pos;
+
+		if (links[Dir::EAST] == nullptr || links[Dir::WEST] == nullptr)
+		{
+			plus = nullptr;
+			minus = nullptr;
+
+			iter = pYNodes.find(std::make_pair(pos.y, pos.x));
+			if (iter == yEnd) goto skiplinking;
+
+			crrIter = iter;
+			crrIter++;
+
+			if (node.links[Dir::EAST] == nullptr && crrIter != yEnd)
+			{
+				if (crrIter -> first.first == pos.y)
+				{
+					plus = crrIter -> second;
+					node.links[Dir::EAST] = plus;
+					plus -> links[Dir::WEST] = &node;
+				}
+			}
+
+			crrIter = iter;
+			if (node.links[Dir::WEST] == nullptr && crrIter != yBegin)
+			{
+				crrIter--;
+				if (crrIter -> first.first == pos.y)
+				{
+					minus = crrIter -> second;
+					node.links[Dir::WEST] = minus;
+					minus -> links[Dir::EAST] = &node;
+				}
+			}
+		}
+
+		if (links[Dir::NORTH] == nullptr || links[Dir::SOUTH] == nullptr)
+		{
+			plus = nullptr;
+			minus = nullptr;
+
+			iter = pXNodes.find(std::make_pair(pos.x, pos.y));
+			if (iter == xEnd) goto skiplinking;
+
+			crrIter = iter;
+			crrIter++;
+
+			if (node.links[Dir::SOUTH] == nullptr && crrIter != xEnd)
+			{
+				if (crrIter -> first.first == pos.x)
+				{
+					plus = crrIter -> second;
+					node.links[Dir::SOUTH] = plus;
+					plus -> links[Dir::NORTH] = &node;
+				}
+			}
+
+			crrIter = iter;
+			if (node.links[Dir::NORTH] == nullptr && crrIter != xBegin)
+			{
+				crrIter--;
+				if (crrIter -> first.first == pos.x)
+				{
+					minus = crrIter -> second;
+					node.links[Dir::NORTH] = minus;
+					minus -> links[Dir::SOUTH] = &node;
+				}
+			}
+		}
+
+		skiplinking:
+		if (links[Dir::NORTH] == &PNode::null) links[Dir::NORTH] = nullptr;
+		if (links[Dir::EAST] == &PNode::null) links[Dir::EAST] = nullptr;
+		if (links[Dir::SOUTH] == &PNode::null) links[Dir::SOUTH] = nullptr;
+		if (links[Dir::WEST] == &PNode::null) links[Dir::WEST] = nullptr;
+	}
+}
+
 void Dungeon::CreateNodes()
 {
 	SDL_Rect &space = tree.Get().space;
@@ -380,15 +378,16 @@ bool Dungeon::Divide(int left)
 
 	tree.AddNodes(tree.Get());
 	tree.GoLeft();
-	crrSpace = &tree.Get().space;
 
+	crrSpace = &tree.Get().space;
 	crrSpace ->* wh = randSize;
 
 	bool ok = Divide(left);
+
 	tree.GoUp();
 	tree.GoRight();
-	crrSpace = &tree.Get().space;
 
+	crrSpace = &tree.Get().space;
 	crrSpace ->* xy += randSize;
 	crrSpace ->* wh -= randSize;
 
@@ -425,18 +424,14 @@ void Dungeon::Prepare(const bool newSeed)
 
 PNode &Dungeon::AddNode(int x, int y)
 {
-	auto range = pXNodes.equal_range(x);
-	for (auto &i = range.first; i != range.second; i++)
-	{
-		PNode &node = *(i -> second);
-		if (node.pos.y == y) return node;
-	}
+	auto iter = pXNodes.find(std::make_pair(x, y));
+	if (iter != pXNodes.end()) return *(iter -> second);
 
 	pNodes.push_front(PNode({ x, y }));
 	PNode &node = pNodes.front();
 
-	pXNodes.insert(std::make_pair(x, &node));
-	pYNodes.insert(std::make_pair(y, &node));
+	pXNodes.insert(std::make_pair(std::make_pair(x, y), &node));
+	pYNodes.insert(std::make_pair(std::make_pair(y, x), &node));
 
 	return node;
 }
@@ -574,7 +569,7 @@ void Dungeon::Generate(GenInput *genInput, const bool newSeed)
 	helper.chkFunc = [](const ExeInfo<Cell> &info) -> bool { return !info.node.IsLast(); };
 
 	LOGGER_LOG_TIME("Finding paths");
-	tree.ExecuteObj(helper, &Dungeon::FindPaths, this);
+	tree.ExecuteObj(helper, &Dungeon::FindPath, this);
 
 	LOGGER_LOG("Done!");
 	LOGGER_LOG_ENDL();

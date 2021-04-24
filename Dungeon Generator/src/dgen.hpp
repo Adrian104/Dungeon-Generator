@@ -98,15 +98,15 @@ struct Dungeon
 	std::random_device rd;
 
 	std::forward_list<PNode> pNodes;
-	std::multimap<int, PNode*> pXNodes;
-	std::multimap<int, PNode*> pYNodes;
+	std::map<std::pair<int, int>, PNode*> pXNodes;
+	std::map<std::pair<int, int>, PNode*> pYNodes;
 
 	std::vector<PNode*> usedNodes;
 	std::vector<std::pair<int, PNode*>> openNodes;
 	
 	void MakeRoom();
+	void FindPath();
 	void LinkNodes();
-	void FindPaths();
 	void CreateNodes();
 	bool Divide(int left);
 	void Prepare(const bool newSeed);
