@@ -1,12 +1,13 @@
 #pragma once
 
 #ifdef _DEBUG
-	//#define SHOW_GRID
 	#define RANDOM_COLORS
 	#define LOGGER_ENABLED
+	#define INCREMENTAL_SEED
 #else
 	#define NO_DELAY
 	#define FULL_SCREEN
+	#define RANDOM_SEED
 #endif
 
 #ifdef LOGGER_ENABLED

@@ -103,7 +103,7 @@ void Dungeon::MakeRoom()
 			if (mtEngine() & 1) room2.x = room.x + room.w - room2.w;
 		}
 
-		if (room2.w < 4 || room2.h < 4) doubleRoom = false;
+		doubleRoom = room2.w >= 4 && room2.h >= 4;
 	}
 
 	const int xOffset = int(dX * cache.uni0to1f(mtEngine));
@@ -146,10 +146,10 @@ void Dungeon::FindPath()
 	const bool stopNullptr = PNode::stop == nullptr;
 
 	if (start == PNode::stop) return;
-	PNode **internalNode = &tree.Get().internalNode;
+	PNode **iNode = &tree.Get().internalNode;
 
-	if (!startNullptr && stopNullptr) { *internalNode = start; return; }
-	if (startNullptr && !stopNullptr) { *internalNode = PNode::stop; return; }
+	if (!startNullptr && stopNullptr) { *iNode = start; return; }
+	if (startNullptr && !stopNullptr) { *iNode = PNode::stop; return; }
 
 	int length = 0, index;
 	PNode *crrNode = start;
@@ -217,7 +217,7 @@ void Dungeon::FindPath()
 	}
 
 	while (crrNode -> path & PNode::E_NODE) crrNode = crrNode -> prevNode;
-	*internalNode = crrNode;
+	*iNode = crrNode;
 
 	clear:
 	PNode::stop -> Reset();
@@ -231,8 +231,7 @@ void Dungeon::FindPath()
 
 void Dungeon::LinkNodes()
 {
-	PNode *plus;
-	PNode *minus;
+	PNode *xNode;
 
 	std::map<std::pair<int, int>, PNode*>::iterator iter;
 	std::map<std::pair<int, int>, PNode*>::iterator crrIter;
@@ -250,9 +249,6 @@ void Dungeon::LinkNodes()
 
 		if (links[Dir::EAST] == nullptr || links[Dir::WEST] == nullptr)
 		{
-			plus = nullptr;
-			minus = nullptr;
-
 			iter = pYNodes.find(std::make_pair(pos.y, pos.x));
 			if (iter == yEnd) goto skiplinking;
 
@@ -263,9 +259,9 @@ void Dungeon::LinkNodes()
 			{
 				if (crrIter -> first.first == pos.y)
 				{
-					plus = crrIter -> second;
-					node.links[Dir::EAST] = plus;
-					plus -> links[Dir::WEST] = &node;
+					xNode = crrIter -> second;
+					node.links[Dir::EAST] = xNode;
+					xNode -> links[Dir::WEST] = &node;
 				}
 			}
 
@@ -275,18 +271,15 @@ void Dungeon::LinkNodes()
 				crrIter--;
 				if (crrIter -> first.first == pos.y)
 				{
-					minus = crrIter -> second;
-					node.links[Dir::WEST] = minus;
-					minus -> links[Dir::EAST] = &node;
+					xNode = crrIter -> second;
+					node.links[Dir::WEST] = xNode;
+					xNode -> links[Dir::EAST] = &node;
 				}
 			}
 		}
 
 		if (links[Dir::NORTH] == nullptr || links[Dir::SOUTH] == nullptr)
 		{
-			plus = nullptr;
-			minus = nullptr;
-
 			iter = pXNodes.find(std::make_pair(pos.x, pos.y));
 			if (iter == xEnd) goto skiplinking;
 
@@ -297,9 +290,9 @@ void Dungeon::LinkNodes()
 			{
 				if (crrIter -> first.first == pos.x)
 				{
-					plus = crrIter -> second;
-					node.links[Dir::SOUTH] = plus;
-					plus -> links[Dir::NORTH] = &node;
+					xNode = crrIter -> second;
+					node.links[Dir::SOUTH] = xNode;
+					xNode -> links[Dir::NORTH] = &node;
 				}
 			}
 
@@ -309,9 +302,9 @@ void Dungeon::LinkNodes()
 				crrIter--;
 				if (crrIter -> first.first == pos.x)
 				{
-					minus = crrIter -> second;
-					node.links[Dir::NORTH] = minus;
-					minus -> links[Dir::SOUTH] = &node;
+					xNode = crrIter -> second;
+					node.links[Dir::NORTH] = xNode;
+					xNode -> links[Dir::SOUTH] = &node;
 				}
 			}
 		}
@@ -327,10 +320,17 @@ void Dungeon::LinkNodes()
 void Dungeon::CreateNodes()
 {
 	SDL_Rect &space = tree.Get().space;
-	PNode &NW = AddNode(space.x - 3, space.y - 3);
-	PNode &NE = AddNode(space.x + space.w + 2, space.y - 3);
-	PNode &SW = AddNode(space.x - 3, space.y + space.h + 2);
-	PNode &SE = AddNode(space.x + space.w + 2, space.y + space.h + 2);
+
+	const int xMin = space.x - 3;
+	const int yMin = space.y - 3;
+
+	const int xMax = space.x + space.w + 2;
+	const int yMax = space.y + space.h + 2;
+
+	PNode &NW = AddNode(xMin, yMin);
+	PNode &NE = AddNode(xMax, yMin);
+	PNode &SW = AddNode(xMin, yMax);
+	PNode &SE = AddNode(xMax, yMax);
 
 	NW.links[Dir::EAST] = nullptr;
 	NW.links[Dir::SOUTH] = nullptr;
@@ -355,7 +355,7 @@ bool Dungeon::Divide(int left)
 		space.x += 4; space.y += 4;
 		space.w -= 5; space.h -= 5;
 
-		return space.w >= 5 && space.h >= 5;
+		return space.w < 5 || space.h < 5;
 	}
 	else if (left <= cache.deltaDepth)
 	{
@@ -382,8 +382,8 @@ bool Dungeon::Divide(int left)
 	crrSpace = &tree.Get().space;
 	crrSpace ->* wh = randSize;
 
-	bool ok = Divide(left);
-
+	bool notOk = Divide(left);
+	
 	tree.GoUp();
 	tree.GoRight();
 
@@ -391,23 +391,30 @@ bool Dungeon::Divide(int left)
 	crrSpace ->* xy += randSize;
 	crrSpace ->* wh -= randSize;
 
-	ok &= Divide(left);
+	notOk |= Divide(left);
 	tree.GoUp();
 
-	if (!ok)
+	if (notOk)
 	{
 		tree.DeleteNodes();
 		goto nomore;
 	}
 
-	return true;
+	return false;
 }
 
 void Dungeon::Prepare(const bool newSeed)
 {
 	PNode::heap = &openNodes;
 
+	#ifdef RANDOM_SEED
 	if (newSeed) seed = rd();
+	#endif
+
+	#ifdef INCREMENTAL_SEED
+	if (newSeed) seed++;
+	#endif
+
 	mtEngine.seed(seed);
 
 	tree.Get().space.w = gInput -> xSize - 3;
