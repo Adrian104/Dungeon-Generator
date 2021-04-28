@@ -57,7 +57,7 @@ void PNode::Open(PNode *prev)
 	}
 }
 
-Dungeon::Dungeon() : cache{}, gInput(nullptr), seed(0) { LOGGER_LOG_HEADER("Dungeon Generator"); }
+Dungeon::Dungeon() : cache{}, gInput(nullptr), seed(0), bValues(0) { LOGGER_LOG_HEADER("Dungeon Generator"); }
 Dungeon::~Dungeon() { Clear(); }
 
 void Dungeon::MakeRoom()
@@ -90,7 +90,7 @@ void Dungeon::MakeRoom()
 			room2.w += extra;
 			dX -= extra;
 
-			if (mtEngine() & 1) room2.y = room.y + room.h - room2.h;
+			if (RandomBool()) room2.y = room.y + room.h - room2.h;
 		}
 		else
 		{
@@ -100,7 +100,7 @@ void Dungeon::MakeRoom()
 			room2.h += extra;
 			dY -= extra;
 
-			if (mtEngine() & 1) room2.x = room.x + room.w - room2.w;
+			if (RandomBool()) room2.x = room.x + room.w - room2.w;
 		}
 
 		doubleRoom = room2.w >= 4 && room2.h >= 4;
@@ -121,7 +121,7 @@ void Dungeon::MakeRoom()
 		room2.y += yOffset;
 
 		crrCell.roomList -> nextRoom = new Room(room2);
-		if (mtEngine() & 1) selRoom = &crrCell.roomList -> nextRoom -> room;
+		if (RandomBool()) selRoom = &crrCell.roomList -> nextRoom -> room;
 	}
 
 	SDL_Point iPoint = { selRoom -> x, selRoom -> y };
@@ -151,7 +151,6 @@ void Dungeon::FindPath()
 	if (!startNullptr && stopNullptr) { *iNode = start; return; }
 	if (startNullptr && !stopNullptr) { *iNode = PNode::stop; return; }
 
-	int length = 0, index;
 	PNode *crrNode = start;
 
 	do
@@ -162,7 +161,7 @@ void Dungeon::FindPath()
 			if (neighbor -> mode != PNode::CLOSED) neighbor -> Open(crrNode);
 		}
 
-		if (openNodes.empty()) goto clear;
+		if (openNodes.empty()) throw -1;
 
 		crrNode -> mode = PNode::CLOSED;
 		usedNodes.push_back(crrNode);
@@ -201,26 +200,12 @@ void Dungeon::FindPath()
 			prevNode -> path |= 1 << Dir::EAST;
 		}
 
-		length += bool(!(crrNode -> path & PNode::E_NODE));
 		crrNode = prevNode;
 
 	} while (crrNode != start);
 
-	length += bool(!(crrNode -> path & PNode::E_NODE));
-	index = mtEngine() % length;
-	crrNode = PNode::stop;
-
-	while (index > 0)
-	{
-		index -= bool(!(crrNode -> path & PNode::E_NODE));
-		crrNode = crrNode -> prevNode;
-	}
-
-	while (crrNode -> path & PNode::E_NODE) crrNode = crrNode -> prevNode;
-	*iNode = crrNode;
-
-	clear:
 	PNode::stop -> Reset();
+	*iNode = RandomBool() ? start : PNode::stop;
 
 	for (PNode *&node : usedNodes) node -> Reset();
 	for (auto &[fCost, node] : openNodes) node -> Reset();
@@ -427,6 +412,26 @@ void Dungeon::Prepare(const bool newSeed)
 	cache.uni0to1f = std::uniform_real_distribution<float>(0, 1);
 	cache.uniRoom = std::uniform_real_distribution<float>(gInput -> minRoomSize / 100.0f, gInput -> maxRoomSize / 100.0f);
 	cache.uniSpace = std::uniform_real_distribution<float>((gInput -> spaceSizeRandomness >> 1) / -100.0f, (gInput -> spaceSizeRandomness >> 1) / 100.0f);
+	
+	RandomBool();
+}
+
+bool Dungeon::RandomBool()
+{
+	const bool ret = cache.randValue & 1;
+
+	if (bValues > 1)
+	{
+		bValues--;
+		cache.randValue >>= 1;
+	}
+	else
+	{
+		bValues = 32;
+		cache.randValue = mtEngine();
+	}
+
+	return ret;
 }
 
 PNode &Dungeon::AddNode(int x, int y)
