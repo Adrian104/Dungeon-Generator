@@ -12,11 +12,11 @@ struct DrawInfo
 
 struct DGManager
 {
-	bool quit;
-	bool needRedraw;
-
 	int xSize;
 	int ySize;
+
+	bool quit;
+	bool refTexture;
 
 	Dungeon dg;
 	DrawInfo dInfo;
@@ -24,6 +24,7 @@ struct DGManager
 	GenInput gInput;
 
 	SDL_Window *window;
+	SDL_Texture *texture;
 	SDL_Renderer *renderer;
 
 	DGManager();
@@ -32,6 +33,9 @@ struct DGManager
 	void Run();
 	void Draw();
 	void Update();
+	void Refresh();
+	void Generate();
 
+	void Render();
 	void ApplyFactor(const float factor);
 };

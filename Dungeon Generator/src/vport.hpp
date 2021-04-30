@@ -14,7 +14,7 @@ class Viewport
 	Viewport() : scale(1), xOffset(0), yOffset(0), defScale(1), scaleStep(0.2f) {}
 
 	void Reset();
-	void Update(SDL_Event &sdlEvent);
+	bool Update(SDL_Event &sdlEvent);
 	void SetScaleStep(float pScaleStep);
 	void SetDefaultScale(float pDefScale);
 

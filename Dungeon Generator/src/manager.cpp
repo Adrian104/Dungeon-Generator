@@ -1,6 +1,6 @@
 #include "manager.hpp"
 
-DGManager::DGManager() : quit(false), needRedraw(true), xSize(0), ySize(0)
+DGManager::DGManager() : xSize(0), ySize(0), quit(false), refTexture(true)
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -18,6 +18,7 @@ DGManager::DGManager() : quit(false), needRedraw(true), xSize(0), ySize(0)
 	#endif
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, xSize, ySize);
 
 	gInput.xSize = xSize;
 	gInput.ySize = ySize;
@@ -37,6 +38,7 @@ DGManager::DGManager() : quit(false), needRedraw(true), xSize(0), ySize(0)
 
 DGManager::~DGManager()
 {
+	SDL_DestroyTexture(texture);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
@@ -44,10 +46,11 @@ DGManager::~DGManager()
 
 void DGManager::Run()
 {
-	dg.Generate(&gInput);
+	Generate();
+	Draw();
+
 	while (!quit)
 	{
-		if (needRedraw) Draw();
 		Update();
 
 		#ifndef NO_DELAY
@@ -57,6 +60,77 @@ void DGManager::Run()
 }
 
 void DGManager::Draw()
+{
+	if (refTexture) Render();
+
+	SDL_SetRenderTarget(renderer, nullptr);
+	SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+	SDL_RenderPresent(renderer);
+}
+
+void DGManager::Update()
+{
+	SDL_Event sdlEvent;
+	while (SDL_PollEvent(&sdlEvent))
+	{
+		if (sdlEvent.type == SDL_QUIT) quit = true;
+		else if (sdlEvent.type == SDL_KEYDOWN)
+		{
+			refTexture = true;
+			switch (sdlEvent.key.keysym.sym)
+			{
+			case SDLK_ESCAPE:
+				quit = true;
+				refTexture = false;
+				break;
+
+			case SDLK_F1:
+				dInfo.spaceVisibility = !dInfo.spaceVisibility;
+				break;
+
+			case SDLK_F2:
+				dInfo.roomsVisibility = !dInfo.roomsVisibility;
+				break;
+
+			case SDLK_F3:
+				dInfo.nodesVisibilityMode++;
+				if (dInfo.nodesVisibilityMode > 2) dInfo.nodesVisibilityMode = 0;
+				break;
+
+			case SDLK_F4:
+				dInfo.pathsVisibilityMode++;
+				if (dInfo.pathsVisibilityMode > 2) dInfo.pathsVisibilityMode = 0;
+				break;
+
+			case SDLK_g:
+				Generate();
+				break;
+
+			case SDLK_r:
+				Refresh();
+				break;
+
+			default:
+				refTexture = vPort.Update(sdlEvent);
+			}
+		}
+		else refTexture = vPort.Update(sdlEvent);
+
+		if (refTexture) Draw();
+	}
+}
+
+void DGManager::Refresh()
+{
+	dg.Generate(&gInput, false);
+}
+
+void DGManager::Generate()
+{
+	dg.Generate(&gInput, true);
+}
+
+void DGManager::Render()
 {
 	ExeHelper<Cell> helper(false, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); });
 
@@ -161,6 +235,7 @@ void DGManager::Draw()
 		}
 	};
 
+	SDL_SetRenderTarget(renderer, texture);
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
 	SDL_RenderClear(renderer);
 
@@ -225,59 +300,7 @@ void DGManager::Draw()
 	}
 	#endif
 
-	SDL_RenderPresent(renderer);
-	needRedraw = false;
-}
-
-void DGManager::Update()
-{
-	SDL_Event sdlEvent;
-	while (SDL_PollEvent(&sdlEvent))
-	{
-		needRedraw = true;
-		if (sdlEvent.type == SDL_QUIT) quit = true;
-		else if (sdlEvent.type == SDL_KEYDOWN)
-		{
-			switch (sdlEvent.key.keysym.sym)
-			{
-			case SDLK_ESCAPE:
-				quit = true;
-				break;
-
-			case SDLK_F1:
-				dInfo.spaceVisibility = !dInfo.spaceVisibility;
-				break;
-
-			case SDLK_F2:
-				dInfo.roomsVisibility = !dInfo.roomsVisibility;
-				break;
-
-			case SDLK_F3:
-				dInfo.nodesVisibilityMode++;
-				if (dInfo.nodesVisibilityMode > 2) dInfo.nodesVisibilityMode = 0;
-				break;
-
-			case SDLK_F4:
-				dInfo.pathsVisibilityMode++;
-				if (dInfo.pathsVisibilityMode > 2) dInfo.pathsVisibilityMode = 0;
-				break;
-
-			case SDLK_g:
-				dg.Generate(&gInput);
-				Draw();
-				break;
-
-			case SDLK_r:
-				dg.Generate(&gInput, false);
-				Draw();
-				break;
-
-			default:
-				vPort.Update(sdlEvent);
-			}
-		}
-		else vPort.Update(sdlEvent);
-	}
+	refTexture = false;
 }
 
 void DGManager::ApplyFactor(const float factor)

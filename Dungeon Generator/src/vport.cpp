@@ -7,7 +7,7 @@ void Viewport::Reset()
 	scale = defScale;
 }
 
-void Viewport::Update(SDL_Event &sdlEvent)
+bool Viewport::Update(SDL_Event &sdlEvent)
 {
 	static int xStart = 0;
 	static int yStart = 0;
@@ -47,7 +47,11 @@ void Viewport::Update(SDL_Event &sdlEvent)
 	else if (sdlEvent.type == SDL_KEYDOWN)
 	{
 		if (sdlEvent.key.keysym.sym == SDLK_TAB) Reset();
+		else return false;
 	}
+	else return false;
+
+	return true;
 }
 
 void Viewport::SetScaleStep(float pScaleStep)

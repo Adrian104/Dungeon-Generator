@@ -413,6 +413,7 @@ void Dungeon::Prepare(const bool newSeed)
 	cache.uniRoom = std::uniform_real_distribution<float>(gInput -> minRoomSize / 100.0f, gInput -> maxRoomSize / 100.0f);
 	cache.uniSpace = std::uniform_real_distribution<float>((gInput -> spaceSizeRandomness >> 1) / -100.0f, (gInput -> spaceSizeRandomness >> 1) / 100.0f);
 	
+	bValues = 0;
 	RandomBool();
 }
 
