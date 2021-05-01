@@ -16,7 +16,7 @@ struct DGManager
 	int ySize;
 
 	bool quit;
-	bool refTexture;
+	bool refresh;
 
 	Dungeon dg;
 	DrawInfo dInfo;
@@ -33,8 +33,6 @@ struct DGManager
 	void Run();
 	void Draw();
 	void Update();
-	void Refresh();
-	void Generate();
 
 	void Render();
 	void ApplyFactor(const float factor);

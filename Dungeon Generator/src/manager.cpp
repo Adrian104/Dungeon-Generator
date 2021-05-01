@@ -1,6 +1,6 @@
 #include "manager.hpp"
 
-DGManager::DGManager() : xSize(0), ySize(0), quit(false), refTexture(true)
+DGManager::DGManager() : xSize(0), ySize(0), quit(false), refresh(true)
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -46,23 +46,19 @@ DGManager::~DGManager()
 
 void DGManager::Run()
 {
-	Generate();
-	Draw();
-
+	dg.Generate(&gInput, true);
 	while (!quit)
 	{
 		Update();
 
 		#ifndef NO_DELAY
-		SDL_Delay(5);
+		SDL_Delay(1);
 		#endif
 	}
 }
 
 void DGManager::Draw()
 {
-	if (refTexture) Render();
-
 	SDL_SetRenderTarget(renderer, nullptr);
 	SDL_RenderCopy(renderer, texture, nullptr, nullptr);
 	SDL_RenderPresent(renderer);
@@ -70,18 +66,26 @@ void DGManager::Draw()
 
 void DGManager::Update()
 {
+	if (refresh)
+	{
+		Render();
+		Draw();
+	}
+
+	refresh = false;
 	SDL_Event sdlEvent;
-	while (SDL_PollEvent(&sdlEvent))
+
+	if (SDL_PollEvent(&sdlEvent))
 	{
 		if (sdlEvent.type == SDL_QUIT) quit = true;
 		else if (sdlEvent.type == SDL_KEYDOWN)
 		{
-			refTexture = true;
+			refresh = true;
 			switch (sdlEvent.key.keysym.sym)
 			{
 			case SDLK_ESCAPE:
 				quit = true;
-				refTexture = false;
+				refresh = false;
 				break;
 
 			case SDLK_F1:
@@ -103,31 +107,19 @@ void DGManager::Update()
 				break;
 
 			case SDLK_g:
-				Generate();
+				dg.Generate(&gInput, true);
 				break;
 
 			case SDLK_r:
-				Refresh();
+				dg.Generate(&gInput, false);
 				break;
 
 			default:
-				refTexture = vPort.Update(sdlEvent);
+				refresh = vPort.Update(sdlEvent);
 			}
 		}
-		else refTexture = vPort.Update(sdlEvent);
-
-		if (refTexture) Draw();
+		else refresh = vPort.Update(sdlEvent);
 	}
-}
-
-void DGManager::Refresh()
-{
-	dg.Generate(&gInput, false);
-}
-
-void DGManager::Generate()
-{
-	dg.Generate(&gInput, true);
 }
 
 void DGManager::Render()
@@ -300,7 +292,7 @@ void DGManager::Render()
 	}
 	#endif
 
-	refTexture = false;
+	refresh = false;
 }
 
 void DGManager::ApplyFactor(const float factor)
