@@ -1,4 +1,4 @@
-#include "manager.hpp"
+#include "app.hpp"
 
 int main(int argc, char **argv)
 {
@@ -6,8 +6,8 @@ int main(int argc, char **argv)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	#endif
 
-	DGManager mgr;
-	mgr.Run();
+	Application app;
+	app.Run();
 
 	return EXIT_SUCCESS;
 }

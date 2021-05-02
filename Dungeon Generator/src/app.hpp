@@ -1,5 +1,6 @@
 #pragma once
 #include "macros.hpp"
+#include "appmgr.hpp"
 #include "dgen.hpp"
 
 struct DrawInfo
@@ -10,11 +11,8 @@ struct DrawInfo
 	int pathsVisibilityMode;
 };
 
-struct DGManager
+struct Application : public AppManager
 {
-	int xSize;
-	int ySize;
-
 	bool quit;
 	bool refresh;
 
@@ -22,13 +20,10 @@ struct DGManager
 	DrawInfo dInfo;
 	Viewport vPort;
 	GenInput gInput;
-
-	SDL_Window *window;
 	SDL_Texture *texture;
-	SDL_Renderer *renderer;
 
-	DGManager();
-	~DGManager();
+	Application();
+	~Application();
 
 	void Run();
 	void Draw();

@@ -1,27 +1,11 @@
-#include "manager.hpp"
+#include "app.hpp"
 
-DGManager::DGManager() : xSize(0), ySize(0), quit(false), refresh(true)
+Application::Application() : quit(false), refresh(true)
 {
-	SDL_Init(SDL_INIT_EVERYTHING);
+	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, windowWidth, windowHeight);
 
-	SDL_DisplayMode dm;
-	SDL_GetCurrentDisplayMode(0, &dm);
-
-	#ifdef FULL_SCREEN
-		window = SDL_CreateWindow("Dungeon Generator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w, dm.h, SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN);
-		xSize = dm.w;
-		ySize = dm.h;
-	#else
-		window = SDL_CreateWindow("Dungeon Generator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w - 30, dm.h - 100, SDL_WINDOW_SHOWN);
-		xSize = dm.w - 30;
-		ySize = dm.h - 100;
-	#endif
-
-	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, xSize, ySize);
-
-	gInput.xSize = xSize;
-	gInput.ySize = ySize;
+	gInput.xSize = windowWidth;
+	gInput.ySize = windowHeight;
 
 	gInput.minDepth = 9;
 	gInput.maxDepth = 10;
@@ -36,15 +20,12 @@ DGManager::DGManager() : xSize(0), ySize(0), quit(false), refresh(true)
 	dInfo.pathsVisibilityMode = 1;
 }
 
-DGManager::~DGManager()
+Application::~Application()
 {
 	SDL_DestroyTexture(texture);
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
-	SDL_Quit();
 }
 
-void DGManager::Run()
+void Application::Run()
 {
 	dg.Generate(&gInput, true);
 	while (!quit)
@@ -57,14 +38,14 @@ void DGManager::Run()
 	}
 }
 
-void DGManager::Draw()
+void Application::Draw()
 {
 	SDL_SetRenderTarget(renderer, nullptr);
 	SDL_RenderCopy(renderer, texture, nullptr, nullptr);
 	SDL_RenderPresent(renderer);
 }
 
-void DGManager::Update()
+void Application::Update()
 {
 	if (refresh)
 	{
@@ -122,18 +103,18 @@ void DGManager::Update()
 	}
 }
 
-void DGManager::Render()
+void Application::Render()
 {
 	ExeHelper<Cell> helper(false, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); });
 
-	auto DrawSpace = [](DGManager *mgr) -> void
+	auto DrawSpace = [](Application *mgr) -> void
 	{
 		SDL_FRect rect = ToFRect(mgr -> dg.tree.Get().space);
 		mgr -> vPort.RectToScreen(rect, rect);
 		SDL_RenderDrawRectF(mgr -> renderer, &rect);
 	};
 
-	auto DrawRooms = [](DGManager *mgr) -> void
+	auto DrawRooms = [](Application *mgr) -> void
 	{
 		for (Room *room = mgr -> dg.tree.Get().roomList; room != nullptr; room = room -> nextRoom)
 		{
@@ -143,7 +124,7 @@ void DGManager::Render()
 		}
 	};
 
-	auto DrawNodes = [](DGManager *mgr) -> void
+	auto DrawNodes = [](Application *mgr) -> void
 	{
 		for (PNode &node : mgr -> dg.pNodes)
 		{
@@ -155,7 +136,7 @@ void DGManager::Render()
 		}
 	};
 
-	auto DrawUsedNodes = [](DGManager *mgr) -> void
+	auto DrawUsedNodes = [](Application *mgr) -> void
 	{
 		for (PNode &node : mgr -> dg.pNodes)
 		{
@@ -169,7 +150,7 @@ void DGManager::Render()
 		}
 	};
 
-	auto DrawLinks = [](DGManager *mgr) -> void
+	auto DrawLinks = [](Application *mgr) -> void
 	{
 		for (PNode &node : mgr -> dg.pNodes)
 		{
@@ -204,7 +185,7 @@ void DGManager::Render()
 		}
 	};
 
-	auto DrawPaths = [](DGManager *mgr) -> void
+	auto DrawPaths = [](Application *mgr) -> void
 	{
 		for (PNode &node : mgr -> dg.pNodes)
 		{
@@ -295,10 +276,10 @@ void DGManager::Render()
 	refresh = false;
 }
 
-void DGManager::ApplyFactor(const float factor)
+void Application::ApplyFactor(const float factor)
 {
-	gInput.xSize = int(xSize * factor);
-	gInput.ySize = int(ySize * factor);
+	gInput.xSize = int(windowWidth * factor);
+	gInput.ySize = int(windowHeight * factor);
 
 	vPort.SetDefaultScale(1 / factor);
 	vPort.Reset();
