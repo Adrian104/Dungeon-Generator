@@ -3,7 +3,7 @@
 #include <vector>
 #include <random>
 #include <forward_list>
-#include "macros.hpp"
+#include "global.hpp"
 #include "vport.hpp"
 #include "btree.hpp"
 

@@ -47,7 +47,7 @@
     <ClInclude Include="src\app.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="src\macros.hpp">
+    <ClInclude Include="src\global.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="src\logger.hpp">

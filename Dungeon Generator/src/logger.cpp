@@ -5,14 +5,14 @@
 namespace logger
 {
 	bool isRunning;
-	std::chrono::high_resolution_clock::time_point start;
-	std::chrono::high_resolution_clock::time_point stop;
+	std::chrono::steady_clock::time_point start;
+	std::chrono::steady_clock::time_point stop;
 
 	void Stop()
 	{
 		if (!isRunning) return;
 
-		stop = std::chrono::high_resolution_clock::now();
+		stop = std::chrono::steady_clock::now();
 		auto diff = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
 		double time = diff / 1000.0;
 
@@ -43,7 +43,7 @@ namespace logger
 		std::cout << " * " << str << "...";
 
 		isRunning = true;
-		start = std::chrono::high_resolution_clock::now();
+		start = std::chrono::steady_clock::now();
 	}
 	
 	void LogHeader(const std::string &str)

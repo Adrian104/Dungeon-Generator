@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "dgen.hpp"
+#include "logger.hpp"
 
 struct HeapCompare
 {
@@ -76,7 +77,7 @@ void Dungeon::MakeRoom()
 	room.w -= dX;
 	room.h -= dY;
 
-	if (room.w < 4 || room.h < 4) return;
+	if (room.w < gMinRoomWH || room.h < gMinRoomWH) return;
 
 	if (doubleRoom)
 	{
@@ -103,7 +104,7 @@ void Dungeon::MakeRoom()
 			if (RandomBool()) room2.x = room.x + room.w - room2.w;
 		}
 
-		doubleRoom = room2.w >= 4 && room2.h >= 4;
+		doubleRoom = room2.w >= gMinRoomWH && room2.h >= gMinRoomWH;
 	}
 
 	const int xOffset = int(dX * cache.uni0to1f(mtEngine));
@@ -340,7 +341,7 @@ bool Dungeon::Divide(int left)
 		space.x += 4; space.y += 4;
 		space.w -= 5; space.h -= 5;
 
-		return space.w < 5 || space.h < 5;
+		return space.w < gMinSpaceWH || space.h < gMinSpaceWH;
 	}
 	else if (left <= cache.deltaDepth)
 	{

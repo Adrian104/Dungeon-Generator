@@ -7,17 +7,17 @@ Application::Application() : quit(false), refresh(true)
 	gInput.xSize = windowWidth;
 	gInput.ySize = windowHeight;
 
-	gInput.minDepth = 9;
-	gInput.maxDepth = 10;
-	gInput.maxRoomSize = 75;
-	gInput.minRoomSize = 25;
-	gInput.doubleRoomProb = 25;
-	gInput.spaceSizeRandomness = 35;
+	gInput.minDepth = gDefMinDepth;
+	gInput.maxDepth = gDefMaxDepth;
+	gInput.maxRoomSize = gDefMaxRoomSize;
+	gInput.minRoomSize = gDefMinRoomSize;
+	gInput.doubleRoomProb = gDefDoubleRoomProb;
+	gInput.spaceSizeRandomness = gDefSpaceSizeRandomness;
 
-	dInfo.spaceVisibility = true;
-	dInfo.roomsVisibility = true;
-	dInfo.nodesVisibilityMode = 1;
-	dInfo.pathsVisibilityMode = 1;
+	dInfo.spaceVisibility = gDefSpaceVisibility;
+	dInfo.roomsVisibility = gDefRoomsVisibility;
+	dInfo.nodesVisibilityMode = gDefNodesVisibilityMode;
+	dInfo.pathsVisibilityMode = gDefPathsVisibilityMode;
 }
 
 Application::~Application()

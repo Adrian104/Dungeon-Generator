@@ -1,6 +1,6 @@
 #pragma once
 #include <SDL.h>
-#include "macros.hpp"
+#include "global.hpp"
 
 class Viewport
 {
@@ -11,7 +11,7 @@ class Viewport
 	float scaleStep;
 
 	public:
-	Viewport() : scale(1), xOffset(0), yOffset(0), defScale(1), scaleStep(0.2f) {}
+	Viewport() : scale(1), xOffset(0), yOffset(0), defScale(1), scaleStep(gDefScaleStep) {}
 
 	void Reset();
 	bool Update(SDL_Event &sdlEvent);

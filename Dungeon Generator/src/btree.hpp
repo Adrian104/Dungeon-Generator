@@ -1,5 +1,5 @@
 #pragma once
-#include "macros.hpp"
+#include "global.hpp"
 
 template <typename Type>
 class BTNode

@@ -187,7 +187,7 @@
     <ClInclude Include="src\btree.hpp" />
     <ClInclude Include="src\dgen.hpp" />
     <ClInclude Include="src\logger.hpp" />
-    <ClInclude Include="src\macros.hpp" />
+    <ClInclude Include="src\global.hpp" />
     <ClInclude Include="src\app.hpp" />
     <ClInclude Include="src\vport.hpp" />
   </ItemGroup>

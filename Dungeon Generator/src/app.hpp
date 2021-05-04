@@ -1,5 +1,5 @@
 #pragma once
-#include "macros.hpp"
+#include "global.hpp"
 #include "appmgr.hpp"
 #include "dgen.hpp"
 
