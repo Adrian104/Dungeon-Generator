@@ -27,3 +27,10 @@ inline const int gDefNodesVisibilityMode = 0;
 inline const int gDefPathsVisibilityMode = 2;
 inline const bool gDefSpaceVisibility = true;
 inline const bool gDefRoomsVisibility = true;
+
+inline const std::pair<std::string, int> gFonts[] =
+{
+	std::pair<std::string, int>("res/Quicksand-Regular.ttf", 16)
+};
+
+inline const int gFontCount = sizeof(gFonts) / sizeof(*gFonts);
