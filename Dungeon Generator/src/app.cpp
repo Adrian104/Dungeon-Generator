@@ -1,6 +1,6 @@
 #include "app.hpp"
 
-Application::Application() : quit(false), refresh(true)
+Application::Application() : quit(false)
 {
 	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, windowWidth, windowHeight);
 
@@ -28,6 +28,10 @@ Application::~Application()
 void Application::Run()
 {
 	dg.Generate(&gInput, true);
+
+	Render();
+	Draw();
+
 	while (!quit)
 	{
 		Update();
@@ -47,16 +51,8 @@ void Application::Draw()
 
 void Application::Update()
 {
-	if (refresh)
-	{
-		Render();
-		Draw();
-	}
-
-	refresh = false;
-	SDL_Event sdlEvent;
-
-	if (SDL_PollEvent(&sdlEvent))
+	bool refresh = false;
+	if (SDL_Event sdlEvent; SDL_PollEvent(&sdlEvent))
 	{
 		if (sdlEvent.type == SDL_QUIT) quit = true;
 		else if (sdlEvent.type == SDL_KEYDOWN)
@@ -100,6 +96,12 @@ void Application::Update()
 			}
 		}
 		else refresh = vPort.Update(sdlEvent);
+	}
+
+	if (refresh)
+	{
+		Render();
+		Draw();
 	}
 }
 
@@ -272,8 +274,6 @@ void Application::Render()
 		SDL_RenderDrawLineF(renderer, a.x, a.y, b.x, b.y);
 	}
 	#endif
-
-	refresh = false;
 }
 
 void Application::ApplyFactor(const float factor)

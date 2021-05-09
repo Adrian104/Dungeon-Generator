@@ -14,7 +14,6 @@ struct DrawInfo
 struct Application : public AppManager
 {
 	bool quit;
-	bool refresh;
 
 	Dungeon dg;
 	DrawInfo dInfo;

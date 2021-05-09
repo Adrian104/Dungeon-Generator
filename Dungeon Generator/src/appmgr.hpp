@@ -22,5 +22,5 @@ struct AppManager
 	AppManager();
 	~AppManager();
 
-	void RenderText(const std::string &str, int fontId, int fontStyle);
+	void RenderText(const std::string &str, int fontId, int style, const SDL_Color &color = { 0xFF, 0xFF, 0xFF, 0xFF });
 };

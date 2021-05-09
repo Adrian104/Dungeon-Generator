@@ -40,14 +40,14 @@ AppManager::~AppManager()
 	SDL_Quit();
 }
 
-void AppManager::RenderText(const std::string &str, int fontId, int fontStyle)
+void AppManager::RenderText(const std::string &str, int fontId, int style, const SDL_Color &color)
 {
 	if (text.texture != nullptr) SDL_DestroyTexture(text.texture);
 
 	TTF_Font *const font = fonts[fontId];
-	TTF_SetFontStyle(font, fontStyle);
+	TTF_SetFontStyle(font, style);
 
-	SDL_Surface *surface = TTF_RenderText_Blended(font, str.c_str(), { 0xFF, 0xFF, 0xFF, 0xFF });
+	SDL_Surface *surface = TTF_RenderText_Blended(font, str.c_str(), color);
 	text.texture = SDL_CreateTextureFromSurface(renderer, surface);
 
 	SDL_FreeSurface(surface);

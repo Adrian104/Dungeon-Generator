@@ -175,6 +175,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\anim.cpp" />
     <ClCompile Include="src\appmgr.cpp" />
     <ClCompile Include="src\dgen.cpp" />
     <ClCompile Include="src\logger.cpp" />
@@ -183,6 +184,7 @@
     <ClCompile Include="src\vport.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\anim.hpp" />
     <ClInclude Include="src\appmgr.hpp" />
     <ClInclude Include="src\btree.hpp" />
     <ClInclude Include="src\dgen.hpp" />
