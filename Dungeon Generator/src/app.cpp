@@ -18,16 +18,20 @@ Application::Application() : quit(false)
 	dInfo.roomsVisibility = gDefRoomsVisibility;
 	dInfo.nodesVisibilityMode = gDefNodesVisibilityMode;
 	dInfo.pathsVisibilityMode = gDefPathsVisibilityMode;
+
+	overlay = new Overlay(*this);
 }
 
 Application::~Application()
 {
+	delete overlay;
 	SDL_DestroyTexture(texture);
 }
 
 void Application::Run()
 {
 	dg.Generate(&gInput, true);
+	overlay -> Render();
 
 	Render();
 	Draw();
@@ -46,6 +50,8 @@ void Application::Draw()
 {
 	SDL_SetRenderTarget(renderer, nullptr);
 	SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+
+	overlay -> Draw();
 	SDL_RenderPresent(renderer);
 }
 

@@ -181,6 +181,7 @@
     <ClCompile Include="src\logger.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\app.cpp" />
+    <ClCompile Include="src\overlay.cpp" />
     <ClCompile Include="src\vport.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -191,6 +192,7 @@
     <ClInclude Include="src\logger.hpp" />
     <ClInclude Include="src\global.hpp" />
     <ClInclude Include="src\app.hpp" />
+    <ClInclude Include="src\overlay.hpp" />
     <ClInclude Include="src\vport.hpp" />
   </ItemGroup>
   <ItemGroup>

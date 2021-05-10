@@ -2,6 +2,7 @@
 #include "global.hpp"
 #include "appmgr.hpp"
 #include "dgen.hpp"
+#include "overlay.hpp"
 
 struct DrawInfo
 {
@@ -19,6 +20,7 @@ struct Application : public AppManager
 	DrawInfo dInfo;
 	Viewport vPort;
 	GenInput gInput;
+	Overlay *overlay;
 	SDL_Texture *texture;
 
 	Application();

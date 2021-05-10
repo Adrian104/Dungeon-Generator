@@ -28,9 +28,19 @@ inline const int gDefPathsVisibilityMode = 2;
 inline const bool gDefSpaceVisibility = true;
 inline const bool gDefRoomsVisibility = true;
 
+inline const int gOverlayXMargin = 6;
+inline const int gOverlayYMargin = 4;
+inline const int gOverlayWidth = 300;
+inline const int gOverlayAnimTime = 350;
+inline const int gOverlayTitleYPos = 50;
+inline const int gOverlayOutlineWidth = 3;
+
 inline const std::pair<std::string, int> gFonts[] =
 {
 	std::pair<std::string, int>("res/Quicksand-Regular.ttf", 16)
 };
 
 inline const int gFontCount = sizeof(gFonts) / sizeof(*gFonts);
+
+inline const int gOverlayXMargin2 = gOverlayXMargin << 1;
+inline const int gOverlayYMargin2 = gOverlayYMargin << 1;
