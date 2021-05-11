@@ -34,6 +34,12 @@ inline const int gOverlayWidth = 300;
 inline const int gOverlayAnimTime = 350;
 inline const int gOverlayTitleYPos = 50;
 inline const int gOverlayOutlineWidth = 3;
+inline const int gOverlayTitleYOffset = 60;
+inline const int gOverlayRefInternalOffset = 22;
+inline const int gOverlayRefExternalOffset = 40;
+
+inline const std::string gNodesVisibilityModeNames[] = { "None", "All", "Used" };
+inline const std::string gPathsVisibilityModeNames[] = { "None", "Links", "Paths" };
 
 inline const std::pair<std::string, int> gFonts[] =
 {

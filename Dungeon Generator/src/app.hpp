@@ -14,7 +14,8 @@ struct DrawInfo
 
 struct Application : public AppManager
 {
-	bool quit;
+	bool quit, plus;
+	float factor, lastFactor;
 
 	Dungeon dg;
 	DrawInfo dInfo;
@@ -31,5 +32,7 @@ struct Application : public AppManager
 	void Update();
 
 	void Render();
-	void ApplyFactor(const float factor);
+	void ApplyFactor();
+	void LoadDefaults();
+	void Generate(const bool newSeed);
 };

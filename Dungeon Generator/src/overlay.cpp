@@ -1,12 +1,16 @@
 #include "overlay.hpp"
 
-Overlay::Overlay(AppManager &appManager) : Animator(std::chrono::milliseconds(gOverlayAnimTime)), mgr(appManager)
+Overlay::Overlay(AppManager &appManager) : Animator(std::chrono::milliseconds(gOverlayAnimTime)), selected(0), refresh(true), mgr(appManager)
 {
 	texture = SDL_CreateTexture(mgr.renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, gOverlayWidth, mgr.windowHeight);
 	SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
 }
 
-Overlay::~Overlay() { SDL_DestroyTexture(texture); }
+Overlay::~Overlay()
+{
+	for (RefInterface *&ref : refs) delete ref;
+	SDL_DestroyTexture(texture);
+}
 
 void Overlay::Draw()
 {
@@ -35,4 +39,79 @@ void Overlay::Render()
 
 	rect = { xCenter - gOverlayXMargin, gOverlayTitleYPos - gOverlayYMargin, text.width + gOverlayXMargin2, text.height + gOverlayYMargin2 };
 	SDL_RenderDrawRect(mgr.renderer, &rect);
+
+	int crrIndex = 0;
+	int crrPos = gOverlayTitleYPos + gOverlayTitleYOffset;
+
+	for (RefInterface *&ref : refs)
+	{
+		const uint8_t colorVal = crrIndex == selected ? 0 : 0xFF;
+
+		mgr.RenderText(ref -> name, 0, TTF_STYLE_BOLD, { colorVal, 0xFF, colorVal, 0xFF });
+		xCenter = XCenter();
+
+		rect = { xCenter, crrPos, text.width, text.height };
+		SDL_RenderCopy(mgr.renderer, text.texture, nullptr, &rect);
+		crrPos += gOverlayRefInternalOffset;
+
+		mgr.RenderText(ref -> Get(), 0, TTF_STYLE_NORMAL);
+		xCenter = XCenter();
+
+		rect = { xCenter, crrPos, text.width, text.height };
+		SDL_RenderCopy(mgr.renderer, text.texture, nullptr, &rect);
+		crrPos += gOverlayRefExternalOffset;
+
+		crrIndex++;
+	}
+
+	refresh = false;
+}
+
+bool Overlay::Update()
+{
+	if (refresh)
+	{
+		Render();
+		if (IsAnimating()) UpdateAnim();
+
+		return true;
+	}
+
+	if (IsAnimating())
+	{
+		UpdateAnim();
+		return true;
+	}
+
+	return false;
+}
+
+void Overlay::MoveSelected(const bool up)
+{
+	if (GetAnimPhase() == 1.0f) return;
+
+	if (up)
+	{
+		selected--;
+		if (selected < 0) selected = refs.size() - 1;
+	}
+	else
+	{
+		selected++;
+		if (selected >= int(refs.size())) selected = 0;
+	}
+
+	refresh = true;
+}
+
+bool Overlay::ChangeSelected(const bool minus)
+{
+	if (GetAnimPhase() == 1.0f) return false;
+	RefInterface *const ref = refs.at(selected);
+
+	if (minus) ref -> Minus();
+	else ref -> Plus();
+
+	refresh = true;
+	return true;
 }

@@ -1,25 +1,23 @@
 #include "app.hpp"
 
-Application::Application() : quit(false)
+Application::Application() : quit(false), plus(false), factor(1), lastFactor(1)
 {
+	LoadDefaults();
 	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, windowWidth, windowHeight);
 
-	gInput.xSize = windowWidth;
-	gInput.ySize = windowHeight;
-
-	gInput.minDepth = gDefMinDepth;
-	gInput.maxDepth = gDefMaxDepth;
-	gInput.maxRoomSize = gDefMaxRoomSize;
-	gInput.minRoomSize = gDefMinRoomSize;
-	gInput.doubleRoomProb = gDefDoubleRoomProb;
-	gInput.spaceSizeRandomness = gDefSpaceSizeRandomness;
-
-	dInfo.spaceVisibility = gDefSpaceVisibility;
-	dInfo.roomsVisibility = gDefRoomsVisibility;
-	dInfo.nodesVisibilityMode = gDefNodesVisibilityMode;
-	dInfo.pathsVisibilityMode = gDefPathsVisibilityMode;
-
 	overlay = new Overlay(*this);
+
+	overlay -> AddRef(FactRef("Size factor", &factor));
+	overlay -> AddRef(ValRef("Minimum depth", &gInput.minDepth));
+	overlay -> AddRef(ValRef("Maximum depth", &gInput.maxDepth));
+	overlay -> AddRef(PercRef("Minimum room size", &gInput.minRoomSize));
+	overlay -> AddRef(PercRef("Maximum room size", &gInput.maxRoomSize));
+	overlay -> AddRef(PercRef("Space randomness", &gInput.spaceSizeRandomness));
+	overlay -> AddRef(PercRef("Double room probability", &gInput.doubleRoomProb));
+	overlay -> AddRef(BoolRef("Space visibility", &dInfo.spaceVisibility));
+	overlay -> AddRef(BoolRef("Rooms visibility", &dInfo.roomsVisibility));
+	overlay -> AddRef(ModeRef<3>("Nodes visibility", &dInfo.nodesVisibilityMode, gNodesVisibilityModeNames));
+	overlay -> AddRef(ModeRef<3>("Paths visibility", &dInfo.pathsVisibilityMode, gPathsVisibilityModeNames));
 }
 
 Application::~Application()
@@ -30,7 +28,7 @@ Application::~Application()
 
 void Application::Run()
 {
-	dg.Generate(&gInput, true);
+	Generate(true);
 	overlay -> Render();
 
 	Render();
@@ -63,38 +61,54 @@ void Application::Update()
 		if (sdlEvent.type == SDL_QUIT) quit = true;
 		else if (sdlEvent.type == SDL_KEYDOWN)
 		{
-			refresh = true;
 			switch (sdlEvent.key.keysym.sym)
 			{
 			case SDLK_ESCAPE:
 				quit = true;
-				refresh = false;
-				break;
-
-			case SDLK_F1:
-				dInfo.spaceVisibility = !dInfo.spaceVisibility;
-				break;
-
-			case SDLK_F2:
-				dInfo.roomsVisibility = !dInfo.roomsVisibility;
-				break;
-
-			case SDLK_F3:
-				dInfo.nodesVisibilityMode++;
-				if (dInfo.nodesVisibilityMode > 2) dInfo.nodesVisibilityMode = 0;
-				break;
-
-			case SDLK_F4:
-				dInfo.pathsVisibilityMode++;
-				if (dInfo.pathsVisibilityMode > 2) dInfo.pathsVisibilityMode = 0;
 				break;
 
 			case SDLK_g:
-				dg.Generate(&gInput, true);
+				refresh = true;
+				Generate(true);
 				break;
 
-			case SDLK_r:
-				dg.Generate(&gInput, false);
+			case SDLK_d:
+				refresh = true;
+				overlay -> refresh = true;
+
+				LoadDefaults();
+				Generate(false);
+				break;
+
+			case SDLK_m:
+				overlay -> ToggleAnim();
+				break;
+
+			case SDLK_UP:
+				overlay -> MoveSelected(true);
+				break;
+
+			case SDLK_DOWN:
+				overlay -> MoveSelected(false);
+				break;
+
+			case SDLK_RETURN:
+			case SDLK_EQUALS:
+				if (overlay -> ChangeSelected(false))
+				{
+					plus = true;
+					refresh = true;
+					Generate(false);
+				}
+				break;
+
+			case SDLK_MINUS:
+				if (overlay -> ChangeSelected(true))
+				{
+					plus = false;
+					refresh = true;
+					Generate(false);
+				}
 				break;
 
 			default:
@@ -104,9 +118,12 @@ void Application::Update()
 		else refresh = vPort.Update(sdlEvent);
 	}
 
-	if (refresh)
+	bool redraw = refresh;
+	redraw |= overlay -> Update();
+
+	if (redraw)
 	{
-		Render();
+		if (refresh) Render();
 		Draw();
 	}
 }
@@ -282,11 +299,52 @@ void Application::Render()
 	#endif
 }
 
-void Application::ApplyFactor(const float factor)
+void Application::ApplyFactor()
 {
 	gInput.xSize = int(windowWidth * factor);
 	gInput.ySize = int(windowHeight * factor);
 
 	vPort.SetDefaultScale(1 / factor);
 	vPort.Reset();
+
+	lastFactor = factor;
+}
+
+void Application::LoadDefaults()
+{
+	gInput.xSize = windowWidth;
+	gInput.ySize = windowHeight;
+	gInput.minDepth = gDefMinDepth;
+	gInput.maxDepth = gDefMaxDepth;
+	gInput.maxRoomSize = gDefMaxRoomSize;
+	gInput.minRoomSize = gDefMinRoomSize;
+	gInput.doubleRoomProb = gDefDoubleRoomProb;
+	gInput.spaceSizeRandomness = gDefSpaceSizeRandomness;
+
+	dInfo.spaceVisibility = gDefSpaceVisibility;
+	dInfo.roomsVisibility = gDefRoomsVisibility;
+	dInfo.nodesVisibilityMode = gDefNodesVisibilityMode;
+	dInfo.pathsVisibilityMode = gDefPathsVisibilityMode;
+
+	factor = 1;
+	ApplyFactor();
+}
+
+void Application::Generate(const bool newSeed)
+{
+	if (lastFactor != factor) ApplyFactor();
+
+	if (gInput.maxDepth < gInput.minDepth)
+	{
+		if (plus) gInput.maxDepth = gInput.minDepth;
+		else gInput.minDepth = gInput.maxDepth;
+	}
+
+	if (gInput.maxRoomSize < gInput.minRoomSize)
+	{
+		if (plus) gInput.maxRoomSize = gInput.minRoomSize;
+		else gInput.minRoomSize = gInput.maxRoomSize;
+	}
+
+	dg.Generate(&gInput, newSeed);
 }
