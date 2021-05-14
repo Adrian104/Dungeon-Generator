@@ -301,10 +301,12 @@ void Application::Render()
 
 void Application::ApplyFactor()
 {
-	gInput.xSize = int(windowWidth * factor);
-	gInput.ySize = int(windowHeight * factor);
+	const float invFactor = 1 / factor;
 
-	vPort.SetDefaultScale(1 / factor);
+	gInput.xSize = int(windowWidth * invFactor);
+	gInput.ySize = int(windowHeight * invFactor);
+
+	vPort.SetDefaultScale(factor);
 	vPort.Reset();
 
 	lastFactor = factor;
@@ -326,7 +328,7 @@ void Application::LoadDefaults()
 	dInfo.nodesVisibilityMode = gDefNodesVisibilityMode;
 	dInfo.pathsVisibilityMode = gDefPathsVisibilityMode;
 
-	factor = 1;
+	factor = gDefFactor;
 	ApplyFactor();
 }
 

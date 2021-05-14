@@ -63,7 +63,7 @@ Dungeon::~Dungeon() { Clear(); }
 
 void Dungeon::MakeRoom()
 {
-	CreateNodes();
+	CreateSpaceNodes();
 
 	Cell &crrCell = tree.Get();
 	SDL_Rect room = crrCell.space;
@@ -132,10 +132,7 @@ void Dungeon::MakeRoom()
 	pNodes.push_front(PNode(iPoint));
 	crrCell.internalNode = &pNodes.front();
 
-	AddEntryNode<Dir::NORTH>(crrCell);
-	AddEntryNode<Dir::EAST>(crrCell);
-	AddEntryNode<Dir::SOUTH>(crrCell);
-	AddEntryNode<Dir::WEST>(crrCell);
+	CreateRoomNodes();
 }
 
 void Dungeon::FindPath()
@@ -303,34 +300,6 @@ void Dungeon::LinkNodes()
 	}
 }
 
-void Dungeon::CreateNodes()
-{
-	SDL_Rect &space = tree.Get().space;
-
-	const int xMin = space.x - 3;
-	const int yMin = space.y - 3;
-
-	const int xMax = space.x + space.w + 2;
-	const int yMax = space.y + space.h + 2;
-
-	PNode &NW = AddNode(xMin, yMin);
-	PNode &NE = AddNode(xMax, yMin);
-	PNode &SW = AddNode(xMin, yMax);
-	PNode &SE = AddNode(xMax, yMax);
-
-	NW.links[Dir::EAST] = nullptr;
-	NW.links[Dir::SOUTH] = nullptr;
-
-	NE.links[Dir::WEST] = nullptr;
-	NE.links[Dir::SOUTH] = nullptr;
-
-	SW.links[Dir::NORTH] = nullptr;
-	SW.links[Dir::EAST] = nullptr;
-
-	SE.links[Dir::NORTH] = nullptr;
-	SE.links[Dir::WEST] = nullptr;
-}
-
 bool Dungeon::Divide(int left)
 {
 	if (left <= 0)
@@ -420,17 +389,17 @@ void Dungeon::Prepare(const bool newSeed)
 
 bool Dungeon::RandomBool()
 {
-	const bool ret = cache.randValue & 1;
+	const bool ret = randValue & 1;
 
 	if (bValues > 1)
 	{
 		bValues--;
-		cache.randValue >>= 1;
+		randValue >>= 1;
 	}
 	else
 	{
 		bValues = 32;
-		cache.randValue = mtEngine();
+		randValue = mtEngine();
 	}
 
 	return ret;
@@ -450,101 +419,115 @@ PNode &Dungeon::AddNode(int x, int y)
 	return node;
 }
 
-template <uint8_t dir>
-void Dungeon::AddEntryNode(Cell &cell)
+void Dungeon::CreateRoomNodes()
 {
+	Cell &cell = tree.Get();
 	PNode &iNode = *cell.internalNode;
 	const SDL_Point &iPoint = iNode.pos;
 
-	SDL_Rect *room = &cell.roomList -> room;
-	if (Room *nxRoom = cell.roomList -> nextRoom; nxRoom != nullptr)
+	int edges[4] = { std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() };
+	for (Room *crrRoom = cell.roomList; crrRoom != nullptr; crrRoom = crrRoom -> nextRoom)
 	{
-		SDL_Rect *room2 = &nxRoom -> room;
+		const SDL_Rect &rect = crrRoom -> room;
 
-		if (!SDL_PointInRect(&iNode.pos, room2)) goto skip;
-		if (!SDL_PointInRect(&iNode.pos, room)) { room = room2; goto skip; }
+		const int xPlusW = rect.x + rect.w;
+		const int yPlusH = rect.y + rect.h;
 
-		if constexpr (dir == Dir::NORTH)
-			{ if (room -> y > room2 -> y) room = room2; }
-		else if constexpr (dir == Dir::EAST)
-			{ if (room -> x + room -> w < room2 -> x + room2 -> w) room = room2; }
-		else if constexpr (dir == Dir::SOUTH)
-			{ if (room -> y + room -> h < room2 -> y + room2 -> h) room = room2; }
-		else
-			{ if (room -> x > room2 -> x) room = room2; }
-	}
+		if (iPoint.x >= rect.x && iPoint.x < xPlusW)
+		{
+			if (edges[Dir::NORTH] > rect.y) edges[Dir::NORTH] = rect.y;
+			if (edges[Dir::SOUTH] < yPlusH) edges[Dir::SOUTH] = yPlusH;
+		}
 
-	skip:
-	SDL_Point ePoint = iPoint;
-	SDL_Point bPoint;
-
-	if constexpr (dir == Dir::NORTH)
-	{
-		ePoint.y = room -> y;
-		bPoint = { ePoint.x, cell.space.y - 3 };
-	}
-	else if constexpr (dir == Dir::EAST)
-	{
-		ePoint.x = room -> x + room -> w - 1;
-		bPoint = { cell.space.x + cell.space.w + 2, ePoint.y };
-	}
-	else if constexpr (dir == Dir::SOUTH)
-	{
-		ePoint.y = room -> y + room -> h - 1;
-		bPoint = { ePoint.x, cell.space.y + cell.space.h + 2 };
-	}
-	else
-	{
-		ePoint.x = room -> x;
-		bPoint = { cell.space.x - 3, ePoint.y };
+		if (iPoint.y >= rect.y && iPoint.y < yPlusH)
+		{
+			if (edges[Dir::WEST] > rect.x) edges[Dir::WEST] = rect.x;
+			if (edges[Dir::EAST] < xPlusW) edges[Dir::EAST] = xPlusW;
+		}
 	}
 
-	pNodes.push_front(PNode(ePoint));
-	PNode &eNode = pNodes.front();
-	PNode &bNode = AddNode(bPoint.x, bPoint.y);
+	auto FastAddNode = [this](int x, int y) -> PNode*
+	{
+		pNodes.push_front(PNode({ x, y }));
+		return &pNodes.front();
+	};
 
-	if constexpr (dir == Dir::NORTH)
+	PNode *const eNodes[4] =
 	{
-		iNode.links[Dir::NORTH] = &eNode;
-		eNode.links[Dir::NORTH] = &bNode;
-		eNode.links[Dir::SOUTH] = &iNode;
-		bNode.links[Dir::SOUTH] = &eNode;
-	}
-	else if constexpr (dir == Dir::EAST)
-	{
-		iNode.links[Dir::EAST] = &eNode;
-		eNode.links[Dir::EAST] = &bNode;
-		eNode.links[Dir::WEST] = &iNode;
-		bNode.links[Dir::WEST] = &eNode;
-	}
-	else if constexpr (dir == Dir::SOUTH)
-	{
-		iNode.links[Dir::SOUTH] = &eNode;
-		eNode.links[Dir::SOUTH] = &bNode;
-		eNode.links[Dir::NORTH] = &iNode;
-		bNode.links[Dir::NORTH] = &eNode;
-	}
-	else
-	{
-		iNode.links[Dir::WEST] = &eNode;
-		eNode.links[Dir::WEST] = &bNode;
-		eNode.links[Dir::EAST] = &iNode;
-		bNode.links[Dir::EAST] = &eNode;
-	}
+		FastAddNode(iPoint.x, edges[0]),
+		FastAddNode(edges[1] - 1, iPoint.y),
+		FastAddNode(iPoint.x, edges[2] - 1),
+		FastAddNode(edges[3], iPoint.y)
+	};
 
-	if constexpr (dir == Dir::NORTH || dir == Dir::SOUTH)
+	PNode *const bNodes[4] =
 	{
-		bNode.links[Dir::EAST] = nullptr;
-		bNode.links[Dir::WEST] = nullptr;
-	}
-	else
-	{
-		bNode.links[Dir::NORTH] = nullptr;
-		bNode.links[Dir::SOUTH] = nullptr;
-	}
+		&AddNode(iPoint.x, cell.space.y - 3),
+		&AddNode(cell.space.x + cell.space.w + 2, iPoint.y),
+		&AddNode(iPoint.x, cell.space.y + cell.space.h + 2),
+		&AddNode(cell.space.x - 3, iPoint.y)
+	};
 
-	eNode.path |= PNode::E_NODE;
 	iNode.path |= PNode::I_NODE;
+	iNode.links[Dir::NORTH] = eNodes[Dir::NORTH];
+	iNode.links[Dir::EAST] = eNodes[Dir::EAST];
+	iNode.links[Dir::SOUTH] = eNodes[Dir::SOUTH];
+	iNode.links[Dir::WEST] = eNodes[Dir::WEST];
+
+	eNodes[Dir::NORTH] -> path |= PNode::E_NODE;
+	eNodes[Dir::NORTH] -> links[Dir::SOUTH] = &iNode;
+	eNodes[Dir::NORTH] -> links[Dir::NORTH] = bNodes[Dir::NORTH];
+	eNodes[Dir::EAST] -> path |= PNode::E_NODE;
+	eNodes[Dir::EAST] -> links[Dir::WEST] = &iNode;
+	eNodes[Dir::EAST] -> links[Dir::EAST] = bNodes[Dir::EAST];
+	eNodes[Dir::SOUTH] -> path |= PNode::E_NODE;
+	eNodes[Dir::SOUTH] -> links[Dir::NORTH] = &iNode;
+	eNodes[Dir::SOUTH] -> links[Dir::SOUTH] = bNodes[Dir::SOUTH];
+	eNodes[Dir::WEST] -> path |= PNode::E_NODE;
+	eNodes[Dir::WEST] -> links[Dir::EAST] = &iNode;
+	eNodes[Dir::WEST] -> links[Dir::WEST] = bNodes[Dir::WEST];
+
+	bNodes[Dir::NORTH] -> links[Dir::SOUTH] = eNodes[Dir::NORTH];
+	bNodes[Dir::EAST] -> links[Dir::WEST] = eNodes[Dir::EAST];
+	bNodes[Dir::SOUTH] -> links[Dir::NORTH] = eNodes[Dir::SOUTH];
+	bNodes[Dir::WEST] -> links[Dir::EAST] = eNodes[Dir::WEST];
+
+	bNodes[Dir::NORTH] -> links[Dir::EAST] = nullptr;
+	bNodes[Dir::NORTH] -> links[Dir::WEST] = nullptr;
+	bNodes[Dir::EAST] -> links[Dir::NORTH] = nullptr;
+	bNodes[Dir::EAST] -> links[Dir::SOUTH] = nullptr;
+	bNodes[Dir::SOUTH] -> links[Dir::EAST] = nullptr;
+	bNodes[Dir::SOUTH] -> links[Dir::WEST] = nullptr;
+	bNodes[Dir::WEST] -> links[Dir::NORTH] = nullptr;
+	bNodes[Dir::WEST] -> links[Dir::SOUTH] = nullptr;
+}
+
+void Dungeon::CreateSpaceNodes()
+{
+	SDL_Rect &space = tree.Get().space;
+
+	const int xMin = space.x - 3;
+	const int yMin = space.y - 3;
+
+	const int xMax = space.x + space.w + 2;
+	const int yMax = space.y + space.h + 2;
+
+	PNode &NW = AddNode(xMin, yMin);
+	PNode &NE = AddNode(xMax, yMin);
+	PNode &SW = AddNode(xMin, yMax);
+	PNode &SE = AddNode(xMax, yMax);
+
+	NW.links[Dir::EAST] = nullptr;
+	NW.links[Dir::SOUTH] = nullptr;
+
+	NE.links[Dir::WEST] = nullptr;
+	NE.links[Dir::SOUTH] = nullptr;
+
+	SW.links[Dir::NORTH] = nullptr;
+	SW.links[Dir::EAST] = nullptr;
+
+	SE.links[Dir::NORTH] = nullptr;
+	SE.links[Dir::WEST] = nullptr;
 }
 
 void Dungeon::Clear()

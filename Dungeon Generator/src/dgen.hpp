@@ -81,7 +81,6 @@ struct Dungeon
 	struct Cache
 	{
 		int deltaDepth;
-		uint32_t randValue;
 
 		std::uniform_int_distribution<int> uni0to99;
 		std::uniform_int_distribution<int> uniDepth;
@@ -96,6 +95,7 @@ struct Dungeon
 
 	uint32_t seed;
 	uint32_t bValues;
+	uint32_t randValue;
 
 	std::mt19937 mtEngine;
 	std::random_device rd;
@@ -110,15 +110,14 @@ struct Dungeon
 	void MakeRoom();
 	void FindPath();
 	void LinkNodes();
-	void CreateNodes();
 	bool Divide(int left);
 	void Prepare(const bool newSeed);
 
 	bool RandomBool();
 	PNode &AddNode(int x, int y);
 
-	template <uint8_t dir>
-	void AddEntryNode(Cell &cell);
+	void CreateRoomNodes();
+	void CreateSpaceNodes();
 
 	Dungeon();
 	~Dungeon();

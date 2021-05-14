@@ -11,6 +11,7 @@
 	#define RANDOM_SEED
 #endif
 
+inline const float gDefFactor = 1;
 inline const float gDefScaleStep = 0.25f;
 
 inline const int gMinRoomWH = 4;
