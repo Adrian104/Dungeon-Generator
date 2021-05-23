@@ -7,45 +7,29 @@
 #include "vport.hpp"
 #include "btree.hpp"
 
-enum Dir : uint8_t { NORTH, EAST, SOUTH, WEST, INVALID };
-
-inline SDL_FPoint ToFPoint(const SDL_Point &point) { return { float(point.x), float(point.y) }; }
-inline SDL_FRect ToFRect(const SDL_Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
-
-struct Room;
 struct Cell;
-struct PNode;
+struct Node;
 struct Dungeon;
 struct GenInput;
 
 typedef BinTree<Cell> Tree;
-
-struct Room
-{
-	SDL_Rect room;
-	Room *nextRoom;
-
-	Room() : room{}, nextRoom(nullptr) {}
-	Room(SDL_Rect &rect) : room(rect), nextRoom(nullptr) {}
-	~Room() { delete nextRoom; }
-};
+enum Dir : uint8_t { NORTH, EAST, SOUTH, WEST, INVALID };
 
 struct Cell
 {
 	SDL_Rect space;
-	Room *roomList;
-	PNode *internalNode;
+	Node *internalNode;
+	std::forward_list<SDL_Rect> roomList;
 
-	Cell() : space{}, roomList(nullptr), internalNode(nullptr) {}
-	~Cell() { delete roomList; }
+	Cell() : space{}, internalNode(nullptr) {}
 };
 
-struct PNode
+struct Node
 {
-	static PNode null;
-	static PNode *stop;
+	static Node null;
+	static Node *stop;
 
-	static std::vector<std::pair<int, PNode*>> *heap;
+	static std::vector<std::pair<int, Node*>> *heap;
 
 	enum : uint8_t { UNVISITED, OPEN, CLOSED };
 	enum : uint8_t { E_NODE = 1 << 4, I_NODE = 1 << 5 };
@@ -57,14 +41,14 @@ struct PNode
 	uint8_t mode;
 	uint8_t path;
 
-	PNode *links[4];
-	PNode *prevNode;
+	Node *links[4];
+	Node *prevNode;
 	const SDL_Point pos;
 
-	PNode(const SDL_Point &pPos) : gCost(0), hCost(0), fCost(0), mode(UNVISITED), path(0), links{ &null, &null, &null, &null }, prevNode(nullptr), pos(pPos) {}
+	Node(const int x, const int y) : gCost(0), hCost(0), fCost(0), mode(UNVISITED), path(0), links{ &null, &null, &null, &null }, prevNode(nullptr), pos{ x, y } {}
 	
 	void Reset();
-	void Open(PNode *prev);
+	void Open(Node *prev);
 };
 
 struct GenInput
@@ -100,12 +84,12 @@ struct Dungeon
 	std::mt19937 mtEngine;
 	std::random_device rd;
 
-	std::forward_list<PNode> pNodes;
-	std::map<std::pair<int, int>, PNode*> pXNodes;
-	std::map<std::pair<int, int>, PNode*> pYNodes;
+	std::forward_list<Node> nodes;
+	std::map<std::pair<int, int>, Node*> posXNodes;
+	std::map<std::pair<int, int>, Node*> posYNodes;
 
-	std::vector<PNode*> usedNodes;
-	std::vector<std::pair<int, PNode*>> openNodes;
+	std::vector<Node*> usedNodes;
+	std::vector<std::pair<int, Node*>> openNodes;
 	
 	void MakeRoom();
 	void FindPath();
@@ -114,10 +98,9 @@ struct Dungeon
 	void Prepare(const bool newSeed);
 
 	bool RandomBool();
-	PNode &AddNode(int x, int y);
-
 	void CreateRoomNodes();
 	void CreateSpaceNodes();
+	Node &AddRegNode(int x, int y);
 
 	Dungeon();
 	~Dungeon();

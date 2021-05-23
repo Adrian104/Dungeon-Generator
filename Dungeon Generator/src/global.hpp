@@ -26,7 +26,7 @@ inline const int gDefSpaceSizeRandomness = 35;
 
 inline const int gDefNodesVisibilityMode = 0;
 inline const int gDefPathsVisibilityMode = 2;
-inline const bool gDefSpaceVisibility = true;
+inline const bool gDefSpaceVisibility = false;
 inline const bool gDefRoomsVisibility = true;
 
 inline const int gOverlayXMargin = 6;

@@ -1,5 +1,8 @@
 #include "app.hpp"
 
+inline SDL_FPoint ToFPoint(const SDL_Point &point) { return { float(point.x), float(point.y) }; }
+inline SDL_FRect ToFRect(const SDL_Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
+
 Application::Application() : quit(false), plus(false), factor(1), lastFactor(1)
 {
 	LoadDefaults();
@@ -130,69 +133,59 @@ void Application::Update()
 
 void Application::Render()
 {
-	ExeHelper<Cell> helper(false, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); });
+	SDL_SetRenderTarget(renderer, texture);
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
+	SDL_RenderClear(renderer);
 
-	auto DrawSpace = [](Application *mgr) -> void
+	if (dInfo.spaceVisibility)
 	{
-		SDL_FRect rect = ToFRect(mgr -> dg.tree.Get().space);
-		mgr -> vPort.RectToScreen(rect, rect);
-		SDL_RenderDrawRectF(mgr -> renderer, &rect);
-	};
-
-	auto DrawRooms = [](Application *mgr) -> void
-	{
-		for (Room *room = mgr -> dg.tree.Get().roomList; room != nullptr; room = room -> nextRoom)
+		auto DrawSpace = [](Application *mgr) -> void
 		{
-			SDL_FRect rect = ToFRect(room -> room);
+			SDL_FRect rect = ToFRect(mgr -> dg.tree.Get().space);
 			mgr -> vPort.RectToScreen(rect, rect);
 			SDL_RenderDrawRectF(mgr -> renderer, &rect);
-		}
-	};
+		};
 
-	auto DrawNodes = [](Application *mgr) -> void
+		SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
+		dg.tree.Execute(ExeHelper<Cell>(false, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); }), &DrawSpace, this);
+	}
+
+	if (dInfo.roomsVisibility)
 	{
-		for (PNode &node : mgr -> dg.pNodes)
+		auto DrawRooms = [](Application *mgr) -> void
 		{
-			SDL_FPoint point = ToFPoint(node.pos);
-			SDL_FRect rect = { point.x, point.y, 1, 1 };
+			for (SDL_Rect &room : mgr -> dg.tree.Get().roomList)
+			{
+				SDL_FRect rect = ToFRect(room);
+				mgr -> vPort.RectToScreen(rect, rect);
+				SDL_RenderDrawRectF(mgr -> renderer, &rect);
+			}
+		};
 
-			mgr -> vPort.RectToScreen(rect, rect);
-			SDL_RenderFillRectF(mgr -> renderer, &rect);
-		}
-	};
+		SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
+		dg.tree.Execute(ExeHelper<Cell>(false, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); }), &DrawRooms, this);
+	}
 
-	auto DrawUsedNodes = [](Application *mgr) -> void
+	if (dInfo.pathsVisibilityMode == 1)
 	{
-		for (PNode &node : mgr -> dg.pNodes)
-		{
-			if ((node.path & 0b1111) == 0 || (node.path & PNode::I_NODE)) continue;
-
-			SDL_FPoint point = ToFPoint(node.pos);
-			SDL_FRect rect = { point.x, point.y, 1, 1 };
-
-			mgr -> vPort.RectToScreen(rect, rect);
-			SDL_RenderFillRectF(mgr -> renderer, &rect);
-		}
-	};
-
-	auto DrawLinks = [](Application *mgr) -> void
-	{
-		for (PNode &node : mgr -> dg.pNodes)
+		#ifdef RANDOM_COLORS
+		const int offset = rand() & 0b10;
+		#else
+		SDL_SetRenderDrawColor(renderer, 0x55, 0x55, 0x55, 0xFF);
+		#endif
+		
+		for (Node &node : dg.nodes)
 		{
 			#ifdef RANDOM_COLORS
 			int r, g, b;
+			do { r = 255 * (rand() & 0x1); g = 255 * (rand() & 0x1); b = 255 * (rand() & 0x1); }
+			while (r == 0 && g == 0 && b == 0);
 
-			do
-			{
-				r = 255 * (rand() & 0x1);
-				g = 255 * (rand() & 0x1);
-				b = 255 * (rand() & 0x1);
-			} while (r == 0 && g == 0 && b == 0);
-
-			SDL_SetRenderDrawColor(mgr -> renderer, r, g, b, 0xFF);
-			#endif
-
+			SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
+			for (int i = offset; i < offset + 2; i++)
+			#else
 			for (int i = 0; i < 2; i++)
+			#endif
 			{
 				if (node.links[i] == nullptr) continue;
 
@@ -202,19 +195,19 @@ void Application::Render()
 				p1.x += 0.5f; p1.y += 0.5f;
 				p2.x += 0.5f; p2.y += 0.5f;
 
-				mgr -> vPort.ToScreen(p1.x, p1.y, p1.x, p1.y);
-				mgr -> vPort.ToScreen(p2.x, p2.y, p2.x, p2.y);
+				vPort.ToScreen(p1.x, p1.y, p1.x, p1.y);
+				vPort.ToScreen(p2.x, p2.y, p2.x, p2.y);
 
-				SDL_RenderDrawLineF(mgr -> renderer, p1.x, p1.y, p2.x, p2.y);
+				SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
 			}
 		}
-	};
-
-	auto DrawPaths = [](Application *mgr) -> void
+	}
+	else if (dInfo.pathsVisibilityMode == 2)
 	{
-		for (PNode &node : mgr -> dg.pNodes)
+		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+		for (Node &node : dg.nodes)
 		{
-			if (node.path & (PNode::E_NODE | PNode::I_NODE)) continue;
+			if (node.path & (Node::E_NODE | Node::I_NODE)) continue;
 			for (int i = 0; i < 4; i++)
 			{
 				if (!(node.path & (1 << i))) continue;
@@ -225,50 +218,39 @@ void Application::Render()
 				p1.x += 0.5f; p1.y += 0.5f;
 				p2.x += 0.5f; p2.y += 0.5f;
 
-				mgr -> vPort.ToScreen(p1.x, p1.y, p1.x, p1.y);
-				mgr -> vPort.ToScreen(p2.x, p2.y, p2.x, p2.y);
+				vPort.ToScreen(p1.x, p1.y, p1.x, p1.y);
+				vPort.ToScreen(p2.x, p2.y, p2.x, p2.y);
 
-				SDL_RenderDrawLineF(mgr -> renderer, p1.x, p1.y, p2.x, p2.y);
+				SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
 			}
 		}
-	};
-
-	SDL_SetRenderTarget(renderer, texture);
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
-	SDL_RenderClear(renderer);
-
-	if (dInfo.spaceVisibility)
-	{
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
-		dg.tree.Execute(helper, &DrawSpace, this);
-	}
-
-	if (dInfo.roomsVisibility)
-	{
-		SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
-		dg.tree.Execute(helper, &DrawRooms, this);
-	}
-
-	if (dInfo.pathsVisibilityMode == 1)
-	{
-		SDL_SetRenderDrawColor(renderer, 0x55, 0x55, 0x55, 0xFF);
-		DrawLinks(this);
-	}
-	else if (dInfo.pathsVisibilityMode == 2)
-	{
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-		DrawPaths(this);
 	}
 
 	if (dInfo.nodesVisibilityMode == 1)
 	{
 		SDL_SetRenderDrawColor(renderer, 0, 0xFF, 0, 0xFF);
-		DrawNodes(this);
+		for (Node &node : dg.nodes)
+		{
+			SDL_FPoint point = ToFPoint(node.pos);
+			SDL_FRect rect = { point.x, point.y, 1, 1 };
+
+			vPort.RectToScreen(rect, rect);
+			SDL_RenderFillRectF(renderer, &rect);
+		}
 	}
 	else if (dInfo.nodesVisibilityMode == 2)
 	{
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xBB, 0, 0xFF);
-		DrawUsedNodes(this);
+		for (Node &node : dg.nodes)
+		{
+			if ((node.path & 0b1111) == 0 || (node.path & Node::I_NODE)) continue;
+
+			SDL_FPoint point = ToFPoint(node.pos);
+			SDL_FRect rect = { point.x, point.y, 1, 1 };
+
+			vPort.RectToScreen(rect, rect);
+			SDL_RenderFillRectF(renderer, &rect);
+		}
 	}
 
 	#ifdef SHOW_GRID
