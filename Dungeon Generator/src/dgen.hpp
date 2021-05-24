@@ -62,27 +62,23 @@ struct GenInput
 
 struct Dungeon
 {
-	struct Cache
+	struct Uniforms
 	{
-		int deltaDepth;
-
 		std::uniform_int_distribution<int> uni0to99;
 		std::uniform_int_distribution<int> uniDepth;
-		std::uniform_real_distribution<float> uni0to1f;
 		std::uniform_real_distribution<float> uniRoom;
 		std::uniform_real_distribution<float> uniSpace;
+		std::uniform_real_distribution<float> uni0to1f;
 	};
 
+	int deltaDepth;
+
 	Tree tree;
-	Cache cache;
 	GenInput *gInput;
+	Uniforms uniforms;
 
-	uint32_t seed;
 	uint32_t bValues;
-	uint32_t randValue;
-
 	std::mt19937 mtEngine;
-	std::random_device rd;
 
 	std::forward_list<Node> nodes;
 	std::map<std::pair<int, int>, Node*> posXNodes;
@@ -91,11 +87,11 @@ struct Dungeon
 	std::vector<Node*> usedNodes;
 	std::vector<std::pair<int, Node*>> openNodes;
 	
+	void Prepare();
 	void MakeRoom();
 	void FindPath();
 	void LinkNodes();
 	bool Divide(int left);
-	void Prepare(const bool newSeed);
 
 	bool RandomBool();
 	void CreateRoomNodes();
@@ -106,5 +102,5 @@ struct Dungeon
 	~Dungeon();
 
 	void Clear();
-	void Generate(GenInput *genInput, const bool newSeed = true);
+	void Generate(GenInput *genInput, const uint32_t seed);
 };

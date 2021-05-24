@@ -95,6 +95,7 @@ void Application::Update()
 				overlay -> MoveSelected(false);
 				break;
 
+			case SDLK_RIGHT:
 			case SDLK_RETURN:
 			case SDLK_EQUALS:
 				if (overlay -> ChangeSelected(false))
@@ -105,6 +106,7 @@ void Application::Update()
 				}
 				break;
 
+			case SDLK_LEFT:
 			case SDLK_MINUS:
 				if (overlay -> ChangeSelected(true))
 				{
@@ -330,5 +332,16 @@ void Application::Generate(const bool newSeed)
 		else gInput.minRoomSize = gInput.maxRoomSize;
 	}
 
-	dg.Generate(&gInput, newSeed);
+	static uint32_t seed = 0;
+
+	#ifdef RANDOM_SEED
+	static std::random_device rd;
+	if (newSeed) seed = rd();
+	#endif
+
+	#ifdef INCREMENTAL_SEED
+	if (newSeed) seed++;
+	#endif
+
+	dg.Generate(&gInput, seed);
 }

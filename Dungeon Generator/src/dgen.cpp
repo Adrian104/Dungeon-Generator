@@ -58,8 +58,28 @@ void Node::Open(Node *prev)
 	}
 }
 
-Dungeon::Dungeon() : cache{}, gInput(nullptr), seed(0), bValues(0) { LOGGER_LOG_HEADER("Dungeon Generator"); }
+Dungeon::Dungeon() : deltaDepth(0), gInput(nullptr), uniforms{}, bValues(0) { LOGGER_LOG_HEADER("Dungeon Generator"); }
 Dungeon::~Dungeon() { Clear(); }
+
+void Dungeon::Prepare()
+{
+	Clear();
+
+	Node::heap = &openNodes;
+	deltaDepth = gInput -> maxDepth - gInput -> minDepth;
+
+	tree.Get().space.w = gInput -> xSize - 3;
+	tree.Get().space.h = gInput -> ySize - 3;
+
+	uniforms.uni0to99 = std::uniform_int_distribution<int>(0, 99);
+	uniforms.uni0to1f = std::uniform_real_distribution<float>(0, 1);
+	uniforms.uniDepth = std::uniform_int_distribution<int>(0, deltaDepth);
+	uniforms.uniRoom = std::uniform_real_distribution<float>(1.0f - gInput -> maxRoomSize / 100.0f, 1.0f - gInput -> minRoomSize / 100.0f);
+	uniforms.uniSpace = std::uniform_real_distribution<float>((gInput -> spaceSizeRandomness >> 1) / -100.0f, (gInput -> spaceSizeRandomness >> 1) / 100.0f);
+
+	bValues = 0;
+	RandomBool();
+}
 
 void Dungeon::MakeRoom()
 {
@@ -69,10 +89,10 @@ void Dungeon::MakeRoom()
 	SDL_Rect room = crrCell.space;
 	SDL_Rect room2;
 
-	bool doubleRoom = cache.uni0to99(mtEngine) < gInput -> doubleRoomProb;
+	bool doubleRoom = uniforms.uni0to99(mtEngine) < gInput -> doubleRoomProb;
 
-	int dX = int(room.w * cache.uniRoom(mtEngine));
-	int dY = int(room.h * cache.uniRoom(mtEngine));
+	int dX = int(room.w * uniforms.uniRoom(mtEngine));
+	int dY = int(room.h * uniforms.uniRoom(mtEngine));
 
 	room.w -= dX;
 	room.h -= dY;
@@ -85,7 +105,7 @@ void Dungeon::MakeRoom()
 
 		if (dX > dY)
 		{
-			const int extra = int(dX * cache.uni0to1f(mtEngine));
+			const int extra = int(dX * uniforms.uni0to1f(mtEngine));
 
 			room2.h >>= 1;
 			room2.w += extra;
@@ -95,7 +115,7 @@ void Dungeon::MakeRoom()
 		}
 		else
 		{
-			const int extra = int(dY * cache.uni0to1f(mtEngine));
+			const int extra = int(dY * uniforms.uni0to1f(mtEngine));
 
 			room2.w >>= 1;
 			room2.h += extra;
@@ -107,8 +127,8 @@ void Dungeon::MakeRoom()
 		doubleRoom = room2.w >= gMinRoomWH && room2.h >= gMinRoomWH;
 	}
 
-	const int xOffset = int(dX * cache.uni0to1f(mtEngine));
-	const int yOffset = int(dY * cache.uni0to1f(mtEngine));
+	const int xOffset = int(dX * uniforms.uni0to1f(mtEngine));
+	const int yOffset = int(dY * uniforms.uni0to1f(mtEngine));
 
 	room.x += xOffset;
 	room.y += yOffset;
@@ -294,19 +314,19 @@ void Dungeon::LinkNodes()
 
 bool Dungeon::Divide(int left)
 {
-	if (left <= 0)
+	if (left <= 0) goto nomore;
+	if (left <= deltaDepth)
 	{
-		nomore:
-		SDL_Rect &space = tree.Get().space;
+		if (left <= uniforms.uniDepth(mtEngine))
+		{
+			nomore:
+			SDL_Rect &space = tree.Get().space;
 
-		space.x += 4; space.y += 4;
-		space.w -= 5; space.h -= 5;
+			space.x += 4; space.y += 4;
+			space.w -= 5; space.h -= 5;
 
-		return space.w < gMinSpaceWH || space.h < gMinSpaceWH;
-	}
-	else if (left <= cache.deltaDepth)
-	{
-		if (cache.uniDepth(mtEngine) >= left) goto nomore;
+			return space.w < gMinSpaceWH || space.h < gMinSpaceWH;
+		}
 	}
 
 	left--;
@@ -321,7 +341,7 @@ bool Dungeon::Divide(int left)
 	else { xy = &SDL_Rect::x; wh = &SDL_Rect::w; }
 
 	const int totalSize = crrSpace ->* wh;
-	const int randSize = (totalSize >> 1) + int(totalSize * cache.uniSpace(mtEngine));
+	const int randSize = (totalSize >> 1) + int(totalSize * uniforms.uniSpace(mtEngine));
 
 	tree.AddNodes(tree.Get());
 	tree.GoLeft();
@@ -350,37 +370,9 @@ bool Dungeon::Divide(int left)
 	return false;
 }
 
-void Dungeon::Prepare(const bool newSeed)
-{
-	Node::heap = &openNodes;
-
-	#ifdef RANDOM_SEED
-	if (newSeed) seed = rd();
-	#endif
-
-	#ifdef INCREMENTAL_SEED
-	if (newSeed) seed++;
-	#endif
-
-	mtEngine.seed(seed);
-
-	tree.Get().space.w = gInput -> xSize - 3;
-	tree.Get().space.h = gInput -> ySize - 3;
-
-	cache.deltaDepth = gInput -> maxDepth - gInput -> minDepth;
-	cache.uni0to99 = std::uniform_int_distribution<int>(0, 99);
-	cache.uniDepth = std::uniform_int_distribution<int>(0, cache.deltaDepth);
-
-	cache.uni0to1f = std::uniform_real_distribution<float>(0, 1);
-	cache.uniRoom = std::uniform_real_distribution<float>(1.0f - gInput -> maxRoomSize / 100.0f, 1.0f - gInput -> minRoomSize / 100.0f);
-	cache.uniSpace = std::uniform_real_distribution<float>((gInput -> spaceSizeRandomness >> 1) / -100.0f, (gInput -> spaceSizeRandomness >> 1) / 100.0f);
-	
-	bValues = 0;
-	RandomBool();
-}
-
 bool Dungeon::RandomBool()
 {
+	static uint32_t randValue = 0;
 	const bool ret = randValue & 1;
 
 	if (bValues > 1)
@@ -525,31 +517,28 @@ void Dungeon::Clear()
 	tree.Clear();
 }
 
-void Dungeon::Generate(GenInput *genInput, const bool newSeed)
+void Dungeon::Generate(GenInput *genInput, const uint32_t seed)
 {
 	LOGGER_LOG("Generation started");
 	LOGGER_LOG_ENDL();
 
+	mtEngine.seed(seed);
 	gInput = genInput;
-	ExeHelper<Cell> helper(true, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); });
 
 	LOGGER_LOG_TIME("Preparing");
-	Clear();
-	Prepare(newSeed);
+	Prepare();
 
 	LOGGER_LOG_TIME("Partitioning space");
 	Divide(gInput -> maxDepth);
 
 	LOGGER_LOG_TIME("Generating rooms");
-	tree.ExecuteObj(helper, &Dungeon::MakeRoom, this);
+	tree.ExecuteObj(ExeHelper<Cell>(true, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); }), &Dungeon::MakeRoom, this);
 
 	LOGGER_LOG_TIME("Linking nodes");
 	LinkNodes();
 
-	helper.chkFunc = [](const ExeInfo<Cell> &info) -> bool { return !info.node.IsLast(); };
-
 	LOGGER_LOG_TIME("Finding paths");
-	tree.ExecuteObj(helper, &Dungeon::FindPath, this);
+	tree.ExecuteObj(ExeHelper<Cell>(true, 0, [](const ExeInfo<Cell> &info) -> bool { return !info.node.IsLast(); }), &Dungeon::FindPath, this);
 
 	LOGGER_LOG("Done!");
 	LOGGER_LOG_ENDL();
