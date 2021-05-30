@@ -58,14 +58,14 @@ void Node::Open(Node *prev)
 	}
 }
 
-Dungeon::Dungeon() : deltaDepth(0), gInput(nullptr), uniforms{}, bValues(0) { LOGGER_LOG_HEADER("Dungeon Generator"); }
+Dungeon::Dungeon() : roomCount(0), deltaDepth(0), uniforms{}, gInput(nullptr), gOutput(nullptr), bValues(0) { LOGGER_LOG_HEADER("Dungeon Generator"); }
 Dungeon::~Dungeon() { Clear(); }
 
 void Dungeon::Prepare()
 {
 	Clear();
 
-	Node::heap = &openNodes;
+	roomCount = 0;
 	deltaDepth = gInput -> maxDepth - gInput -> minDepth;
 
 	tree.Get().space.w = gInput -> xSize - 3;
@@ -79,6 +79,8 @@ void Dungeon::Prepare()
 
 	bValues = 0;
 	RandomBool();
+
+	Node::heap = &openNodes;
 }
 
 void Dungeon::MakeRoom()
@@ -134,12 +136,16 @@ void Dungeon::MakeRoom()
 	room.y += yOffset;
 
 	SDL_Rect *selRoom = &crrCell.roomList.emplace_front(room);
+	roomCount++;
+
 	if (doubleRoom)
 	{
 		room2.x += xOffset;
 		room2.y += yOffset;
 
 		crrCell.roomList.emplace_front(room2);
+		roomCount++;
+
 		if (RandomBool()) selRoom = &crrCell.roomList.front();
 	}
 
@@ -370,6 +376,46 @@ bool Dungeon::Divide(int left)
 	return false;
 }
 
+void Dungeon::GenerateOutput()
+{
+	auto RoomCollector = [](Dungeon *dg) -> void
+	{
+		auto &roomsVector = dg -> gOutput -> rooms;
+		for (SDL_Rect &room : dg -> tree.Get().roomList) roomsVector.push_back(room);
+	};
+
+	gOutput -> rooms.reserve(roomCount);
+	tree.Execute(ExeHelper<Cell>(true, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); }), &RoomCollector, this);
+
+	int eCount = 0;
+	int pCount = 0;
+
+	for (Node &node : nodes)
+	{
+		if ((node.path & Node::I_NODE) == 0)
+		{
+			pCount += node.CheckIfPath(Dir::NORTH);
+			pCount += node.CheckIfPath(Dir::EAST);
+		}
+
+		eCount += node.CheckIfEntrance();
+	}
+
+	gOutput -> paths.reserve(pCount);
+	gOutput -> entrances.reserve(eCount);
+
+	for (Node &node : nodes)
+	{
+		if ((node.path & Node::I_NODE) == 0)
+		{
+			if (node.CheckIfPath(Dir::NORTH)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::NORTH] -> pos));
+			if (node.CheckIfPath(Dir::EAST)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::EAST] -> pos));
+		}
+
+		if (node.CheckIfEntrance()) gOutput -> entrances.push_back(node.pos);
+	}
+}
+
 bool Dungeon::RandomBool()
 {
 	static uint32_t randValue = 0;
@@ -517,13 +563,15 @@ void Dungeon::Clear()
 	tree.Clear();
 }
 
-void Dungeon::Generate(GenInput *genInput, const uint32_t seed)
+void Dungeon::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_t seed)
 {
 	LOGGER_LOG("Generation started");
 	LOGGER_LOG_ENDL();
 
 	mtEngine.seed(seed);
+
 	gInput = genInput;
+	gOutput = genOutput;
 
 	LOGGER_LOG_TIME("Preparing");
 	Prepare();
@@ -539,6 +587,9 @@ void Dungeon::Generate(GenInput *genInput, const uint32_t seed)
 
 	LOGGER_LOG_TIME("Finding paths");
 	tree.ExecuteObj(ExeHelper<Cell>(true, 0, [](const ExeInfo<Cell> &info) -> bool { return !info.node.IsLast(); }), &Dungeon::FindPath, this);
+
+	LOGGER_LOG_TIME("Generating output");
+	GenerateOutput();
 
 	LOGGER_LOG("Done!");
 	LOGGER_LOG_ENDL();

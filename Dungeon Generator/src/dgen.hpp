@@ -11,6 +11,7 @@ struct Cell;
 struct Node;
 struct Dungeon;
 struct GenInput;
+struct GenOutput;
 
 typedef BinTree<Cell> Tree;
 enum Dir : uint8_t { NORTH, EAST, SOUTH, WEST, INVALID };
@@ -49,6 +50,9 @@ struct Node
 	
 	void Reset();
 	void Open(Node *prev);
+
+	inline bool CheckIfEntrance() const { return (path & E_NODE) != 0 && (path & 0b1111) != 0; }
+	inline bool CheckIfPath(const uint8_t dir) const { return (path & (1 << dir)) != 0 ? (links[dir] -> path & I_NODE) == 0 : false; }
 };
 
 struct GenInput
@@ -58,6 +62,13 @@ struct GenInput
 	int maxDepth, minDepth;
 	int spaceSizeRandomness;
 	int maxRoomSize, minRoomSize;
+};
+
+struct GenOutput
+{
+	std::vector<SDL_Rect> rooms;
+	std::vector<SDL_Point> entrances;
+	std::vector<std::pair<SDL_Point, SDL_Point>> paths;
 };
 
 struct Dungeon
@@ -71,11 +82,14 @@ struct Dungeon
 		std::uniform_real_distribution<float> uni0to1f;
 	};
 
+	int roomCount;
 	int deltaDepth;
 
 	Tree tree;
-	GenInput *gInput;
 	Uniforms uniforms;
+
+	GenInput *gInput;
+	GenOutput *gOutput;
 
 	uint32_t bValues;
 	std::mt19937 mtEngine;
@@ -92,6 +106,7 @@ struct Dungeon
 	void FindPath();
 	void LinkNodes();
 	bool Divide(int left);
+	void GenerateOutput();
 
 	bool RandomBool();
 	void CreateRoomNodes();
@@ -102,5 +117,5 @@ struct Dungeon
 	~Dungeon();
 
 	void Clear();
-	void Generate(GenInput *genInput, const uint32_t seed);
+	void Generate(GenInput *genInput, GenOutput *genOutput, const uint32_t seed);
 };

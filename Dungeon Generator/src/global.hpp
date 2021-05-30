@@ -39,8 +39,8 @@ inline const int gOverlayTitleYOffset = 60;
 inline const int gOverlayRefInternalOffset = 22;
 inline const int gOverlayRefExternalOffset = 40;
 
-inline const std::string gNodesVisibilityModeNames[] = { "None", "All", "Used" };
 inline const std::string gPathsVisibilityModeNames[] = { "None", "Links", "Paths" };
+inline const std::string gNodesVisibilityModeNames[] = { "None", "All", "Used", "Entrances" };
 
 inline const std::pair<std::string, int> gFonts[] =
 {

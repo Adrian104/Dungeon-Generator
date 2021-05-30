@@ -17,10 +17,12 @@ struct Application : public AppManager
 	bool quit, plus;
 	float factor, lastFactor;
 
+	GenInput gInput;
+	GenOutput *gOutput;
+
 	Dungeon dg;
 	DrawInfo dInfo;
 	Viewport vPort;
-	GenInput gInput;
 	Overlay *overlay;
 	SDL_Texture *texture;
 

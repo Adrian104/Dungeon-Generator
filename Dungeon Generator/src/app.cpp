@@ -3,7 +3,7 @@
 inline SDL_FPoint ToFPoint(const SDL_Point &point) { return { float(point.x), float(point.y) }; }
 inline SDL_FRect ToFRect(const SDL_Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
 
-Application::Application() : quit(false), plus(false), factor(1), lastFactor(1)
+Application::Application() : quit(false), plus(false), factor(1), lastFactor(1), gOutput(nullptr)
 {
 	LoadDefaults();
 	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, windowWidth, windowHeight);
@@ -19,13 +19,15 @@ Application::Application() : quit(false), plus(false), factor(1), lastFactor(1)
 	overlay -> AddRef(PercRef("Double room probability", &gInput.doubleRoomProb));
 	overlay -> AddRef(BoolRef("Space visibility", &dInfo.spaceVisibility));
 	overlay -> AddRef(BoolRef("Rooms visibility", &dInfo.roomsVisibility));
-	overlay -> AddRef(ModeRef<3>("Nodes visibility", &dInfo.nodesVisibilityMode, gNodesVisibilityModeNames));
+	overlay -> AddRef(ModeRef<4>("Nodes visibility", &dInfo.nodesVisibilityMode, gNodesVisibilityModeNames));
 	overlay -> AddRef(ModeRef<3>("Paths visibility", &dInfo.pathsVisibilityMode, gPathsVisibilityModeNames));
 }
 
 Application::~Application()
 {
+	delete gOutput;
 	delete overlay;
+
 	SDL_DestroyTexture(texture);
 }
 
@@ -154,18 +156,13 @@ void Application::Render()
 
 	if (dInfo.roomsVisibility)
 	{
-		auto DrawRooms = [](Application *mgr) -> void
-		{
-			for (SDL_Rect &room : mgr -> dg.tree.Get().roomList)
-			{
-				SDL_FRect rect = ToFRect(room);
-				mgr -> vPort.RectToScreen(rect, rect);
-				SDL_RenderDrawRectF(mgr -> renderer, &rect);
-			}
-		};
-
 		SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
-		dg.tree.Execute(ExeHelper<Cell>(false, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); }), &DrawRooms, this);
+		for (SDL_Rect &room : gOutput -> rooms)
+		{
+			SDL_FRect rect = ToFRect(room);
+			vPort.RectToScreen(rect, rect);
+			SDL_RenderDrawRectF(renderer, &rect);
+		}
 	}
 
 	if (dInfo.pathsVisibilityMode == 1)
@@ -207,24 +204,18 @@ void Application::Render()
 	else if (dInfo.pathsVisibilityMode == 2)
 	{
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-		for (Node &node : dg.nodes)
+		for (std::pair<SDL_Point, SDL_Point> &path : gOutput -> paths)
 		{
-			if (node.path & (Node::E_NODE | Node::I_NODE)) continue;
-			for (int i = 0; i < 4; i++)
-			{
-				if (!(node.path & (1 << i))) continue;
+			SDL_FPoint p1 = ToFPoint(path.first);
+			SDL_FPoint p2 = ToFPoint(path.second);
 
-				SDL_FPoint p1 = ToFPoint(node.pos);
-				SDL_FPoint p2 = ToFPoint(node.links[i] -> pos);
+			p1.x += 0.5f; p1.y += 0.5f;
+			p2.x += 0.5f; p2.y += 0.5f;
 
-				p1.x += 0.5f; p1.y += 0.5f;
-				p2.x += 0.5f; p2.y += 0.5f;
+			vPort.ToScreen(p1.x, p1.y, p1.x, p1.y);
+			vPort.ToScreen(p2.x, p2.y, p2.x, p2.y);
 
-				vPort.ToScreen(p1.x, p1.y, p1.x, p1.y);
-				vPort.ToScreen(p2.x, p2.y, p2.x, p2.y);
-
-				SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
-			}
+			SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
 		}
 	}
 
@@ -248,6 +239,18 @@ void Application::Render()
 			if ((node.path & 0b1111) == 0 || (node.path & Node::I_NODE)) continue;
 
 			SDL_FPoint point = ToFPoint(node.pos);
+			SDL_FRect rect = { point.x, point.y, 1, 1 };
+
+			vPort.RectToScreen(rect, rect);
+			SDL_RenderFillRectF(renderer, &rect);
+		}
+	}
+	else if (dInfo.nodesVisibilityMode == 3)
+	{
+		SDL_SetRenderDrawColor(renderer, 0xFF, 0x60, 0, 0xFF);
+		for (SDL_Point &entrance : gOutput -> entrances)
+		{
+			SDL_FPoint point = ToFPoint(entrance);
 			SDL_FRect rect = { point.x, point.y, 1, 1 };
 
 			vPort.RectToScreen(rect, rect);
@@ -343,5 +346,8 @@ void Application::Generate(const bool newSeed)
 	if (newSeed) seed++;
 	#endif
 
-	dg.Generate(&gInput, seed);
+	delete gOutput;
+	gOutput = new GenOutput;
+
+	dg.Generate(&gInput, gOutput, seed);
 }
