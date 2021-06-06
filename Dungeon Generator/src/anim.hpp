@@ -1,6 +1,4 @@
 #pragma once
-#include <chrono>
-#include "global.hpp"
 
 class Animator
 {

@@ -1,5 +1,4 @@
 #pragma once
-#include <string>
 
 #ifdef _DEBUG
 	#define RANDOM_COLORS

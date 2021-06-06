@@ -1,6 +1,4 @@
 #pragma once
-#include <SDL.h>
-#include <SDL_ttf.h>
 #include "global.hpp"
 
 struct AppManager

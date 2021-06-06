@@ -1,3 +1,4 @@
+#include "pch.hpp"
 #include "appmgr.hpp"
 
 AppManager::AppManager() : text(), fonts()

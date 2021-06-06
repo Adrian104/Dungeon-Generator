@@ -1,5 +1,4 @@
 #pragma once
-#include <SDL.h>
 #include "global.hpp"
 
 class Viewport

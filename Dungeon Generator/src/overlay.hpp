@@ -1,5 +1,4 @@
 #pragma once
-#include <vector>
 #include "global.hpp"
 #include "appmgr.hpp"
 #include "anim.hpp"

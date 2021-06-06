@@ -1,3 +1,4 @@
+#include "pch.hpp"
 #include "anim.hpp"
 
 Animator::Animator(std::chrono::duration<float> pTotalTime) : phase(0), state(0), totalTime(pTotalTime) {}

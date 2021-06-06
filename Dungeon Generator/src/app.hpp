@@ -1,7 +1,7 @@
 #pragma once
 #include "global.hpp"
-#include "appmgr.hpp"
-#include "dgen.hpp"
+#include "vport.hpp"
+#include "core/dgen.hpp"
 #include "overlay.hpp"
 
 struct DrawInfo

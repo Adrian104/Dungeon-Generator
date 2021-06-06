@@ -1,5 +1,4 @@
-#include <iostream>
-#include <chrono>
+#include "pch.hpp"
 #include "logger.hpp"
 
 namespace logger

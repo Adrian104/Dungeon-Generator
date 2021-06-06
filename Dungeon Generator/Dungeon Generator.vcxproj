@@ -76,15 +76,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)src\pch</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)src\pch</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)src\pch</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)src\pch</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -94,10 +98,11 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Libraries\SDL2mixer\include;C:\Libraries\SDL2image\include;C:\Libraries\SDL2ttf\include;C:\Libraries\SDL2\include;src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Libraries\SDL2mixer\include;C:\Libraries\SDL2image\include;C:\Libraries\SDL2ttf\include;C:\Libraries\SDL2\include</AdditionalIncludeDirectories>
       <PrecompiledHeaderOutputFile>$(VisualStudioDir)\Precompiled headers\$(ProjectName)\$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -116,10 +121,11 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Libraries\SDL2mixer\include;C:\Libraries\SDL2image\include;C:\Libraries\SDL2ttf\include;C:\Libraries\SDL2\include;src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Libraries\SDL2mixer\include;C:\Libraries\SDL2image\include;C:\Libraries\SDL2ttf\include;C:\Libraries\SDL2\include</AdditionalIncludeDirectories>
       <PrecompiledHeaderOutputFile>$(VisualStudioDir)\Precompiled headers\$(ProjectName)\$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -138,10 +144,11 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Libraries\SDL2mixer\include;C:\Libraries\SDL2image\include;C:\Libraries\SDL2ttf\include;C:\Libraries\SDL2\include;src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Libraries\SDL2mixer\include;C:\Libraries\SDL2image\include;C:\Libraries\SDL2ttf\include;C:\Libraries\SDL2\include</AdditionalIncludeDirectories>
       <PrecompiledHeaderOutputFile>$(VisualStudioDir)\Precompiled headers\$(ProjectName)\$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -160,10 +167,11 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Libraries\SDL2mixer\include;C:\Libraries\SDL2image\include;C:\Libraries\SDL2ttf\include;C:\Libraries\SDL2\include;src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Libraries\SDL2mixer\include;C:\Libraries\SDL2image\include;C:\Libraries\SDL2ttf\include;C:\Libraries\SDL2\include</AdditionalIncludeDirectories>
       <PrecompiledHeaderOutputFile>$(VisualStudioDir)\Precompiled headers\$(ProjectName)\$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -177,22 +185,29 @@
   <ItemGroup>
     <ClCompile Include="src\anim.cpp" />
     <ClCompile Include="src\appmgr.cpp" />
-    <ClCompile Include="src\dgen.cpp" />
+    <ClCompile Include="src\core\dgen.cpp" />
     <ClCompile Include="src\logger.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\app.cpp" />
     <ClCompile Include="src\overlay.cpp" />
+    <ClCompile Include="src\pch\pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\vport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\anim.hpp" />
     <ClInclude Include="src\appmgr.hpp" />
-    <ClInclude Include="src\btree.hpp" />
-    <ClInclude Include="src\dgen.hpp" />
+    <ClInclude Include="src\core\btree.hpp" />
+    <ClInclude Include="src\core\dgen.hpp" />
     <ClInclude Include="src\logger.hpp" />
     <ClInclude Include="src\global.hpp" />
     <ClInclude Include="src\app.hpp" />
     <ClInclude Include="src\overlay.hpp" />
+    <ClInclude Include="src\pch\pch.hpp" />
     <ClInclude Include="src\vport.hpp" />
   </ItemGroup>
   <ItemGroup>

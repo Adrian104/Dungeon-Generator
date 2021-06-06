@@ -1,3 +1,4 @@
+#include "pch.hpp"
 #include "app.hpp"
 
 inline SDL_FPoint ToFPoint(const SDL_Point &point) { return { float(point.x), float(point.y) }; }

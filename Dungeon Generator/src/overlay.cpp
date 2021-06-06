@@ -1,3 +1,4 @@
+#include "pch.hpp"
 #include "overlay.hpp"
 
 Overlay::Overlay(AppManager &appManager) : Animator(std::chrono::milliseconds(gOverlayAnimTime)), selected(0), refresh(true), mgr(appManager)
