@@ -16,10 +16,4 @@ namespace logger
 	#define LOGGER_LOG_ENDL() logger::LogEndl()
 	#define LOGGER_LOG_TIME(str) logger::LogTime(str)
 	#define LOGGER_LOG_HEADER(str) logger::LogHeader(str)
-#else
-	#define LOGGER_STOP()
-	#define LOGGER_LOG(str)
-	#define LOGGER_LOG_ENDL()
-	#define LOGGER_LOG_TIME(str)
-	#define LOGGER_LOG_HEADER(str)
 #endif

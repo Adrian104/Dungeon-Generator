@@ -13,9 +13,6 @@
 inline const float gDefFactor = 1;
 inline const float gDefScaleStep = 0.25f;
 
-inline const int gMinRoomWH = 4;
-inline const int gMinSpaceWH = 5;
-
 inline const int gDefMinDepth = 9;
 inline const int gDefMaxDepth = 10;
 inline const int gDefMaxRoomSize = 75;

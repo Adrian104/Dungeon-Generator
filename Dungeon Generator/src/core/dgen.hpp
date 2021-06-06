@@ -1,6 +1,6 @@
 #pragma once
-#include "../global.hpp"
 #include "btree.hpp"
+#include "types.hpp"
 
 struct Cell;
 struct Node;
@@ -13,9 +13,9 @@ enum Dir : uint8_t { NORTH, EAST, SOUTH, WEST, INVALID };
 
 struct Cell
 {
-	SDL_Rect space;
+	Rect space;
 	Node *internalNode;
-	std::forward_list<SDL_Rect> roomList;
+	std::forward_list<Rect> roomList;
 
 	Cell() : space{}, internalNode(nullptr) {}
 };
@@ -39,7 +39,7 @@ struct Node
 
 	Node *links[4];
 	Node *prevNode;
-	const SDL_Point pos;
+	const Point pos;
 
 	Node(const int x, const int y) : gCost(0), hCost(0), fCost(0), mode(UNVISITED), path(0), links{ &null, &null, &null, &null }, prevNode(nullptr), pos{ x, y } {}
 	
@@ -61,9 +61,9 @@ struct GenInput
 
 struct GenOutput
 {
-	std::vector<SDL_Rect> rooms;
-	std::vector<SDL_Point> entrances;
-	std::vector<std::pair<SDL_Point, SDL_Point>> paths;
+	std::vector<Rect> rooms;
+	std::vector<Point> entrances;
+	std::vector<std::pair<Point, Vec>> paths;
 };
 
 struct Dungeon

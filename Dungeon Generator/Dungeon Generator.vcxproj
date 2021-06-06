@@ -203,6 +203,8 @@
     <ClInclude Include="src\appmgr.hpp" />
     <ClInclude Include="src\core\btree.hpp" />
     <ClInclude Include="src\core\dgen.hpp" />
+    <ClInclude Include="src\core\guard.hpp" />
+    <ClInclude Include="src\core\types.hpp" />
     <ClInclude Include="src\logger.hpp" />
     <ClInclude Include="src\global.hpp" />
     <ClInclude Include="src\app.hpp" />

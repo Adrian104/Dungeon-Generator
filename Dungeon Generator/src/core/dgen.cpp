@@ -1,6 +1,7 @@
 #include "pch.hpp"
 #include "dgen.hpp"
 #include "../logger.hpp"
+#include "guard.hpp"
 
 struct HeapCompare
 {
@@ -34,7 +35,8 @@ void Node::Open(Node *prev)
 
 	if (mode == UNVISITED)
 	{
-		SDL_Point diff = { stop -> pos.x - pos.x, stop -> pos.y - pos.y };
+		const Vec diff = stop -> pos - pos;
+
 		hCost = int(sqrtf(float(diff.x * diff.x + diff.y * diff.y)));
 		mode = OPEN;
 
@@ -88,8 +90,8 @@ void Dungeon::MakeRoom()
 	CreateSpaceNodes();
 
 	Cell &crrCell = tree.Get();
-	SDL_Rect room = crrCell.space;
-	SDL_Rect room2;
+	Rect room = crrCell.space;
+	Rect room2;
 
 	bool doubleRoom = uniforms.uni0to99(mtEngine) < gInput -> doubleRoomProb;
 
@@ -99,7 +101,7 @@ void Dungeon::MakeRoom()
 	room.w -= dX;
 	room.h -= dY;
 
-	if (room.w < gMinRoomWH || room.h < gMinRoomWH) return;
+	if (room.w < 4 || room.h < 4) return;
 
 	if (doubleRoom)
 	{
@@ -126,7 +128,7 @@ void Dungeon::MakeRoom()
 			if (RandomBool()) room2.x = room.x + room.w - room2.w;
 		}
 
-		doubleRoom = room2.w >= gMinRoomWH && room2.h >= gMinRoomWH;
+		doubleRoom = room2.w >= 4 && room2.h >= 4;
 	}
 
 	const int xOffset = int(dX * uniforms.uni0to1f(mtEngine));
@@ -135,7 +137,7 @@ void Dungeon::MakeRoom()
 	room.x += xOffset;
 	room.y += yOffset;
 
-	SDL_Rect *selRoom = &crrCell.roomList.emplace_front(room);
+	Rect *selRoom = &crrCell.roomList.emplace_front(room);
 	roomCount++;
 
 	if (doubleRoom)
@@ -149,7 +151,7 @@ void Dungeon::MakeRoom()
 		if (RandomBool()) selRoom = &crrCell.roomList.front();
 	}
 
-	crrCell.internalNode = &nodes.emplace_front(selRoom -> x + (mtEngine() % selRoom -> w), selRoom -> y + (mtEngine() % selRoom -> h));
+	crrCell.internalNode = &nodes.emplace_front(selRoom -> x + (mtEngine() % (selRoom -> w - 2)) + 1, selRoom -> y + (mtEngine() % (selRoom -> h - 2)) + 1);
 	CreateRoomNodes();
 }
 
@@ -191,26 +193,24 @@ void Dungeon::FindPath()
 	do
 	{
 		Node *prevNode = crrNode -> prevNode;
+		const Vec diff = prevNode -> pos - crrNode -> pos;
 
-		int xDiff = prevNode -> pos.x - crrNode -> pos.x;
-		int yDiff = prevNode -> pos.y - crrNode -> pos.y;
-
-		if (yDiff < 0)
+		if (diff.y < 0)
 		{
 			crrNode -> path |= 1 << Dir::NORTH;
 			prevNode -> path |= 1 << Dir::SOUTH;
 		}
-		else if (xDiff > 0)
+		else if (diff.x > 0)
 		{
 			crrNode -> path |= 1 << Dir::EAST;
 			prevNode -> path |= 1 << Dir::WEST;
 		}
-		else if (yDiff > 0)
+		else if (diff.y > 0)
 		{
 			crrNode -> path |= 1 << Dir::SOUTH;
 			prevNode -> path |= 1 << Dir::NORTH;
 		}
-		else if (xDiff < 0)
+		else if (diff.x < 0)
 		{
 			crrNode -> path |= 1 << Dir::WEST;
 			prevNode -> path |= 1 << Dir::EAST;
@@ -246,7 +246,7 @@ void Dungeon::LinkNodes()
 	for (Node &node : nodes)
 	{
 		Node **links = node.links;
-		const SDL_Point &pos = node.pos;
+		const Point &pos = node.pos;
 
 		if (links[Dir::NORTH] == nullptr || links[Dir::SOUTH] == nullptr)
 		{
@@ -326,25 +326,25 @@ bool Dungeon::Divide(int left)
 		if (left <= uniforms.uniDepth(mtEngine))
 		{
 			nomore:
-			SDL_Rect &space = tree.Get().space;
+			Rect &space = tree.Get().space;
 
 			space.x += 4; space.y += 4;
 			space.w -= 5; space.h -= 5;
 
-			return space.w < gMinSpaceWH || space.h < gMinSpaceWH;
+			return space.w < 5 || space.h < 5;
 		}
 	}
 
 	left--;
 
-	int SDL_Rect::*xy;
-	int SDL_Rect::*wh;
+	int Rect::*xy;
+	int Rect::*wh;
 
-	SDL_Rect *crrSpace = &tree.Get().space;
+	Rect *crrSpace = &tree.Get().space;
 	const bool horizontal = crrSpace -> w < crrSpace -> h;
 
-	if (horizontal) { xy = &SDL_Rect::y; wh = &SDL_Rect::h; }
-	else { xy = &SDL_Rect::x; wh = &SDL_Rect::w; }
+	if (horizontal) { xy = &Rect::y; wh = &Rect::h; }
+	else { xy = &Rect::x; wh = &Rect::w; }
 
 	const int totalSize = crrSpace ->* wh;
 	const int randSize = (totalSize >> 1) + int(totalSize * uniforms.uniSpace(mtEngine));
@@ -381,7 +381,7 @@ void Dungeon::GenerateOutput()
 	auto RoomCollector = [](Dungeon *dg) -> void
 	{
 		auto &roomsVector = dg -> gOutput -> rooms;
-		for (SDL_Rect &room : dg -> tree.Get().roomList) roomsVector.push_back(room);
+		for (Rect &room : dg -> tree.Get().roomList) roomsVector.push_back(room);
 	};
 
 	gOutput -> rooms.reserve(roomCount);
@@ -439,10 +439,10 @@ void Dungeon::CreateRoomNodes()
 {
 	Cell &cell = tree.Get();
 	Node &iNode = *cell.internalNode;
-	const SDL_Point &iPoint = iNode.pos;
+	const Point &iPoint = iNode.pos;
 
 	int edges[4] = { std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() };
-	for (SDL_Rect &room : cell.roomList)
+	for (Rect &room : cell.roomList)
 	{
 		const int xPlusW = room.x + room.w;
 		const int yPlusH = room.y + room.h;
@@ -512,7 +512,7 @@ void Dungeon::CreateRoomNodes()
 
 void Dungeon::CreateSpaceNodes()
 {
-	SDL_Rect &space = tree.Get().space;
+	Rect &space = tree.Get().space;
 
 	const int xMin = space.x - 3;
 	const int yMin = space.y - 3;

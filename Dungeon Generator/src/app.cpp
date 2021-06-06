@@ -1,8 +1,8 @@
 #include "pch.hpp"
 #include "app.hpp"
 
-inline SDL_FPoint ToFPoint(const SDL_Point &point) { return { float(point.x), float(point.y) }; }
-inline SDL_FRect ToFRect(const SDL_Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
+inline SDL_FPoint ToFPoint(const Point &point) { return { float(point.x), float(point.y) }; }
+inline SDL_FRect ToFRect(const Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
 
 Application::Application() : quit(false), plus(false), factor(1), lastFactor(1), gOutput(nullptr)
 {
@@ -158,7 +158,7 @@ void Application::Render()
 	if (dInfo.roomsVisibility)
 	{
 		SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
-		for (SDL_Rect &room : gOutput -> rooms)
+		for (Rect &room : gOutput -> rooms)
 		{
 			SDL_FRect rect = ToFRect(room);
 			vPort.RectToScreen(rect, rect);
@@ -205,7 +205,7 @@ void Application::Render()
 	else if (dInfo.pathsVisibilityMode == 2)
 	{
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-		for (std::pair<SDL_Point, SDL_Point> &path : gOutput -> paths)
+		for (std::pair<Point, Vec> &path : gOutput -> paths)
 		{
 			SDL_FPoint p1 = ToFPoint(path.first);
 			SDL_FPoint p2 = ToFPoint(path.second);
@@ -249,7 +249,7 @@ void Application::Render()
 	else if (dInfo.nodesVisibilityMode == 3)
 	{
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0x60, 0, 0xFF);
-		for (SDL_Point &entrance : gOutput -> entrances)
+		for (Point &entrance : gOutput -> entrances)
 		{
 			SDL_FPoint point = ToFPoint(entrance);
 			SDL_FRect rect = { point.x, point.y, 1, 1 };
