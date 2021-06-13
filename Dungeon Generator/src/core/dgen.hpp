@@ -22,8 +22,8 @@ struct Cell
 
 struct Node
 {
-	static Node null;
 	static Node *stop;
+	static Node reqLink;
 
 	static std::vector<std::pair<int, Node*>> *heap;
 
@@ -41,7 +41,7 @@ struct Node
 	Node *prevNode;
 	const Point pos;
 
-	Node(const int x, const int y) : gCost(0), hCost(0), fCost(0), mode(UNVISITED), path(0), links{ &null, &null, &null, &null }, prevNode(nullptr), pos{ x, y } {}
+	Node(const int x, const int y) : gCost(0), hCost(0), fCost(0), mode(UNVISITED), path(0), links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr), pos{ x, y } {}
 	
 	void Reset();
 	void Open(Node *prev);

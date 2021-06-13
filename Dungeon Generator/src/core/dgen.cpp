@@ -8,8 +8,8 @@ struct HeapCompare
 	bool operator() (const std::pair<int, Node*> &p1, const std::pair<int, Node*> &p2) { return p1.first > p2.first; }
 };
 
-Node Node::null = Node(0, 0);
 Node *Node::stop = nullptr;
+Node Node::reqLink = Node(0, 0);
 std::vector<std::pair<int, Node*>> *Node::heap = nullptr;
 
 void Node::Reset()
@@ -151,7 +151,10 @@ void Dungeon::MakeRoom()
 		if (RandomBool()) selRoom = &crrCell.roomList.front();
 	}
 
-	crrCell.internalNode = &nodes.emplace_front(selRoom -> x + (mtEngine() % (selRoom -> w - 2)) + 1, selRoom -> y + (mtEngine() % (selRoom -> h - 2)) + 1);
+	const int iNodeYPos = selRoom -> y + (mtEngine() % (selRoom -> h - 2)) + 1;
+	const int iNodeXPos = selRoom -> x + (mtEngine() % (selRoom -> w - 2)) + 1;
+
+	crrCell.internalNode = &nodes.emplace_front(iNodeXPos, iNodeYPos);
 	CreateRoomNodes();
 }
 
@@ -179,7 +182,9 @@ void Dungeon::FindPath()
 			if (neighbor -> mode != Node::CLOSED) neighbor -> Open(crrNode);
 		}
 
+		#ifdef _DEBUG
 		if (openNodes.empty()) throw -1;
+		#endif
 
 		crrNode -> mode = Node::CLOSED;
 		usedNodes.push_back(crrNode);
@@ -232,90 +237,57 @@ void Dungeon::FindPath()
 
 void Dungeon::LinkNodes()
 {
-	Node *xNode;
+	std::map<std::pair<int, int>, Node*>::iterator crrXIter;
+	std::map<std::pair<int, int>, Node*>::iterator nextXIter;
 
-	std::map<std::pair<int, int>, Node*>::iterator iter;
-	std::map<std::pair<int, int>, Node*>::iterator crrIter;
+	crrXIter = posXNodes.begin();
+	nextXIter = crrXIter;
+	nextXIter++;
 
-	const auto xBegin = posXNodes.begin();
-	const auto xEnd = posXNodes.end();
-
-	const auto yBegin = posYNodes.begin();
-	const auto yEnd = posYNodes.end();
-
-	for (Node &node : nodes)
+	const auto endXIter = posXNodes.end();
+	while (nextXIter != endXIter)
 	{
-		Node **links = node.links;
-		const Point &pos = node.pos;
+		Node *const node = crrXIter -> second;
+		Node **links = node -> links;
 
-		if (links[Dir::NORTH] == nullptr || links[Dir::SOUTH] == nullptr)
+		if (links[Dir::SOUTH] == &Node::reqLink)
 		{
-			iter = posXNodes.find(std::make_pair(pos.x, pos.y));
-			if (iter == xEnd) goto skiplinking;
-
-			crrIter = iter;
-			crrIter++;
-
-			if (links[Dir::SOUTH] == nullptr && crrIter != xEnd)
-			{
-				if (crrIter -> first.first == pos.x)
-				{
-					xNode = crrIter -> second;
-					links[Dir::SOUTH] = xNode;
-					xNode -> links[Dir::NORTH] = &node;
-				}
-			}
-
-			crrIter = iter;
-			if (links[Dir::NORTH] == nullptr && crrIter != xBegin)
-			{
-				crrIter--;
-				if (crrIter -> first.first == pos.x)
-				{
-					xNode = crrIter -> second;
-					links[Dir::NORTH] = xNode;
-					xNode -> links[Dir::SOUTH] = &node;
-				}
-			}
+			Node *const nextNode = nextXIter -> second;
+			links[Dir::SOUTH] = nextNode;
+			nextNode -> links[Dir::NORTH] = node;
 		}
 
-		if (links[Dir::EAST] == nullptr || links[Dir::WEST] == nullptr)
+		crrXIter = nextXIter;
+		nextXIter++;
+	}
+
+	posXNodes.clear();
+
+	std::map<std::pair<int, int>, Node*>::iterator crrYIter;
+	std::map<std::pair<int, int>, Node*>::iterator nextYIter;
+
+	crrYIter = posYNodes.begin();
+	nextYIter = crrYIter;
+	nextYIter++;
+
+	const auto endYIter = posYNodes.end();
+	while (nextYIter != endYIter)
+	{
+		Node *const node = crrYIter -> second;
+		Node **links = node -> links;
+
+		if (links[Dir::EAST] == &Node::reqLink)
 		{
-			iter = posYNodes.find(std::make_pair(pos.y, pos.x));
-			if (iter == yEnd) goto skiplinking;
-
-			crrIter = iter;
-			crrIter++;
-
-			if (links[Dir::EAST] == nullptr && crrIter != yEnd)
-			{
-				if (crrIter -> first.first == pos.y)
-				{
-					xNode = crrIter -> second;
-					links[Dir::EAST] = xNode;
-					xNode -> links[Dir::WEST] = &node;
-				}
-			}
-
-			crrIter = iter;
-			if (links[Dir::WEST] == nullptr && crrIter != yBegin)
-			{
-				crrIter--;
-				if (crrIter -> first.first == pos.y)
-				{
-					xNode = crrIter -> second;
-					links[Dir::WEST] = xNode;
-					xNode -> links[Dir::EAST] = &node;
-				}
-			}
+			Node *const nextNode = nextYIter -> second;
+			links[Dir::EAST] = nextNode;
+			nextNode -> links[Dir::WEST] = node;
 		}
 
-		skiplinking:
-		for (auto &link : node.links) { if (link == &Node::null) link = nullptr; }
+		crrYIter = nextYIter;
+		nextYIter++;
 	}
 
 	posYNodes.clear();
-	posXNodes.clear();
 }
 
 bool Dungeon::Divide(int left)
@@ -408,8 +380,8 @@ void Dungeon::GenerateOutput()
 	{
 		if ((node.path & Node::I_NODE) == 0)
 		{
-			if (node.CheckIfPath(Dir::NORTH)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::NORTH] -> pos));
-			if (node.CheckIfPath(Dir::EAST)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::EAST] -> pos));
+			if (node.CheckIfPath(Dir::NORTH)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::NORTH] -> pos - node.pos));
+			if (node.CheckIfPath(Dir::EAST)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::EAST] -> pos - node.pos));
 		}
 
 		if (node.CheckIfEntrance()) gOutput -> entrances.push_back(node.pos);
@@ -500,14 +472,10 @@ void Dungeon::CreateRoomNodes()
 	bNodes[Dir::SOUTH] -> links[Dir::NORTH] = eNodes[Dir::SOUTH];
 	bNodes[Dir::WEST] -> links[Dir::EAST] = eNodes[Dir::WEST];
 
-	bNodes[Dir::NORTH] -> links[Dir::EAST] = nullptr;
-	bNodes[Dir::NORTH] -> links[Dir::WEST] = nullptr;
-	bNodes[Dir::EAST] -> links[Dir::NORTH] = nullptr;
-	bNodes[Dir::EAST] -> links[Dir::SOUTH] = nullptr;
-	bNodes[Dir::SOUTH] -> links[Dir::EAST] = nullptr;
-	bNodes[Dir::SOUTH] -> links[Dir::WEST] = nullptr;
-	bNodes[Dir::WEST] -> links[Dir::NORTH] = nullptr;
-	bNodes[Dir::WEST] -> links[Dir::SOUTH] = nullptr;
+	bNodes[Dir::NORTH] -> links[Dir::EAST] = &Node::reqLink;
+	bNodes[Dir::EAST] -> links[Dir::SOUTH] = &Node::reqLink;
+	bNodes[Dir::SOUTH] -> links[Dir::EAST] = &Node::reqLink;
+	bNodes[Dir::WEST] -> links[Dir::SOUTH] = &Node::reqLink;
 }
 
 void Dungeon::CreateSpaceNodes()
@@ -525,17 +493,10 @@ void Dungeon::CreateSpaceNodes()
 	Node &SW = AddRegNode(xMin, yMax);
 	Node &SE = AddRegNode(xMax, yMax);
 
-	NW.links[Dir::EAST] = nullptr;
-	NW.links[Dir::SOUTH] = nullptr;
-
-	NE.links[Dir::WEST] = nullptr;
-	NE.links[Dir::SOUTH] = nullptr;
-
-	SW.links[Dir::NORTH] = nullptr;
-	SW.links[Dir::EAST] = nullptr;
-
-	SE.links[Dir::NORTH] = nullptr;
-	SE.links[Dir::WEST] = nullptr;
+	NW.links[Dir::EAST] = &Node::reqLink;
+	NW.links[Dir::SOUTH] = &Node::reqLink;
+	NE.links[Dir::SOUTH] = &Node::reqLink;
+	SW.links[Dir::EAST] = &Node::reqLink;
 }
 
 Node &Dungeon::AddRegNode(int x, int y)

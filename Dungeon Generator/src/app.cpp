@@ -208,7 +208,7 @@ void Application::Render()
 		for (std::pair<Point, Vec> &path : gOutput -> paths)
 		{
 			SDL_FPoint p1 = ToFPoint(path.first);
-			SDL_FPoint p2 = ToFPoint(path.second);
+			SDL_FPoint p2 = ToFPoint(path.first + path.second);
 
 			p1.x += 0.5f; p1.y += 0.5f;
 			p2.x += 0.5f; p2.y += 0.5f;
