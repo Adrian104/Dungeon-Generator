@@ -9,20 +9,19 @@ struct HeapCompare
 };
 
 Node *Node::stop = nullptr;
-Node Node::reqLink = Node(0, 0);
+Node Node::reqLink = Node(Node::Type::NORMAL);
 std::vector<std::pair<int, Node*>> *Node::heap = nullptr;
 
 void Node::Reset()
 {
 	gCost = 0;
-	mode = UNVISITED;
-	prevNode = nullptr;
+	mode = Mode::UNVISITED;
 }
 
 void Node::Open(Node *prev)
 {
 	int newGCost = prev -> gCost;
-	if (prev -> path == 0 || path == 0)
+	if (prev -> CheckIfGCost() || CheckIfGCost())
 	{
 		int xDiff = prev -> pos.x - pos.x;
 		int yDiff = prev -> pos.y - pos.y;
@@ -33,12 +32,12 @@ void Node::Open(Node *prev)
 		newGCost += (xDiff > yDiff) ? xDiff : yDiff;
 	}
 
-	if (mode == UNVISITED)
+	if (mode == Mode::UNVISITED)
 	{
 		const Vec diff = stop -> pos - pos;
 
 		hCost = int(sqrtf(float(diff.x * diff.x + diff.y * diff.y)));
-		mode = OPEN;
+		mode = Mode::OPEN;
 
 		goto next;
 	}
@@ -137,7 +136,9 @@ void Dungeon::MakeRoom()
 	room.x += xOffset;
 	room.y += yOffset;
 
-	Rect *selRoom = &crrCell.roomList.emplace_front(room);
+	std::vector<Rect> &roomVec = crrCell.roomVec;
+
+	roomVec.emplace_back(room);
 	roomCount++;
 
 	if (doubleRoom)
@@ -145,16 +146,16 @@ void Dungeon::MakeRoom()
 		room2.x += xOffset;
 		room2.y += yOffset;
 
-		crrCell.roomList.emplace_front(room2);
+		roomVec.emplace_back(room2);
 		roomCount++;
-
-		if (RandomBool()) selRoom = &crrCell.roomList.front();
 	}
+
+	Rect *const selRoom = &roomVec.at(mtEngine() % roomVec.size());
 
 	const int iNodeYPos = selRoom -> y + (mtEngine() % (selRoom -> h - 2)) + 1;
 	const int iNodeXPos = selRoom -> x + (mtEngine() % (selRoom -> w - 2)) + 1;
 
-	crrCell.internalNode = &nodes.emplace_front(iNodeXPos, iNodeYPos);
+	crrCell.internalNode = &nodes.emplace_front(Node::Type::INTERNAL, iNodeXPos, iNodeYPos);
 	CreateRoomNodes();
 }
 
@@ -179,14 +180,14 @@ void Dungeon::FindPath()
 		for (Node *&neighbor : crrNode -> links)
 		{
 			if (neighbor == nullptr) continue;
-			if (neighbor -> mode != Node::CLOSED) neighbor -> Open(crrNode);
+			if (neighbor -> mode != Node::Mode::CLOSED) neighbor -> Open(crrNode);
 		}
 
 		#ifdef _DEBUG
 		if (openNodes.empty()) throw -1;
 		#endif
 
-		crrNode -> mode = Node::CLOSED;
+		crrNode -> mode = Node::Mode::CLOSED;
 		usedNodes.push_back(crrNode);
 
 		crrNode = openNodes.at(0).second;
@@ -197,25 +198,25 @@ void Dungeon::FindPath()
 
 	do
 	{
-		Node *prevNode = crrNode -> prevNode;
-		const Vec diff = prevNode -> pos - crrNode -> pos;
+		Node **links = crrNode -> links;
+		Node *const prevNode = crrNode -> prevNode;
 
-		if (diff.y < 0)
+		if (prevNode == links[0])
 		{
 			crrNode -> path |= 1 << Dir::NORTH;
 			prevNode -> path |= 1 << Dir::SOUTH;
 		}
-		else if (diff.x > 0)
+		else if (prevNode == links[1])
 		{
 			crrNode -> path |= 1 << Dir::EAST;
 			prevNode -> path |= 1 << Dir::WEST;
 		}
-		else if (diff.y > 0)
+		else if (prevNode == links[2])
 		{
 			crrNode -> path |= 1 << Dir::SOUTH;
 			prevNode -> path |= 1 << Dir::NORTH;
 		}
-		else if (diff.x < 0)
+		else if (prevNode == links[3])
 		{
 			crrNode -> path |= 1 << Dir::WEST;
 			prevNode -> path |= 1 << Dir::EAST;
@@ -353,7 +354,7 @@ void Dungeon::GenerateOutput()
 	auto RoomCollector = [](Dungeon *dg) -> void
 	{
 		auto &roomsVector = dg -> gOutput -> rooms;
-		for (Rect &room : dg -> tree.Get().roomList) roomsVector.push_back(room);
+		for (Rect &room : dg -> tree.Get().roomVec) roomsVector.push_back(room);
 	};
 
 	gOutput -> rooms.reserve(roomCount);
@@ -364,7 +365,7 @@ void Dungeon::GenerateOutput()
 
 	for (Node &node : nodes)
 	{
-		if ((node.path & Node::I_NODE) == 0)
+		if (node.type != Node::Type::INTERNAL)
 		{
 			pCount += node.CheckIfPath(Dir::NORTH);
 			pCount += node.CheckIfPath(Dir::EAST);
@@ -378,7 +379,7 @@ void Dungeon::GenerateOutput()
 
 	for (Node &node : nodes)
 	{
-		if ((node.path & Node::I_NODE) == 0)
+		if (node.type != Node::Type::INTERNAL)
 		{
 			if (node.CheckIfPath(Dir::NORTH)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::NORTH] -> pos - node.pos));
 			if (node.CheckIfPath(Dir::EAST)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::EAST] -> pos - node.pos));
@@ -414,7 +415,7 @@ void Dungeon::CreateRoomNodes()
 	const Point &iPoint = iNode.pos;
 
 	int edges[4] = { std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() };
-	for (Rect &room : cell.roomList)
+	for (Rect &room : cell.roomVec)
 	{
 		const int xPlusW = room.x + room.w;
 		const int yPlusH = room.y + room.h;
@@ -434,10 +435,10 @@ void Dungeon::CreateRoomNodes()
 
 	Node *const eNodes[4] =
 	{
-		&nodes.emplace_front(iPoint.x, edges[0]),
-		&nodes.emplace_front(edges[1] - 1, iPoint.y),
-		&nodes.emplace_front(iPoint.x, edges[2] - 1),
-		&nodes.emplace_front(edges[3], iPoint.y)
+		&nodes.emplace_front(Node::Type::ENTRY, iPoint.x, edges[0]),
+		&nodes.emplace_front(Node::Type::ENTRY, edges[1] - 1, iPoint.y),
+		&nodes.emplace_front(Node::Type::ENTRY, iPoint.x, edges[2] - 1),
+		&nodes.emplace_front(Node::Type::ENTRY, edges[3], iPoint.y)
 	};
 
 	Node *const bNodes[4] =
@@ -448,22 +449,17 @@ void Dungeon::CreateRoomNodes()
 		&AddRegNode(cell.space.x - 3, iPoint.y)
 	};
 
-	iNode.path |= Node::I_NODE;
 	iNode.links[Dir::NORTH] = eNodes[Dir::NORTH];
 	iNode.links[Dir::EAST] = eNodes[Dir::EAST];
 	iNode.links[Dir::SOUTH] = eNodes[Dir::SOUTH];
 	iNode.links[Dir::WEST] = eNodes[Dir::WEST];
 
-	eNodes[Dir::NORTH] -> path |= Node::E_NODE;
 	eNodes[Dir::NORTH] -> links[Dir::SOUTH] = &iNode;
 	eNodes[Dir::NORTH] -> links[Dir::NORTH] = bNodes[Dir::NORTH];
-	eNodes[Dir::EAST] -> path |= Node::E_NODE;
 	eNodes[Dir::EAST] -> links[Dir::WEST] = &iNode;
 	eNodes[Dir::EAST] -> links[Dir::EAST] = bNodes[Dir::EAST];
-	eNodes[Dir::SOUTH] -> path |= Node::E_NODE;
 	eNodes[Dir::SOUTH] -> links[Dir::NORTH] = &iNode;
 	eNodes[Dir::SOUTH] -> links[Dir::SOUTH] = bNodes[Dir::SOUTH];
-	eNodes[Dir::WEST] -> path |= Node::E_NODE;
 	eNodes[Dir::WEST] -> links[Dir::EAST] = &iNode;
 	eNodes[Dir::WEST] -> links[Dir::WEST] = bNodes[Dir::WEST];
 
@@ -504,7 +500,7 @@ Node &Dungeon::AddRegNode(int x, int y)
 	const auto iter = posXNodes.find(std::make_pair(x, y));
 	if (iter != posXNodes.end()) return *(iter -> second);
 
-	Node &node = nodes.emplace_front(x, y);
+	Node &node = nodes.emplace_front(Node::Type::NORMAL, x, y);
 
 	posXNodes.insert(std::make_pair(std::make_pair(x, y), &node));
 	posYNodes.insert(std::make_pair(std::make_pair(y, x), &node));

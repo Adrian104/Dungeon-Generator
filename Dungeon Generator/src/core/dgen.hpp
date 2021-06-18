@@ -15,7 +15,7 @@ struct Cell
 {
 	Rect space;
 	Node *internalNode;
-	std::forward_list<Rect> roomList;
+	std::vector<Rect> roomVec;
 
 	Cell() : space{}, internalNode(nullptr) {}
 };
@@ -27,27 +27,31 @@ struct Node
 
 	static std::vector<std::pair<int, Node*>> *heap;
 
-	enum : uint8_t { UNVISITED, OPEN, CLOSED };
-	enum : uint8_t { E_NODE = 1 << 4, I_NODE = 1 << 5 };
+	enum class Mode : uint8_t { UNVISITED, OPEN, CLOSED };
+	enum class Type : uint8_t { NORMAL, ENTRY, INTERNAL };
+
+	const Type type;
 
 	int gCost;
 	int hCost;
 	int fCost;
 
-	uint8_t mode;
+	Mode mode;
+	Point pos;
 	uint8_t path;
 
 	Node *links[4];
 	Node *prevNode;
-	const Point pos;
 
-	Node(const int x, const int y) : gCost(0), hCost(0), fCost(0), mode(UNVISITED), path(0), links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr), pos{ x, y } {}
+	Node(const Type pType) : type(pType), gCost(0), hCost(0), fCost(0), mode(Mode::UNVISITED), pos{ 0, 0 }, path(0), links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
+	Node(const Type pType, const int x, const int y) : type(pType), gCost(0), hCost(0), fCost(0), mode(Mode::UNVISITED), pos{ x, y }, path(0), links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
 	
 	void Reset();
 	void Open(Node *prev);
 
-	inline bool CheckIfEntrance() const { return (path & E_NODE) != 0 && (path & 0b1111) != 0; }
-	inline bool CheckIfPath(const uint8_t dir) const { return (path & (1 << dir)) != 0 ? (links[dir] -> path & I_NODE) == 0 : false; }
+	inline bool CheckIfGCost() const { return path == 0 && type == Type::NORMAL; }
+	inline bool CheckIfEntrance() const { return path != 0 && type == Type::ENTRY; }
+	inline bool CheckIfPath(const uint8_t dir) const { return (path & (1 << dir)) != 0 ? (links[dir] -> type != Type::INTERNAL) : false; }
 };
 
 struct GenInput

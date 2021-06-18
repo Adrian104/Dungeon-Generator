@@ -237,7 +237,7 @@ void Application::Render()
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xBB, 0, 0xFF);
 		for (Node &node : dg.nodes)
 		{
-			if ((node.path & 0b1111) == 0 || (node.path & Node::I_NODE)) continue;
+			if (node.path == 0 || node.type == Node::Type::INTERNAL) continue;
 
 			SDL_FPoint point = ToFPoint(node.pos);
 			SDL_FRect rect = { point.x, point.y, 1, 1 };
