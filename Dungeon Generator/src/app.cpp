@@ -146,13 +146,13 @@ void Application::Render()
 	{
 		auto DrawSpace = [](Application *mgr) -> void
 		{
-			SDL_FRect rect = ToFRect(mgr -> dg.tree.Get().space);
+			SDL_FRect rect = ToFRect(mgr -> gen.tree.Get().space);
 			mgr -> vPort.RectToScreen(rect, rect);
 			SDL_RenderDrawRectF(mgr -> renderer, &rect);
 		};
 
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
-		dg.tree.Execute(ExeHelper<Cell>(false, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); }), &DrawSpace, this);
+		gen.tree.Execute(ExeHelper<Cell>(false, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); }), &DrawSpace, this);
 	}
 
 	if (dInfo.roomsVisibility)
@@ -174,7 +174,7 @@ void Application::Render()
 		SDL_SetRenderDrawColor(renderer, 0x55, 0x55, 0x55, 0xFF);
 		#endif
 		
-		for (Node &node : dg.nodes)
+		for (Node &node : gen.nodes)
 		{
 			#ifdef RANDOM_COLORS
 			int r, g, b;
@@ -223,7 +223,7 @@ void Application::Render()
 	if (dInfo.nodesVisibilityMode == 1)
 	{
 		SDL_SetRenderDrawColor(renderer, 0, 0xFF, 0, 0xFF);
-		for (Node &node : dg.nodes)
+		for (Node &node : gen.nodes)
 		{
 			SDL_FPoint point = ToFPoint(node.pos);
 			SDL_FRect rect = { point.x, point.y, 1, 1 };
@@ -235,7 +235,7 @@ void Application::Render()
 	else if (dInfo.nodesVisibilityMode == 2)
 	{
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xBB, 0, 0xFF);
-		for (Node &node : dg.nodes)
+		for (Node &node : gen.nodes)
 		{
 			if (node.path == 0 || node.type == Node::Type::INTERNAL) continue;
 
@@ -350,5 +350,5 @@ void Application::Generate(const bool newSeed)
 	delete gOutput;
 	gOutput = new GenOutput;
 
-	dg.Generate(&gInput, gOutput, seed);
+	gen.Generate(&gInput, gOutput, seed);
 }

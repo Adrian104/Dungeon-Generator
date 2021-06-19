@@ -4,9 +4,9 @@
 
 struct Cell;
 struct Node;
-struct Dungeon;
 struct GenInput;
 struct GenOutput;
+struct Generator;
 
 typedef BinTree<Cell> Tree;
 enum Dir : uint8_t { NORTH, EAST, SOUTH, WEST, INVALID };
@@ -14,10 +14,10 @@ enum Dir : uint8_t { NORTH, EAST, SOUTH, WEST, INVALID };
 struct Cell
 {
 	Rect space;
-	Node *internalNode;
+	Node *selNode;
 	std::vector<Rect> roomVec;
 
-	Cell() : space{}, internalNode(nullptr) {}
+	Cell() : space{}, selNode(nullptr) {}
 };
 
 struct Node
@@ -70,7 +70,7 @@ struct GenOutput
 	std::vector<std::pair<Point, Vec>> paths;
 };
 
-struct Dungeon
+struct Generator
 {
 	struct Uniforms
 	{
@@ -112,8 +112,8 @@ struct Dungeon
 	void CreateSpaceNodes();
 	Node &AddRegNode(int x, int y);
 
-	Dungeon();
-	~Dungeon();
+	Generator();
+	~Generator();
 
 	void Clear();
 	void Generate(GenInput *genInput, GenOutput *genOutput, const uint32_t seed);

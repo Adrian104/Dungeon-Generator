@@ -20,7 +20,7 @@ struct Application : public AppManager
 	GenInput gInput;
 	GenOutput *gOutput;
 
-	Dungeon dg;
+	Generator gen;
 	DrawInfo dInfo;
 	Viewport vPort;
 	Overlay *overlay;
