@@ -1,21 +1,25 @@
 #pragma once
 
-#ifndef LOGGER_STOP
-#define LOGGER_STOP()
+#ifndef STOP_TIMING
+#define STOP_TIMING()
 #endif
 
-#ifndef LOGGER_LOG
-#define LOGGER_LOG(str)
+#ifndef LOG_ENDL
+#define LOG_ENDL()
 #endif
 
-#ifndef LOGGER_LOG_ENDL
-#define LOGGER_LOG_ENDL()
+#ifndef LOG_MSG
+#define LOG_MSG(str)
 #endif
 
-#ifndef LOGGER_LOG_TIME
-#define LOGGER_LOG_TIME(str)
+#ifndef LOG_TIME
+#define LOG_TIME(str)
 #endif
 
-#ifndef LOGGER_LOG_HEADER
-#define LOGGER_LOG_HEADER(str)
+#ifndef LOG_HEADER
+#define LOG_HEADER(str)
+#endif
+
+#ifndef LOG_TOTAL_TIME
+#define LOG_TOTAL_TIME(str)
 #endif

@@ -59,7 +59,7 @@ void Node::Open(Node *prev)
 	}
 }
 
-Generator::Generator() : roomCount(0), deltaDepth(0), uniforms{}, gInput(nullptr), gOutput(nullptr), bValues(0) { LOGGER_LOG_HEADER("Dungeon Generator"); }
+Generator::Generator() : roomCount(0), deltaDepth(0), uniforms{}, gInput(nullptr), gOutput(nullptr), bValues(0) { LOG_HEADER("Dungeon Generator"); }
 Generator::~Generator() { Clear(); }
 
 void Generator::Prepare()
@@ -522,32 +522,34 @@ void Generator::Clear()
 
 void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_t seed)
 {
-	LOGGER_LOG("Generation started");
-	LOGGER_LOG_ENDL();
+	LOG_MSG("Generation started");
+	LOG_ENDL();
 
 	mtEngine.seed(seed);
 
 	gInput = genInput;
 	gOutput = genOutput;
 
-	LOGGER_LOG_TIME("Preparing");
+	LOG_TIME("Preparing");
 	Prepare();
 
-	LOGGER_LOG_TIME("Partitioning space");
+	LOG_TIME("Partitioning space");
 	Divide(gInput -> maxDepth);
 
-	LOGGER_LOG_TIME("Generating rooms");
+	LOG_TIME("Generating rooms");
 	tree.ExecuteObj(ExeHelper<Cell>(true, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); }), &Generator::MakeRoom, this);
 
-	LOGGER_LOG_TIME("Linking nodes");
+	LOG_TIME("Linking nodes");
 	LinkNodes();
 
-	LOGGER_LOG_TIME("Finding paths");
+	LOG_TIME("Finding paths");
 	tree.ExecuteObj(ExeHelper<Cell>(true, 0, [](const ExeInfo<Cell> &info) -> bool { return !info.node.IsLast(); }), &Generator::FindPath, this);
 
-	LOGGER_LOG_TIME("Generating output");
+	LOG_TIME("Generating output");
 	GenerateOutput();
 
-	LOGGER_LOG("Done!");
-	LOGGER_LOG_ENDL();
+	LOG_ENDL();
+	LOG_MSG("Done!");
+	LOG_TOTAL_TIME("Total time: ");
+	LOG_ENDL();
 }
