@@ -144,15 +144,15 @@ void Application::Render()
 
 	if (dInfo.spaceVisibility)
 	{
-		auto DrawSpace = [](Application *mgr) -> void
+		auto DrawSpace = [this](bt::Node<Cell> &btNode) -> void
 		{
-			SDL_FRect rect = ToFRect(mgr -> gen.tree.Get().space);
-			mgr -> vPort.RectToScreen(rect, rect);
-			SDL_RenderDrawRectF(mgr -> renderer, &rect);
+			SDL_FRect rect = ToFRect(btNode.data.space);
+			vPort.RectToScreen(rect, rect);
+			SDL_RenderDrawRectF(renderer, &rect);
 		};
 
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
-		gen.tree.Execute(ExeHelper<Cell>(false, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); }), &DrawSpace, this);
+		gen.root -> Execute(bt::Trav::PREORDER, DrawSpace, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
 	}
 
 	if (dInfo.roomsVisibility)

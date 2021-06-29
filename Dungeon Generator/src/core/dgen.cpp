@@ -59,18 +59,16 @@ void Node::Open(Node *prev)
 	}
 }
 
-Generator::Generator() : roomCount(0), deltaDepth(0), uniforms{}, gInput(nullptr), gOutput(nullptr), bValues(0) { LOG_HEADER("Dungeon Generator"); }
+Generator::Generator() : roomCount(0), deltaDepth(0), gInput(nullptr), gOutput(nullptr), bValues(0), uniforms{}, root(nullptr) { LOG_HEADER("Dungeon Generator"); }
 Generator::~Generator() { Clear(); }
 
 void Generator::Prepare()
 {
 	Clear();
+	root = new bt::Node<Cell>(nullptr, Cell(gInput -> xSize - 3, gInput -> ySize - 3));
 
 	roomCount = 0;
 	deltaDepth = gInput -> maxDepth - gInput -> minDepth;
-
-	tree.Get().space.w = gInput -> xSize - 3;
-	tree.Get().space.h = gInput -> ySize - 3;
 
 	uniforms.uni0to99 = std::uniform_int_distribution<int>(0, 99);
 	uniforms.uni0to1f = std::uniform_real_distribution<float>(0, 1);
@@ -84,12 +82,283 @@ void Generator::Prepare()
 	Node::heap = &openNodes;
 }
 
-void Generator::MakeRoom()
+void Generator::LinkNodes()
 {
-	CreateSpaceNodes();
+	std::map<std::pair<int, int>, Node*>::iterator crrXIter;
+	std::map<std::pair<int, int>, Node*>::iterator nextXIter;
 
-	Cell &crrCell = tree.Get();
-	Rect r1Rect = crrCell.space;
+	crrXIter = posXNodes.begin();
+	nextXIter = crrXIter;
+	nextXIter++;
+
+	const auto endXIter = posXNodes.end();
+	while (nextXIter != endXIter)
+	{
+		Node *const node = crrXIter -> second;
+		Node **links = node -> links;
+
+		if (links[Dir::SOUTH] == &Node::reqLink)
+		{
+			Node *const nextNode = nextXIter -> second;
+			links[Dir::SOUTH] = nextNode;
+			nextNode -> links[Dir::NORTH] = node;
+		}
+
+		crrXIter = nextXIter;
+		nextXIter++;
+	}
+
+	posXNodes.clear();
+
+	std::map<std::pair<int, int>, Node*>::iterator crrYIter;
+	std::map<std::pair<int, int>, Node*>::iterator nextYIter;
+
+	crrYIter = posYNodes.begin();
+	nextYIter = crrYIter;
+	nextYIter++;
+
+	const auto endYIter = posYNodes.end();
+	while (nextYIter != endYIter)
+	{
+		Node *const node = crrYIter -> second;
+		Node **links = node -> links;
+
+		if (links[Dir::EAST] == &Node::reqLink)
+		{
+			Node *const nextNode = nextYIter -> second;
+			links[Dir::EAST] = nextNode;
+			nextNode -> links[Dir::WEST] = node;
+		}
+
+		crrYIter = nextYIter;
+		nextYIter++;
+	}
+
+	posYNodes.clear();
+}
+
+void Generator::GenerateOutput()
+{
+	auto RoomCollector = [this](bt::Node<Cell> &btNode) -> void
+	{
+		auto &roomsVector = gOutput -> rooms;
+		for (Rect &room : btNode.data.roomVec) roomsVector.push_back(room);
+	};
+
+	gOutput -> rooms.reserve(roomCount);
+	root -> Execute(bt::Trav::POSTORDER, RoomCollector, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
+
+	int eCount = 0;
+	int pCount = 0;
+
+	for (Node &node : nodes)
+	{
+		if (node.type != Node::Type::INTERNAL)
+		{
+			pCount += node.CheckIfPath(Dir::NORTH);
+			pCount += node.CheckIfPath(Dir::EAST);
+		}
+
+		eCount += node.CheckIfEntrance();
+	}
+
+	gOutput -> paths.reserve(pCount);
+	gOutput -> entrances.reserve(eCount);
+
+	for (Node &node : nodes)
+	{
+		if (node.type != Node::Type::INTERNAL)
+		{
+			if (node.CheckIfPath(Dir::NORTH)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::NORTH] -> pos - node.pos));
+			if (node.CheckIfPath(Dir::EAST)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::EAST] -> pos - node.pos));
+		}
+
+		if (node.CheckIfEntrance()) gOutput -> entrances.push_back(node.pos);
+	}
+}
+
+bool Generator::Divide(bt::Node<Cell> &btNode, int left)
+{
+	if (left <= 0) goto nomore;
+	if (left <= deltaDepth)
+	{
+		if (left <= uniforms.uniDepth(mtEngine))
+		{
+			nomore:
+			Rect &space = btNode.data.space;
+
+			space.x += 4; space.y += 4;
+			space.w -= 5; space.h -= 5;
+
+			return space.w < 5 || space.h < 5;
+		}
+	}
+
+	left--;
+
+	int Rect::*xy;
+	int Rect::*wh;
+
+	Rect *crrSpace = &btNode.data.space;
+	const bool horizontal = crrSpace -> w < crrSpace -> h;
+
+	if (horizontal) { xy = &Rect::y; wh = &Rect::h; }
+	else { xy = &Rect::x; wh = &Rect::w; }
+
+	const int totalSize = crrSpace ->* wh;
+	const int randSize = (totalSize >> 1) + int(totalSize * uniforms.uniSpace(mtEngine));
+
+	btNode.left = new bt::Node<Cell>(&btNode, btNode.data);
+	btNode.left -> data.space.*wh = randSize;
+
+	bool notOk = Divide(*btNode.left, left);
+
+	btNode.right = new bt::Node<Cell>(&btNode, btNode.data);
+	crrSpace = &btNode.right -> data.space;
+
+	crrSpace ->* xy += randSize;
+	crrSpace ->* wh -= randSize;
+
+	notOk |= Divide(*btNode.right, left);
+
+	if (notOk)
+	{
+		delete btNode.right;
+		btNode.right = nullptr;
+
+		delete btNode.left;
+		btNode.left = nullptr;
+
+		goto nomore;
+	}
+
+	return false;
+}
+
+bool Generator::RandomBool()
+{
+	static uint32_t randValue = 0;
+	const bool ret = randValue & 1;
+
+	if (bValues > 1)
+	{
+		bValues--;
+		randValue >>= 1;
+	}
+	else
+	{
+		bValues = 32;
+		randValue = mtEngine();
+	}
+
+	return ret;
+}
+
+Node &Generator::AddRegNode(int x, int y)
+{
+	const auto iter = posXNodes.find(std::make_pair(x, y));
+	if (iter != posXNodes.end()) return *(iter -> second);
+
+	Node &node = nodes.emplace_front(Node::Type::NORMAL, x, y);
+
+	posXNodes.insert(std::make_pair(std::make_pair(x, y), &node));
+	posYNodes.insert(std::make_pair(std::make_pair(y, x), &node));
+
+	return node;
+}
+
+void Generator::CreateRoomNodes(Cell &cell)
+{
+	Node &iNode = *cell.selNode;
+	const Point &iPoint = iNode.pos;
+
+	int edges[4] = { std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() };
+	for (Rect &room : cell.roomVec)
+	{
+		const int xPlusW = room.x + room.w;
+		const int yPlusH = room.y + room.h;
+
+		if (iPoint.x >= room.x && iPoint.x < xPlusW)
+		{
+			if (edges[Dir::NORTH] > room.y) edges[Dir::NORTH] = room.y;
+			if (edges[Dir::SOUTH] < yPlusH) edges[Dir::SOUTH] = yPlusH;
+		}
+
+		if (iPoint.y >= room.y && iPoint.y < yPlusH)
+		{
+			if (edges[Dir::WEST] > room.x) edges[Dir::WEST] = room.x;
+			if (edges[Dir::EAST] < xPlusW) edges[Dir::EAST] = xPlusW;
+		}
+	}
+
+	Node *const eNodes[4] =
+	{
+		&nodes.emplace_front(Node::Type::ENTRY, iPoint.x, edges[0]),
+		&nodes.emplace_front(Node::Type::ENTRY, edges[1] - 1, iPoint.y),
+		&nodes.emplace_front(Node::Type::ENTRY, iPoint.x, edges[2] - 1),
+		&nodes.emplace_front(Node::Type::ENTRY, edges[3], iPoint.y)
+	};
+
+	Node *const bNodes[4] =
+	{
+		&AddRegNode(iPoint.x, cell.space.y - 3),
+		&AddRegNode(cell.space.x + cell.space.w + 2, iPoint.y),
+		&AddRegNode(iPoint.x, cell.space.y + cell.space.h + 2),
+		&AddRegNode(cell.space.x - 3, iPoint.y)
+	};
+
+	iNode.links[Dir::NORTH] = eNodes[Dir::NORTH];
+	iNode.links[Dir::EAST] = eNodes[Dir::EAST];
+	iNode.links[Dir::SOUTH] = eNodes[Dir::SOUTH];
+	iNode.links[Dir::WEST] = eNodes[Dir::WEST];
+
+	eNodes[Dir::NORTH] -> links[Dir::SOUTH] = &iNode;
+	eNodes[Dir::NORTH] -> links[Dir::NORTH] = bNodes[Dir::NORTH];
+	eNodes[Dir::EAST] -> links[Dir::WEST] = &iNode;
+	eNodes[Dir::EAST] -> links[Dir::EAST] = bNodes[Dir::EAST];
+	eNodes[Dir::SOUTH] -> links[Dir::NORTH] = &iNode;
+	eNodes[Dir::SOUTH] -> links[Dir::SOUTH] = bNodes[Dir::SOUTH];
+	eNodes[Dir::WEST] -> links[Dir::EAST] = &iNode;
+	eNodes[Dir::WEST] -> links[Dir::WEST] = bNodes[Dir::WEST];
+
+	bNodes[Dir::NORTH] -> links[Dir::SOUTH] = eNodes[Dir::NORTH];
+	bNodes[Dir::EAST] -> links[Dir::WEST] = eNodes[Dir::EAST];
+	bNodes[Dir::SOUTH] -> links[Dir::NORTH] = eNodes[Dir::SOUTH];
+	bNodes[Dir::WEST] -> links[Dir::EAST] = eNodes[Dir::WEST];
+
+	bNodes[Dir::NORTH] -> links[Dir::EAST] = &Node::reqLink;
+	bNodes[Dir::EAST] -> links[Dir::SOUTH] = &Node::reqLink;
+	bNodes[Dir::SOUTH] -> links[Dir::EAST] = &Node::reqLink;
+	bNodes[Dir::WEST] -> links[Dir::SOUTH] = &Node::reqLink;
+}
+
+void Generator::CreateSpaceNodes(Cell &cell)
+{
+	Rect &space = cell.space;
+
+	const int xMin = space.x - 3;
+	const int yMin = space.y - 3;
+
+	const int xMax = space.x + space.w + 2;
+	const int yMax = space.y + space.h + 2;
+
+	Node &NW = AddRegNode(xMin, yMin);
+	Node &NE = AddRegNode(xMax, yMin);
+	Node &SW = AddRegNode(xMin, yMax);
+	Node &SE = AddRegNode(xMax, yMax);
+
+	NW.links[Dir::EAST] = &Node::reqLink;
+	NW.links[Dir::SOUTH] = &Node::reqLink;
+	NE.links[Dir::SOUTH] = &Node::reqLink;
+	SW.links[Dir::EAST] = &Node::reqLink;
+}
+
+void Generator::MakeRoom(bt::Node<Cell> &btNode)
+{
+	Cell &cell = btNode.data;
+	CreateSpaceNodes(cell);
+
+	Rect r1Rect = cell.space;
 	Rect r2Rect;
 
 	bool doubleRoom = uniforms.uni0to99(mtEngine) < gInput -> doubleRoomProb;
@@ -136,7 +405,7 @@ void Generator::MakeRoom()
 	r1Rect.x += xOffset;
 	r1Rect.y += yOffset;
 
-	std::vector<Rect> &roomVec = crrCell.roomVec;
+	std::vector<Rect> &roomVec = cell.roomVec;
 
 	roomVec.emplace_back(r1Rect);
 	roomCount++;
@@ -155,20 +424,20 @@ void Generator::MakeRoom()
 	const int iNodeYPos = selRoom -> y + (mtEngine() % (selRoom -> h - 2)) + 1;
 	const int iNodeXPos = selRoom -> x + (mtEngine() % (selRoom -> w - 2)) + 1;
 
-	crrCell.selNode = &nodes.emplace_front(Node::Type::INTERNAL, iNodeXPos, iNodeYPos);
-	CreateRoomNodes();
+	cell.selNode = &nodes.emplace_front(Node::Type::INTERNAL, iNodeXPos, iNodeYPos);
+	CreateRoomNodes(cell);
 }
 
-void Generator::FindPath()
+void Generator::FindPath(bt::Node<Cell> &btNode)
 {
-	Node *start = tree.Left() -> selNode;
-	Node::stop = tree.Right() -> selNode;
+	Node *start = btNode.left -> data.selNode;
+	Node::stop = btNode.right -> data.selNode;
 
 	const bool startNullptr = start == nullptr;
 	const bool stopNullptr = Node::stop == nullptr;
 
 	if (start == Node::stop) return;
-	Node **iNode = &tree.Get().selNode;
+	Node **iNode = &btNode.data.selNode;
 
 	if (!startNullptr && stopNullptr) { *iNode = start; return; }
 	if (startNullptr && !stopNullptr) { *iNode = Node::stop; return; }
@@ -236,278 +505,6 @@ void Generator::FindPath()
 	openNodes.clear();
 }
 
-void Generator::LinkNodes()
-{
-	std::map<std::pair<int, int>, Node*>::iterator crrXIter;
-	std::map<std::pair<int, int>, Node*>::iterator nextXIter;
-
-	crrXIter = posXNodes.begin();
-	nextXIter = crrXIter;
-	nextXIter++;
-
-	const auto endXIter = posXNodes.end();
-	while (nextXIter != endXIter)
-	{
-		Node *const node = crrXIter -> second;
-		Node **links = node -> links;
-
-		if (links[Dir::SOUTH] == &Node::reqLink)
-		{
-			Node *const nextNode = nextXIter -> second;
-			links[Dir::SOUTH] = nextNode;
-			nextNode -> links[Dir::NORTH] = node;
-		}
-
-		crrXIter = nextXIter;
-		nextXIter++;
-	}
-
-	posXNodes.clear();
-
-	std::map<std::pair<int, int>, Node*>::iterator crrYIter;
-	std::map<std::pair<int, int>, Node*>::iterator nextYIter;
-
-	crrYIter = posYNodes.begin();
-	nextYIter = crrYIter;
-	nextYIter++;
-
-	const auto endYIter = posYNodes.end();
-	while (nextYIter != endYIter)
-	{
-		Node *const node = crrYIter -> second;
-		Node **links = node -> links;
-
-		if (links[Dir::EAST] == &Node::reqLink)
-		{
-			Node *const nextNode = nextYIter -> second;
-			links[Dir::EAST] = nextNode;
-			nextNode -> links[Dir::WEST] = node;
-		}
-
-		crrYIter = nextYIter;
-		nextYIter++;
-	}
-
-	posYNodes.clear();
-}
-
-bool Generator::Divide(int left)
-{
-	if (left <= 0) goto nomore;
-	if (left <= deltaDepth)
-	{
-		if (left <= uniforms.uniDepth(mtEngine))
-		{
-			nomore:
-			Rect &space = tree.Get().space;
-
-			space.x += 4; space.y += 4;
-			space.w -= 5; space.h -= 5;
-
-			return space.w < 5 || space.h < 5;
-		}
-	}
-
-	left--;
-
-	int Rect::*xy;
-	int Rect::*wh;
-
-	Rect *crrSpace = &tree.Get().space;
-	const bool horizontal = crrSpace -> w < crrSpace -> h;
-
-	if (horizontal) { xy = &Rect::y; wh = &Rect::h; }
-	else { xy = &Rect::x; wh = &Rect::w; }
-
-	const int totalSize = crrSpace ->* wh;
-	const int randSize = (totalSize >> 1) + int(totalSize * uniforms.uniSpace(mtEngine));
-
-	tree.AddNodes(tree.Get());
-	tree.GoLeft();
-
-	crrSpace = &tree.Get().space;
-	crrSpace ->* wh = randSize;
-
-	bool notOk = Divide(left);
-	
-	tree.GoUp();
-	tree.GoRight();
-
-	crrSpace = &tree.Get().space;
-	crrSpace ->* xy += randSize;
-	crrSpace ->* wh -= randSize;
-
-	notOk |= Divide(left);
-	tree.GoUp();
-
-	if (notOk)
-	{
-		tree.DeleteNodes();
-		goto nomore;
-	}
-
-	return false;
-}
-
-void Generator::GenerateOutput()
-{
-	auto RoomCollector = [](Generator *gen) -> void
-	{
-		auto &roomsVector = gen -> gOutput -> rooms;
-		for (Rect &room : gen -> tree.Get().roomVec) roomsVector.push_back(room);
-	};
-
-	gOutput -> rooms.reserve(roomCount);
-	tree.Execute(ExeHelper<Cell>(true, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); }), &RoomCollector, this);
-
-	int eCount = 0;
-	int pCount = 0;
-
-	for (Node &node : nodes)
-	{
-		if (node.type != Node::Type::INTERNAL)
-		{
-			pCount += node.CheckIfPath(Dir::NORTH);
-			pCount += node.CheckIfPath(Dir::EAST);
-		}
-
-		eCount += node.CheckIfEntrance();
-	}
-
-	gOutput -> paths.reserve(pCount);
-	gOutput -> entrances.reserve(eCount);
-
-	for (Node &node : nodes)
-	{
-		if (node.type != Node::Type::INTERNAL)
-		{
-			if (node.CheckIfPath(Dir::NORTH)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::NORTH] -> pos - node.pos));
-			if (node.CheckIfPath(Dir::EAST)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::EAST] -> pos - node.pos));
-		}
-
-		if (node.CheckIfEntrance()) gOutput -> entrances.push_back(node.pos);
-	}
-}
-
-bool Generator::RandomBool()
-{
-	static uint32_t randValue = 0;
-	const bool ret = randValue & 1;
-
-	if (bValues > 1)
-	{
-		bValues--;
-		randValue >>= 1;
-	}
-	else
-	{
-		bValues = 32;
-		randValue = mtEngine();
-	}
-
-	return ret;
-}
-
-void Generator::CreateRoomNodes()
-{
-	Cell &cell = tree.Get();
-	Node &iNode = *cell.selNode;
-	const Point &iPoint = iNode.pos;
-
-	int edges[4] = { std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() };
-	for (Rect &room : cell.roomVec)
-	{
-		const int xPlusW = room.x + room.w;
-		const int yPlusH = room.y + room.h;
-
-		if (iPoint.x >= room.x && iPoint.x < xPlusW)
-		{
-			if (edges[Dir::NORTH] > room.y) edges[Dir::NORTH] = room.y;
-			if (edges[Dir::SOUTH] < yPlusH) edges[Dir::SOUTH] = yPlusH;
-		}
-
-		if (iPoint.y >= room.y && iPoint.y < yPlusH)
-		{
-			if (edges[Dir::WEST] > room.x) edges[Dir::WEST] = room.x;
-			if (edges[Dir::EAST] < xPlusW) edges[Dir::EAST] = xPlusW;
-		}
-	}
-
-	Node *const eNodes[4] =
-	{
-		&nodes.emplace_front(Node::Type::ENTRY, iPoint.x, edges[0]),
-		&nodes.emplace_front(Node::Type::ENTRY, edges[1] - 1, iPoint.y),
-		&nodes.emplace_front(Node::Type::ENTRY, iPoint.x, edges[2] - 1),
-		&nodes.emplace_front(Node::Type::ENTRY, edges[3], iPoint.y)
-	};
-
-	Node *const bNodes[4] =
-	{
-		&AddRegNode(iPoint.x, cell.space.y - 3),
-		&AddRegNode(cell.space.x + cell.space.w + 2, iPoint.y),
-		&AddRegNode(iPoint.x, cell.space.y + cell.space.h + 2),
-		&AddRegNode(cell.space.x - 3, iPoint.y)
-	};
-
-	iNode.links[Dir::NORTH] = eNodes[Dir::NORTH];
-	iNode.links[Dir::EAST] = eNodes[Dir::EAST];
-	iNode.links[Dir::SOUTH] = eNodes[Dir::SOUTH];
-	iNode.links[Dir::WEST] = eNodes[Dir::WEST];
-
-	eNodes[Dir::NORTH] -> links[Dir::SOUTH] = &iNode;
-	eNodes[Dir::NORTH] -> links[Dir::NORTH] = bNodes[Dir::NORTH];
-	eNodes[Dir::EAST] -> links[Dir::WEST] = &iNode;
-	eNodes[Dir::EAST] -> links[Dir::EAST] = bNodes[Dir::EAST];
-	eNodes[Dir::SOUTH] -> links[Dir::NORTH] = &iNode;
-	eNodes[Dir::SOUTH] -> links[Dir::SOUTH] = bNodes[Dir::SOUTH];
-	eNodes[Dir::WEST] -> links[Dir::EAST] = &iNode;
-	eNodes[Dir::WEST] -> links[Dir::WEST] = bNodes[Dir::WEST];
-
-	bNodes[Dir::NORTH] -> links[Dir::SOUTH] = eNodes[Dir::NORTH];
-	bNodes[Dir::EAST] -> links[Dir::WEST] = eNodes[Dir::EAST];
-	bNodes[Dir::SOUTH] -> links[Dir::NORTH] = eNodes[Dir::SOUTH];
-	bNodes[Dir::WEST] -> links[Dir::EAST] = eNodes[Dir::WEST];
-
-	bNodes[Dir::NORTH] -> links[Dir::EAST] = &Node::reqLink;
-	bNodes[Dir::EAST] -> links[Dir::SOUTH] = &Node::reqLink;
-	bNodes[Dir::SOUTH] -> links[Dir::EAST] = &Node::reqLink;
-	bNodes[Dir::WEST] -> links[Dir::SOUTH] = &Node::reqLink;
-}
-
-void Generator::CreateSpaceNodes()
-{
-	Rect &space = tree.Get().space;
-
-	const int xMin = space.x - 3;
-	const int yMin = space.y - 3;
-
-	const int xMax = space.x + space.w + 2;
-	const int yMax = space.y + space.h + 2;
-
-	Node &NW = AddRegNode(xMin, yMin);
-	Node &NE = AddRegNode(xMax, yMin);
-	Node &SW = AddRegNode(xMin, yMax);
-	Node &SE = AddRegNode(xMax, yMax);
-
-	NW.links[Dir::EAST] = &Node::reqLink;
-	NW.links[Dir::SOUTH] = &Node::reqLink;
-	NE.links[Dir::SOUTH] = &Node::reqLink;
-	SW.links[Dir::EAST] = &Node::reqLink;
-}
-
-Node &Generator::AddRegNode(int x, int y)
-{
-	const auto iter = posXNodes.find(std::make_pair(x, y));
-	if (iter != posXNodes.end()) return *(iter -> second);
-
-	Node &node = nodes.emplace_front(Node::Type::NORMAL, x, y);
-
-	posXNodes.insert(std::make_pair(std::make_pair(x, y), &node));
-	posYNodes.insert(std::make_pair(std::make_pair(y, x), &node));
-
-	return node;
-}
-
 void Generator::Clear()
 {
 	posYNodes.clear();
@@ -517,7 +514,8 @@ void Generator::Clear()
 	usedNodes.clear();
 	openNodes.clear();
 
-	tree.Clear();
+	delete root;
+	root = nullptr;
 }
 
 void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_t seed)
@@ -534,16 +532,16 @@ void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_
 	Prepare();
 
 	LOG_TIME("Partitioning space");
-	Divide(gInput -> maxDepth);
+	Divide(*root, gInput -> maxDepth);
 
 	LOG_TIME("Generating rooms");
-	tree.ExecuteObj(ExeHelper<Cell>(true, 0, [](const ExeInfo<Cell> &info) -> bool { return info.node.IsLast(); }), &Generator::MakeRoom, this);
+	root -> Execute(bt::Trav::POSTORDER, &Generator::MakeRoom, this, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
 
 	LOG_TIME("Linking nodes");
 	LinkNodes();
 
 	LOG_TIME("Finding paths");
-	tree.ExecuteObj(ExeHelper<Cell>(true, 0, [](const ExeInfo<Cell> &info) -> bool { return !info.node.IsLast(); }), &Generator::FindPath, this);
+	root -> Execute(bt::Trav::POSTORDER, &Generator::FindPath, this, [](const bt::Info<Cell> &info) -> bool { return info.IsInternal(); });
 
 	LOG_TIME("Generating output");
 	GenerateOutput();

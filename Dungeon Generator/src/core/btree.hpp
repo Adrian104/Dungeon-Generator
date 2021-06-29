@@ -1,245 +1,95 @@
 #pragma once
+#include "utils.hpp"
 
-template <typename Type>
-class BTNode
+namespace bt
 {
-	Type data;
-	BTNode *const parent;
+	enum class Trav : byte { PREORDER, POSTORDER };
 
-	BTNode *left;
-	BTNode *right;
+	template <typename Type>
+	struct Info;
 
-	public:
-	BTNode(BTNode *const pParent, const Type &ref = Type());
-	~BTNode();
-
-	inline Type *Up() { return parent != nullptr ? &parent -> data : nullptr; }
-	inline Type *Left() { return left != nullptr ? &left -> data : nullptr; }
-	inline Type *Right() { return right != nullptr ? &right -> data : nullptr; }
-
-	inline bool IsRoot() const { return parent == nullptr; }
-	inline bool IsLast() const { return left == nullptr && right == nullptr; }
-
-	template <typename T> friend class BinTree;
-};
-
-template <typename Type>
-struct ExeInfo
-{
-	int depth;
-	void *resource;
-	BTNode<Type> &node;
-
-	ExeInfo(const int d, void *res, BTNode<Type> &crr) : depth(d), resource(res), node(crr) {}
-};
-
-template <typename Type>
-struct ExeHelper
-{
-	bool rev;
-	void *resource;
-	mutable int depth;
-	bool (*chkFunc)(const ExeInfo<Type> &info);
-
-	ExeHelper(bool pReverse, int pDepth, bool (*pFunc)(const ExeInfo<Type> &info), void *res = nullptr) : rev(pReverse), depth(pDepth), chkFunc(pFunc), resource(res) {}
-};
-
-template <typename Type>
-class BinTree
-{
-	public:
-	enum : uint8_t { LEFT = 0b1, RIGHT = 0b10 };
-
-	private:
-	BTNode<Type> *crr;
-	BTNode<Type> *root;
-
-	public:
-	BinTree();
-	~BinTree();
-
-	bool GoUp();
-	bool GoLeft();
-	bool GoRight();
-
-	void Clear();
-	void DeleteNodes() const;
-	void AddNodes(const Type &ref = Type());
-	uint8_t AddNodes(uint8_t sides, const Type &ref = Type());
-
-	template <typename FP, typename ...Args>
-	void Execute(const ExeHelper<Type> &helper, FP *fPtr, Args ...args);
-
-	template <typename FP, typename OP, typename ...Args>
-	void ExecuteObj(const ExeHelper<Type> &helper, FP OP::*fPtr, OP *oPtr, Args ...args);
-
-	inline Type &Get() const { return crr -> data; }
-	inline void ToRoot() { crr = root; }
-	inline bool IsRoot() const { return crr == root; }
-
-	inline Type *Up() { return crr -> Up(); }
-	inline Type *Left() { return crr -> Left(); }
-	inline Type *Right() { return crr -> Right(); }
-};
-
-template <typename Type>
-BTNode<Type>::BTNode(BTNode *const pParent, const Type &ref) : data(ref), parent(pParent), left(nullptr), right(nullptr) {}
-
-template <typename Type>
-BTNode<Type>::~BTNode()
-{
-	delete right;
-	delete left;
-}
-
-template <typename Type>
-BinTree<Type>::BinTree() : crr(nullptr), root(nullptr) { Clear(); }
-
-template <typename Type>
-BinTree<Type>::~BinTree() { delete root; }
-
-template <typename Type>
-bool BinTree<Type>::GoUp()
-{
-	if (crr -> parent == nullptr) return false;
-
-	crr = crr -> parent;
-	return true;
-}
-
-template <typename Type>
-bool BinTree<Type>::GoLeft()
-{
-	if (crr -> left == nullptr) return false;
-
-	crr = crr -> left;
-	return true;
-}
-
-template <typename Type>
-bool BinTree<Type>::GoRight()
-{
-	if (crr -> right == nullptr) return false;
-
-	crr = crr -> right;
-	return true;
-}
-
-template <typename Type>
-void BinTree<Type>::Clear()
-{
-	delete root;
-	root = new BTNode<Type>(nullptr);
-	crr = root;
-}
-
-template <typename Type>
-void BinTree<Type>::DeleteNodes() const
-{
-	delete crr -> right;
-	crr -> right = nullptr;
-
-	delete crr -> left;
-	crr -> left = nullptr;
-}
-
-template <typename Type>
-void BinTree<Type>::AddNodes(const Type &ref)
-{
-	if (crr -> left == nullptr) crr -> left = new BTNode<Type>(crr, ref);
-	if (crr -> right == nullptr) crr -> right = new BTNode<Type>(crr, ref);
-}
-
-template <typename Type>
-uint8_t BinTree<Type>::AddNodes(uint8_t sides, const Type &ref)
-{
-	if (sides & LEFT)
+	template <typename Type>
+	class Node
 	{
-		if (crr -> left == nullptr) crr -> left = new BTNode<Type>(crr, ref);
-		else sides &= ~LEFT;
-	}
-
-	if (sides & RIGHT)
-	{
-		if (crr -> right == nullptr) crr -> right = new BTNode<Type>(crr, ref);
-		else sides &= ~RIGHT;
-	}
-
-	return sides;
-}
-
-template <typename Type> template <typename FP, typename ...Args>
-void BinTree<Type>::Execute(const ExeHelper<Type> &helper, FP *fPtr, Args ...args)
-{
-	if (!helper.rev)
-	{
-		if ((*helper.chkFunc)(ExeInfo<Type>(helper.depth, helper.resource, *crr)))
+		struct ExeIter
 		{
-			BTNode<Type> *const temp = crr;
-			(*fPtr)(args...);
-			crr = temp;
-		}
+			Caller<void, Node<Type>&> *const caller;
+			bool (*chkFunc)(const Info<Type> &info);
+
+			ExeIter(Caller<void, Node<Type>&> *pCaller, bool (*pChkFunc)(const Info<Type> &info)) : caller(pCaller), chkFunc(pChkFunc) {}
+
+			void Preorder(Node<Type> *node, const int counter);
+			void Postorder(Node<Type> *node, const int counter);
+		};
+
+		public:
+		Type data;
+
+		Node<Type> *left;
+		Node<Type> *right;
+		Node<Type> *parent;
+
+		Node(Node<Type> *const pParent) : data(Type()), left(nullptr), right(nullptr), parent(pParent) {}
+		Node(Node<Type> *const pParent, const Type &ref) : data(ref), left(nullptr), right(nullptr), parent(pParent) {}
+		~Node() { delete right; delete left; }
+
+		template <typename FType>
+		void Execute(Trav type, FType func, bool (*chkFunc)(const Info<Type> &info), int counter = 0);
+
+		template <typename FType, typename Class>
+		void Execute(Trav type, FType func, Class *obj, bool (*chkFunc)(const Info<Type> &info), int counter = 0);
+	};
+
+	template <typename Type>
+	struct Info
+	{
+		const int counter;
+		Node<Type> *const node;
+
+		Info(const int pCounter, Node<Type> *const pNode) : counter(pCounter), node(pNode) {}
+
+		inline bool IsRoot() const { return node -> parent == nullptr; }
+		inline bool IsLeaf() const { return node -> left == nullptr && node -> right == nullptr; }
+		inline bool IsInternal() const { return node -> left != nullptr || node -> right != nullptr; }
+	};
+
+	template <typename Type>
+	void Node<Type>::ExeIter::Preorder(Node<Type> *node, const int counter)
+	{
+		if ((*chkFunc)(Info<Type>(counter, node))) caller -> Call(*node);
+
+		const int nextVal = counter - 1;
+		if (node -> left != nullptr) Preorder(node -> left, nextVal);
+		if (node -> right != nullptr) Preorder(node -> right, nextVal);
 	}
 
-	helper.depth--;
-	if (GoLeft())
+	template <typename Type>
+	void Node<Type>::ExeIter::Postorder(Node<Type> *node, const int counter)
 	{
-		Execute(helper, fPtr, args...);
-		GoUp();
+		const int nextVal = counter - 1;
+		if (node -> left != nullptr) Postorder(node -> left, nextVal);
+		if (node -> right != nullptr) Postorder(node -> right, nextVal);
+
+		if ((*chkFunc)(Info<Type>(counter, node))) caller -> Call(*node);
 	}
 
-	if (GoRight())
+	template <typename Type> template <typename FType>
+	void Node<Type>::Execute(Trav type, FType func, bool (*chkFunc)(const Info<Type> &info), int counter)
 	{
-		Execute(helper, fPtr, args...);
-		GoUp();
+		FCaller<void, Node<Type>&> caller(func);
+		ExeIter exeIter(&caller, chkFunc);
+
+		if (type == Trav::PREORDER) exeIter.Preorder(this, counter);
+		else exeIter.Postorder(this, counter);
 	}
 
-	helper.depth++;
-	if (helper.rev)
+	template <typename Type> template <typename FType, typename Class>
+	void Node<Type>::Execute(Trav type, FType func, Class *obj, bool (*chkFunc)(const Info<Type> &info), int counter)
 	{
-		if ((*helper.chkFunc)(ExeInfo<Type>(helper.depth, helper.resource, *crr)))
-		{
-			BTNode<Type> *const temp = crr;
-			(*fPtr)(args...);
-			crr = temp;
-		}
-	}
-}
+		MCaller<void, Class, Node<Type>&> caller(func, obj);
+		ExeIter exeIter(&caller, chkFunc);
 
-template <typename Type> template <typename FP, typename OP, typename ...Args>
-void BinTree<Type>::ExecuteObj(const ExeHelper<Type> &helper, FP OP::*fPtr, OP *oPtr, Args ...args)
-{
-	if (!helper.rev)
-	{
-		if ((*helper.chkFunc)(ExeInfo<Type>(helper.depth, helper.resource, *crr)))
-		{
-			BTNode<Type> *const temp = crr;
-			(oPtr ->* fPtr)(args...);
-			crr = temp;
-		}
-	}
-
-	helper.depth--;
-	if (GoLeft())
-	{
-		ExecuteObj(helper, fPtr, oPtr, args...);
-		GoUp();
-	}
-
-	if (GoRight())
-	{
-		ExecuteObj(helper, fPtr, oPtr, args...);
-		GoUp();
-	}
-
-	helper.depth++;
-	if (helper.rev)
-	{
-		if ((*helper.chkFunc)(ExeInfo<Type>(helper.depth, helper.resource, *crr)))
-		{
-			BTNode<Type> *const temp = crr;
-			(oPtr ->* fPtr)(args...);
-			crr = temp;
-		}
+		if (type == Trav::PREORDER) exeIter.Preorder(this, counter);
+		else exeIter.Postorder(this, counter);
 	}
 }

@@ -74,7 +74,7 @@
     <ClInclude Include="src\pch\pch.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\types.hpp">
+    <ClInclude Include="src\core\utils.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="src\core\guard.hpp">

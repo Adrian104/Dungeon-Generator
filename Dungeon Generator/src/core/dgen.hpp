@@ -1,6 +1,6 @@
 #pragma once
+#include "utils.hpp"
 #include "btree.hpp"
-#include "types.hpp"
 
 struct Cell;
 struct Node;
@@ -8,8 +8,7 @@ struct GenInput;
 struct GenOutput;
 struct Generator;
 
-typedef BinTree<Cell> Tree;
-enum Dir : uint8_t { NORTH, EAST, SOUTH, WEST, INVALID };
+enum Dir : byte { NORTH, EAST, SOUTH, WEST, INVALID };
 
 struct Cell
 {
@@ -18,6 +17,7 @@ struct Cell
 	std::vector<Rect> roomVec;
 
 	Cell() : space{}, selNode(nullptr) {}
+	Cell(int w, int h) : space{ 0, 0, w, h }, selNode(nullptr) {}
 };
 
 struct Node
@@ -27,8 +27,8 @@ struct Node
 
 	static std::vector<std::pair<int, Node*>> *heap;
 
-	enum class Mode : uint8_t { UNVISITED, OPEN, CLOSED };
-	enum class Type : uint8_t { NORMAL, ENTRY, INTERNAL };
+	enum class Mode : byte { UNVISITED, OPEN, CLOSED };
+	enum class Type : byte { NORMAL, ENTRY, INTERNAL };
 
 	const Type type;
 
@@ -38,7 +38,7 @@ struct Node
 
 	Mode mode;
 	Point pos;
-	uint8_t path;
+	byte path;
 
 	Node *links[4];
 	Node *prevNode;
@@ -51,7 +51,7 @@ struct Node
 
 	inline bool CheckIfGCost() const { return path == 0 && type == Type::NORMAL; }
 	inline bool CheckIfEntrance() const { return path != 0 && type == Type::ENTRY; }
-	inline bool CheckIfPath(const uint8_t dir) const { return (path & (1 << dir)) != 0 ? (links[dir] -> type != Type::INTERNAL) : false; }
+	inline bool CheckIfPath(const byte dir) const { return (path & (1 << dir)) != 0 ? (links[dir] -> type != Type::INTERNAL) : false; }
 };
 
 struct GenInput
@@ -84,14 +84,14 @@ struct Generator
 	int roomCount;
 	int deltaDepth;
 
-	Tree tree;
-	Uniforms uniforms;
-
 	GenInput *gInput;
 	GenOutput *gOutput;
 
 	uint32_t bValues;
+	Uniforms uniforms;
 	std::mt19937 mtEngine;
+
+	bt::Node<Cell> *root;
 
 	std::forward_list<Node> nodes;
 	std::map<std::pair<int, int>, Node*> posXNodes;
@@ -101,16 +101,17 @@ struct Generator
 	std::vector<std::pair<int, Node*>> openNodes;
 	
 	void Prepare();
-	void MakeRoom();
-	void FindPath();
 	void LinkNodes();
-	bool Divide(int left);
 	void GenerateOutput();
+	bool Divide(bt::Node<Cell> &btNode, int left);
 
 	bool RandomBool();
-	void CreateRoomNodes();
-	void CreateSpaceNodes();
 	Node &AddRegNode(int x, int y);
+	void CreateRoomNodes(Cell &cell);
+	void CreateSpaceNodes(Cell &cell);
+
+	void MakeRoom(bt::Node<Cell> &btNode);
+	void FindPath(bt::Node<Cell> &btNode);
 
 	Generator();
 	~Generator();

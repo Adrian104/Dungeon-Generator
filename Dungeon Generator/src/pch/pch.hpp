@@ -3,6 +3,7 @@
 #include <chrono>
 #include <random>
 #include <algorithm>
+#include <functional>
 
 #include <map>
 #include <vector>
