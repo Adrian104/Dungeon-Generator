@@ -551,3 +551,34 @@ void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_
 	LOG_TOTAL_TIME("Total time: ");
 	LOG_ENDL();
 }
+
+void Generator::GenerateDebug(GenInput *genInput, GenOutput *genOutput, const uint32_t seed, Caller<void> &callback)
+{
+	LOG_MSG("Generation started (with debugging)");
+	LOG_ENDL();
+
+	mtEngine.seed(seed);
+
+	gInput = genInput;
+	gOutput = genOutput;
+
+	LOG_TIME("Preparing for debugging");
+
+	Prepare();
+	Divide(*root, gInput -> maxDepth);
+
+	root -> Execute(bt::Trav::POSTORDER, &Generator::MakeRoom, this, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
+	LinkNodes();
+	root -> Execute(bt::Trav::POSTORDER, &Generator::FindPath, this, [](const bt::Info<Cell> &info) -> bool { return info.IsInternal(); });
+
+	LOG_TIME("Rendering objects");
+	callback.Call();
+
+	LOG_TIME("Continuing work");
+	GenerateOutput();
+
+	LOG_ENDL();
+	LOG_MSG("Done!");
+	LOG_TOTAL_TIME("Total time: ");
+	LOG_ENDL();
+}

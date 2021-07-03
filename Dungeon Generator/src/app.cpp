@@ -18,10 +18,9 @@ Application::Application() : quit(false), plus(false), factor(1), lastFactor(1),
 	overlay -> AddRef(PercRef("Maximum room size", &gInput.maxRoomSize));
 	overlay -> AddRef(PercRef("Space randomness", &gInput.spaceSizeRandomness));
 	overlay -> AddRef(PercRef("Double room probability", &gInput.doubleRoomProb));
-	overlay -> AddRef(BoolRef("Space visibility", &dInfo.spaceVisibility));
 	overlay -> AddRef(BoolRef("Rooms visibility", &dInfo.roomsVisibility));
-	overlay -> AddRef(ModeRef<4>("Nodes visibility", &dInfo.nodesVisibilityMode, gNodesVisibilityModeNames));
-	overlay -> AddRef(ModeRef<3>("Paths visibility", &dInfo.pathsVisibilityMode, gPathsVisibilityModeNames));
+	overlay -> AddRef(BoolRef("Paths visibility", &dInfo.pathsVisibility));
+	overlay -> AddRef(BoolRef("Entrances visibility", &dInfo.entrancesVisibility));
 }
 
 Application::~Application()
@@ -34,7 +33,7 @@ Application::~Application()
 
 void Application::Run()
 {
-	Generate(true);
+	Generate(GenMode::NEW_SEED);
 	overlay -> Render();
 
 	Render();
@@ -75,15 +74,20 @@ void Application::Update()
 
 			case SDLK_g:
 				refresh = true;
-				Generate(true);
+				Generate(GenMode::NEW_SEED);
 				break;
 
-			case SDLK_d:
+			case SDLK_r:
 				refresh = true;
 				overlay -> refresh = true;
 
 				LoadDefaults();
-				Generate(false);
+				Generate(GenMode::OLD_SEED);
+				break;
+
+			case SDLK_d:
+				Generate(GenMode::DEBUG_MODE);
+				Draw();
 				break;
 
 			case SDLK_m:
@@ -105,7 +109,7 @@ void Application::Update()
 				{
 					plus = true;
 					refresh = true;
-					Generate(false);
+					Generate(GenMode::OLD_SEED);
 				}
 				break;
 
@@ -115,7 +119,7 @@ void Application::Update()
 				{
 					plus = false;
 					refresh = true;
-					Generate(false);
+					Generate(GenMode::OLD_SEED);
 				}
 				break;
 
@@ -142,19 +146,6 @@ void Application::Render()
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
 	SDL_RenderClear(renderer);
 
-	if (dInfo.spaceVisibility)
-	{
-		auto DrawSpace = [this](bt::Node<Cell> &btNode) -> void
-		{
-			SDL_FRect rect = ToFRect(btNode.data.space);
-			vPort.RectToScreen(rect, rect);
-			SDL_RenderDrawRectF(renderer, &rect);
-		};
-
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
-		gen.root -> Execute(bt::Trav::PREORDER, DrawSpace, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
-	}
-
 	if (dInfo.roomsVisibility)
 	{
 		SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
@@ -166,43 +157,7 @@ void Application::Render()
 		}
 	}
 
-	if (dInfo.pathsVisibilityMode == 1)
-	{
-		#ifdef RANDOM_COLORS
-		const int offset = rand() & 0b10;
-		#else
-		SDL_SetRenderDrawColor(renderer, 0x55, 0x55, 0x55, 0xFF);
-		#endif
-		
-		for (Node &node : gen.nodes)
-		{
-			#ifdef RANDOM_COLORS
-			int r, g, b;
-			do { r = 255 * (rand() & 0x1); g = 255 * (rand() & 0x1); b = 255 * (rand() & 0x1); }
-			while (r == 0 && g == 0 && b == 0);
-
-			SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
-			for (int i = offset; i < offset + 2; i++)
-			#else
-			for (int i = 0; i < 2; i++)
-			#endif
-			{
-				if (node.links[i] == nullptr) continue;
-
-				SDL_FPoint p1 = ToFPoint(node.pos);
-				SDL_FPoint p2 = ToFPoint(node.links[i] -> pos);
-
-				p1.x += 0.5f; p1.y += 0.5f;
-				p2.x += 0.5f; p2.y += 0.5f;
-
-				vPort.ToScreen(p1.x, p1.y, p1.x, p1.y);
-				vPort.ToScreen(p2.x, p2.y, p2.x, p2.y);
-
-				SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
-			}
-		}
-	}
-	else if (dInfo.pathsVisibilityMode == 2)
+	if (dInfo.pathsVisibility)
 	{
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 		for (std::pair<Point, Vec> &path : gOutput -> paths)
@@ -220,33 +175,7 @@ void Application::Render()
 		}
 	}
 
-	if (dInfo.nodesVisibilityMode == 1)
-	{
-		SDL_SetRenderDrawColor(renderer, 0, 0xFF, 0, 0xFF);
-		for (Node &node : gen.nodes)
-		{
-			SDL_FPoint point = ToFPoint(node.pos);
-			SDL_FRect rect = { point.x, point.y, 1, 1 };
-
-			vPort.RectToScreen(rect, rect);
-			SDL_RenderFillRectF(renderer, &rect);
-		}
-	}
-	else if (dInfo.nodesVisibilityMode == 2)
-	{
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0xBB, 0, 0xFF);
-		for (Node &node : gen.nodes)
-		{
-			if (node.path == 0 || node.type == Node::Type::INTERNAL) continue;
-
-			SDL_FPoint point = ToFPoint(node.pos);
-			SDL_FRect rect = { point.x, point.y, 1, 1 };
-
-			vPort.RectToScreen(rect, rect);
-			SDL_RenderFillRectF(renderer, &rect);
-		}
-	}
-	else if (dInfo.nodesVisibilityMode == 3)
+	if (dInfo.entrancesVisibility)
 	{
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0x60, 0, 0xFF);
 		for (Point &entrance : gOutput -> entrances)
@@ -258,33 +187,87 @@ void Application::Render()
 			SDL_RenderFillRectF(renderer, &rect);
 		}
 	}
+}
+
+void Application::RenderDebug()
+{
+	SDL_SetRenderTarget(renderer, texture);
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
+	SDL_RenderClear(renderer);
 
 	#ifdef SHOW_GRID
-	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0x16);
-	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+	const float scale = vPort.GetScale();
 
-	for (float x = 0; x <= gInput.xSize; x++)
+	SDL_FPoint a, b;
+	SDL_SetRenderDrawColor(renderer, 0x16, 0x16, 0x16, 0xFF);
+
+	a = { -vPort.GetXOffset() * scale, -vPort.GetYOffset() * scale };
+	b = { a.x, a.y + float(gInput.ySize) * scale };
+
+	for (int x = 0; x <= gInput.xSize; x++)
 	{
-		SDL_FPoint a = { x, 0 };
-		SDL_FPoint b = { x, float(gInput.ySize) };
-
-		vPort.ToScreen(a.x, a.y, a.x, a.y);
-		vPort.ToScreen(b.x, b.y, b.x, b.y);
-
 		SDL_RenderDrawLineF(renderer, a.x, a.y, b.x, b.y);
+		a.x += scale; b.x += scale;
 	}
 
-	for (float y = 0; y <= gInput.ySize; y++)
+	a = { -vPort.GetXOffset() * scale, -vPort.GetYOffset() * scale };
+	b = { a.x + float(gInput.xSize) * scale, a.y };
+
+	for (int y = 0; y <= gInput.ySize; y++)
 	{
-		SDL_FPoint a = { 0, y };
-		SDL_FPoint b = { float(gInput.xSize), y };
-
-		vPort.ToScreen(a.x, a.y, a.x, a.y);
-		vPort.ToScreen(b.x, b.y, b.x, b.y);
-
 		SDL_RenderDrawLineF(renderer, a.x, a.y, b.x, b.y);
+		a.y += scale; b.y += scale;
 	}
 	#endif
+
+	auto DrawCell = [this](bt::Node<Cell> &btNode) -> void
+	{
+		SDL_FRect rect = ToFRect(btNode.data.space);
+		vPort.RectToScreen(rect, rect);
+
+		SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
+		SDL_RenderDrawRectF(renderer, &rect);
+
+		SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
+		for (Rect &room : btNode.data.roomVec)
+		{
+			rect = ToFRect(room);
+			vPort.RectToScreen(rect, rect);
+			SDL_RenderDrawRectF(renderer, &rect);
+		}
+	};
+
+	gen.root -> Execute(bt::Trav::PREORDER, DrawCell, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
+
+	const int offset = rand() & 0b10;
+	for (Node &node : gen.nodes)
+	{
+		SDL_FPoint p1 = { float(node.pos.x + 0.5f), float(node.pos.y + 0.5f) };
+		vPort.ToScreen(p1.x, p1.y, p1.x, p1.y);
+
+		for (int i = offset; i < offset + 2; i++)
+		{
+			Node *const node2 = node.links[i];
+			if (node2 == nullptr) continue;
+
+			SDL_FPoint p2 = { float(node2 -> pos.x + 0.5f), float(node2 -> pos.y + 0.5f) };
+			vPort.ToScreen(p2.x, p2.y, p2.x, p2.y);
+
+			if (node.type != Node::Type::INTERNAL && node.CheckIfPath(i)) SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+			else SDL_SetRenderDrawColor(renderer, 0x30, 0x30, 0x30, 0xFF);
+
+			SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
+		}
+	}
+
+	SDL_SetRenderDrawColor(renderer, 0, 0xC0, 0, 0xFF);
+	for (Node &node : gen.nodes)
+	{
+		SDL_FRect rect = { float(node.pos.x), float(node.pos.y), 1, 1 };
+		
+		vPort.RectToScreen(rect, rect);
+		SDL_RenderFillRectF(renderer, &rect);
+	}
 }
 
 void Application::ApplyFactor()
@@ -311,16 +294,15 @@ void Application::LoadDefaults()
 	gInput.doubleRoomProb = gDefDoubleRoomProb;
 	gInput.spaceSizeRandomness = gDefSpaceSizeRandomness;
 
-	dInfo.spaceVisibility = gDefSpaceVisibility;
 	dInfo.roomsVisibility = gDefRoomsVisibility;
-	dInfo.nodesVisibilityMode = gDefNodesVisibilityMode;
-	dInfo.pathsVisibilityMode = gDefPathsVisibilityMode;
+	dInfo.pathsVisibility = gDefPathsVisibility;
+	dInfo.entrancesVisibility = gDefEntrancesVisibility;
 
 	factor = gDefFactor;
 	ApplyFactor();
 }
 
-void Application::Generate(const bool newSeed)
+void Application::Generate(GenMode mode)
 {
 	if (lastFactor != factor) ApplyFactor();
 
@@ -336,19 +318,26 @@ void Application::Generate(const bool newSeed)
 		else gInput.minRoomSize = gInput.maxRoomSize;
 	}
 
-	static uint32_t seed = 0;
-
-	#ifdef RANDOM_SEED
-	static std::random_device rd;
-	if (newSeed) seed = rd();
-	#endif
-
-	#ifdef INCREMENTAL_SEED
-	if (newSeed) seed++;
-	#endif
-
 	delete gOutput;
 	gOutput = new GenOutput;
 
-	gen.Generate(&gInput, gOutput, seed);
+	static uint32_t seed = 0;
+	if (mode != GenMode::DEBUG_MODE)
+	{
+		#ifdef RANDOM_SEED
+		static std::random_device rd;
+		if (mode == GenMode::NEW_SEED) seed = rd();
+		#endif
+
+		#ifdef INCREMENTAL_SEED
+		if (mode == GenMode::NEW_SEED) seed++;
+		#endif
+
+		gen.Generate(&gInput, gOutput, seed);
+	}
+	else
+	{
+		MCaller<void, Application> caller(&Application::RenderDebug, this);
+		gen.GenerateDebug(&gInput, gOutput, seed, caller);
+	}
 }

@@ -118,4 +118,5 @@ struct Generator
 
 	void Clear();
 	void Generate(GenInput *genInput, GenOutput *genOutput, const uint32_t seed);
+	void GenerateDebug(GenInput *genInput, GenOutput *genOutput, const uint32_t seed, Caller<void> &callback);
 };

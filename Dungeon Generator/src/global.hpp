@@ -1,7 +1,6 @@
 #pragma once
 
 #ifdef _DEBUG
-	#define RANDOM_COLORS
 	#define LOGGER_ENABLED
 	#define INCREMENTAL_SEED
 #else
@@ -20,10 +19,9 @@ inline const int gDefMinRoomSize = 25;
 inline const int gDefDoubleRoomProb = 25;
 inline const int gDefSpaceSizeRandomness = 35;
 
-inline const int gDefNodesVisibilityMode = 0;
-inline const int gDefPathsVisibilityMode = 2;
-inline const bool gDefSpaceVisibility = false;
 inline const bool gDefRoomsVisibility = true;
+inline const bool gDefPathsVisibility = true;
+inline const bool gDefEntrancesVisibility = false;
 
 inline const int gOverlayXMargin = 6;
 inline const int gOverlayYMargin = 4;
@@ -34,9 +32,6 @@ inline const int gOverlayOutlineWidth = 3;
 inline const int gOverlayTitleYOffset = 60;
 inline const int gOverlayRefInternalOffset = 22;
 inline const int gOverlayRefExternalOffset = 40;
-
-inline const std::string gPathsVisibilityModeNames[] = { "None", "Links", "Paths" };
-inline const std::string gNodesVisibilityModeNames[] = { "None", "All", "Used", "Entrances" };
 
 inline const std::pair<std::string, int> gFonts[] =
 {
