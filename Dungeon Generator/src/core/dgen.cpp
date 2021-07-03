@@ -62,9 +62,21 @@ void Node::Open(Node *prev)
 Generator::Generator() : roomCount(0), deltaDepth(0), gInput(nullptr), gOutput(nullptr), bValues(0), uniforms{}, root(nullptr) { LOG_HEADER("Dungeon Generator"); }
 Generator::~Generator() { Clear(); }
 
+void Generator::Clear()
+{
+	posYNodes.clear();
+	posXNodes.clear();
+
+	nodes.clear();
+	usedNodes.clear();
+	openNodes.clear();
+
+	delete root;
+	root = nullptr;
+}
+
 void Generator::Prepare()
 {
-	Clear();
 	root = new bt::Node<Cell>(nullptr, Cell(gInput -> xSize - 3, gInput -> ySize - 3));
 
 	roomCount = 0;
@@ -135,6 +147,45 @@ void Generator::LinkNodes()
 	}
 
 	posYNodes.clear();
+}
+
+void Generator::OptimizeNodes()
+{
+	for (std::list<Node>::iterator iter = nodes.begin(); iter != nodes.end(); iter++)
+	{
+		rep:
+		Node &node = *iter;
+		if (node.type != Node::Type::NORMAL) continue;
+
+		if (node.path == 0b0101)
+		{
+			node.links[Dir::NORTH] -> links[Dir::SOUTH] = node.links[Dir::SOUTH];
+			node.links[Dir::SOUTH] -> links[Dir::NORTH] = node.links[Dir::NORTH];
+
+			if (node.links[Dir::WEST] != nullptr) node.links[Dir::WEST] -> links[Dir::EAST] = nullptr;
+			if (node.links[Dir::EAST] != nullptr) node.links[Dir::EAST] -> links[Dir::WEST] = nullptr;
+		}
+		else if (node.path == 0b1010)
+		{
+			node.links[Dir::EAST] -> links[Dir::WEST] = node.links[Dir::WEST];
+			node.links[Dir::WEST] -> links[Dir::EAST] = node.links[Dir::EAST];
+
+			if (node.links[Dir::NORTH] != nullptr) node.links[Dir::NORTH] -> links[Dir::SOUTH] = nullptr;
+			if (node.links[Dir::SOUTH] != nullptr) node.links[Dir::SOUTH] -> links[Dir::NORTH] = nullptr;
+		}
+		else if (node.path == 0)
+		{
+			if (node.links[Dir::NORTH] != nullptr) node.links[Dir::NORTH] -> links[Dir::SOUTH] = nullptr;
+			if (node.links[Dir::SOUTH] != nullptr) node.links[Dir::SOUTH] -> links[Dir::NORTH] = nullptr;
+			if (node.links[Dir::WEST] != nullptr) node.links[Dir::WEST] -> links[Dir::EAST] = nullptr;
+			if (node.links[Dir::EAST] != nullptr) node.links[Dir::EAST] -> links[Dir::WEST] = nullptr;
+		}
+		else continue;
+
+		iter = nodes.erase(iter);
+		if (iter == nodes.end()) break;
+		goto rep;
+	}
 }
 
 void Generator::GenerateOutput()
@@ -505,30 +556,15 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 	openNodes.clear();
 }
 
-void Generator::Clear()
-{
-	posYNodes.clear();
-	posXNodes.clear();
-
-	nodes.clear();
-	usedNodes.clear();
-	openNodes.clear();
-
-	delete root;
-	root = nullptr;
-}
-
 void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_t seed)
 {
 	LOG_MSG("Generation started");
 	LOG_ENDL();
 
-	mtEngine.seed(seed);
-
 	gInput = genInput;
 	gOutput = genOutput;
 
-	LOG_TIME("Preparing");
+	mtEngine.seed(seed);
 	Prepare();
 
 	LOG_TIME("Partitioning space");
@@ -543,8 +579,14 @@ void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_
 	LOG_TIME("Finding paths");
 	root -> Execute(bt::Trav::POSTORDER, &Generator::FindPath, this, [](const bt::Info<Cell> &info) -> bool { return info.IsInternal(); });
 
+	LOG_TIME("Optimizing nodes");
+	OptimizeNodes();
+
 	LOG_TIME("Generating output");
 	GenerateOutput();
+
+	LOG_TIME("Deallocating memory");
+	Clear();
 
 	LOG_ENDL();
 	LOG_MSG("Done!");
@@ -557,25 +599,27 @@ void Generator::GenerateDebug(GenInput *genInput, GenOutput *genOutput, const ui
 	LOG_MSG("Generation started (with debugging)");
 	LOG_ENDL();
 
-	mtEngine.seed(seed);
-
 	gInput = genInput;
 	gOutput = genOutput;
 
+	mtEngine.seed(seed);
+	Prepare();
+
 	LOG_TIME("Preparing for debugging");
 
-	Prepare();
 	Divide(*root, gInput -> maxDepth);
-
 	root -> Execute(bt::Trav::POSTORDER, &Generator::MakeRoom, this, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
 	LinkNodes();
 	root -> Execute(bt::Trav::POSTORDER, &Generator::FindPath, this, [](const bt::Info<Cell> &info) -> bool { return info.IsInternal(); });
+	OptimizeNodes();
 
 	LOG_TIME("Rendering objects");
 	callback.Call();
 
 	LOG_TIME("Continuing work");
+
 	GenerateOutput();
+	Clear();
 
 	LOG_ENDL();
 	LOG_MSG("Done!");

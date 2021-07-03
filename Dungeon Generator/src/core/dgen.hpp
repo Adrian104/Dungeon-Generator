@@ -93,15 +93,17 @@ struct Generator
 
 	bt::Node<Cell> *root;
 
-	std::forward_list<Node> nodes;
+	std::list<Node> nodes;
 	std::map<std::pair<int, int>, Node*> posXNodes;
 	std::map<std::pair<int, int>, Node*> posYNodes;
 
 	std::vector<Node*> usedNodes;
 	std::vector<std::pair<int, Node*>> openNodes;
 	
+	void Clear();
 	void Prepare();
 	void LinkNodes();
+	void OptimizeNodes();
 	void GenerateOutput();
 	bool Divide(bt::Node<Cell> &btNode, int left);
 
@@ -116,7 +118,6 @@ struct Generator
 	Generator();
 	~Generator();
 
-	void Clear();
 	void Generate(GenInput *genInput, GenOutput *genOutput, const uint32_t seed);
 	void GenerateDebug(GenInput *genInput, GenOutput *genOutput, const uint32_t seed, Caller<void> &callback);
 };
