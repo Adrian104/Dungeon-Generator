@@ -4,6 +4,7 @@
 
 struct Cell;
 struct Node;
+struct Room;
 struct GenInput;
 struct GenOutput;
 struct Generator;
@@ -14,7 +15,6 @@ struct Cell
 {
 	Rect space;
 	Node *selNode;
-	std::vector<Rect> roomVec;
 
 	Cell() : space{}, selNode(nullptr) {}
 	Cell(int w, int h) : space{ 0, 0, w, h }, selNode(nullptr) {}
@@ -36,22 +36,29 @@ struct Node
 	int hCost;
 	int fCost;
 
+	byte path;
 	Mode mode;
 	Point pos;
-	byte path;
 
 	Node *links[4];
 	Node *prevNode;
 
-	Node(const Type pType) : type(pType), gCost(0), hCost(0), fCost(0), mode(Mode::UNVISITED), pos{ 0, 0 }, path(0), links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
-	Node(const Type pType, const int x, const int y) : type(pType), gCost(0), hCost(0), fCost(0), mode(Mode::UNVISITED), pos{ x, y }, path(0), links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
+	Node(const Type pType) : type(pType), gCost(0), hCost(0), fCost(0), path(0), mode(Mode::UNVISITED), pos{ 0, 0 }, links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
+	Node(const Type pType, const int x, const int y) : type(pType), gCost(0), hCost(0), fCost(0), path(0), mode(Mode::UNVISITED), pos{ x, y }, links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
 	
 	void Reset();
 	void Open(Node *prev);
 
 	inline bool CheckIfGCost() const { return path == 0 && type == Type::NORMAL; }
-	inline bool CheckIfEntrance() const { return path != 0 && type == Type::ENTRY; }
-	inline bool CheckIfPath(const byte dir) const { return (path & (1 << dir)) != 0 ? (links[dir] -> type != Type::INTERNAL) : false; }
+};
+
+struct Room
+{
+	Node iNode;
+	Node eNodes[4];
+	std::vector<Rect> rects;
+
+	Room() : iNode(Node::Type::INTERNAL), eNodes{ Node(Node::Type::ENTRY), Node(Node::Type::ENTRY), Node(Node::Type::ENTRY), Node(Node::Type::ENTRY) } {}
 };
 
 struct GenInput
@@ -92,9 +99,9 @@ struct Generator
 	std::mt19937 mtEngine;
 
 	bt::Node<Cell> *root;
+	std::forward_list<Room> rooms;
 
-	std::list<Node> nodes;
-	std::map<std::pair<int, int>, Node*> posXNodes;
+	std::map<std::pair<int, int>, Node> posXNodes;
 	std::map<std::pair<int, int>, Node*> posYNodes;
 
 	std::vector<Node*> usedNodes;
@@ -109,8 +116,8 @@ struct Generator
 
 	bool RandomBool();
 	Node &AddRegNode(int x, int y);
-	void CreateRoomNodes(Cell &cell);
 	void CreateSpaceNodes(Cell &cell);
+	void CreateRoomNodes(Cell &cell, Room &room);
 
 	void MakeRoom(bt::Node<Cell> &btNode);
 	void FindPath(bt::Node<Cell> &btNode);

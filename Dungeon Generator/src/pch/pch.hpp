@@ -6,9 +6,9 @@
 #include <functional>
 
 #include <map>
-#include <list>
 #include <vector>
 #include <string>
+#include <forward_list>
 
 #include <SDL.h>
 #include <SDL_ttf.h>

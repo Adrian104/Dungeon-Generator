@@ -82,12 +82,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="SDL2.dll" />
-    <None Include="libfreetype-6.dll" />
-    <None Include="SDL2_ttf.dll" />
-    <None Include="zlib1.dll" />
-  </ItemGroup>
-  <ItemGroup>
     <Font Include="res\Quicksand-Regular.ttf" />
   </ItemGroup>
 </Project>

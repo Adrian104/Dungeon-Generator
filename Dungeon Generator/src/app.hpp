@@ -18,10 +18,10 @@ struct Application : public AppManager
 	bool quit, plus;
 	float factor, lastFactor;
 
+	Generator gen;
 	GenInput gInput;
 	GenOutput *gOutput;
 
-	Generator gen;
 	DrawInfo dInfo;
 	Viewport vPort;
 	Overlay *overlay;

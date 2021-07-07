@@ -220,27 +220,16 @@ void Application::RenderDebug()
 	}
 	#endif
 
-	auto DrawCell = [this](bt::Node<Cell> &btNode) -> void
+	auto DrawSpace = [this](bt::Node<Cell> &btNode) -> void
 	{
 		SDL_FRect rect = ToFRect(btNode.data.space);
+
 		vPort.RectToScreen(rect, rect);
-
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
 		SDL_RenderDrawRectF(renderer, &rect);
-
-		SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
-		for (Rect &room : btNode.data.roomVec)
-		{
-			rect = ToFRect(room);
-			vPort.RectToScreen(rect, rect);
-			SDL_RenderDrawRectF(renderer, &rect);
-		}
 	};
 
-	gen.root -> Execute(bt::Trav::PREORDER, DrawCell, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
-
 	const int offset = rand() & 0b10;
-	for (Node &node : gen.nodes)
+	auto DrawLinks = [this, offset](Node &node) -> void
 	{
 		SDL_FPoint p1 = { float(node.pos.x + 0.5f), float(node.pos.y + 0.5f) };
 		vPort.ToScreen(p1.x, p1.y, p1.x, p1.y);
@@ -251,23 +240,50 @@ void Application::RenderDebug()
 			if (node2 == nullptr) continue;
 
 			SDL_FPoint p2 = { float(node2 -> pos.x + 0.5f), float(node2 -> pos.y + 0.5f) };
+
 			vPort.ToScreen(p2.x, p2.y, p2.x, p2.y);
-
-			if (node.type != Node::Type::INTERNAL && node.CheckIfPath(i)) SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-			else SDL_SetRenderDrawColor(renderer, 0x30, 0x30, 0x30, 0xFF);
-
 			SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
 		}
-	}
+	};
 
-	SDL_SetRenderDrawColor(renderer, 0, 0xC0, 0, 0xFF);
-	for (Node &node : gen.nodes)
+	auto DrawNode = [this](Node &node) -> void
 	{
 		SDL_FRect rect = { float(node.pos.x), float(node.pos.y), 1, 1 };
-		
+
 		vPort.RectToScreen(rect, rect);
 		SDL_RenderFillRectF(renderer, &rect);
+	};
+
+	SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
+	gen.root -> Execute(bt::Trav::PREORDER, DrawSpace, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
+
+	for (Room &room : gen.rooms)
+	{
+		SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
+		for (Rect &rect : room.rects)
+		{
+			SDL_FRect sdlRect = ToFRect(rect);
+			vPort.RectToScreen(sdlRect, sdlRect);
+			SDL_RenderDrawRectF(renderer, &sdlRect);
+		}
+
+		SDL_SetRenderDrawColor(renderer, 0x50, 0x50, 0x50, 0xFF);
+		DrawLinks(room.iNode);
+
+		for (Node &node : room.eNodes) DrawLinks(node);
 	}
+
+	SDL_SetRenderDrawColor(renderer, 0x50, 0x50, 0x50, 0xFF);
+	for (auto &[pair, node] : gen.posXNodes) DrawLinks(node);
+
+	SDL_SetRenderDrawColor(renderer, 0, 0xC0, 0, 0xFF);
+	for (Room &room : gen.rooms)
+	{
+		DrawNode(room.iNode);
+		for (Node &node : room.eNodes) DrawNode(node);
+	}
+
+	for (auto &[pair, node] : gen.posXNodes) DrawNode(node);
 }
 
 void Application::ApplyFactor()
