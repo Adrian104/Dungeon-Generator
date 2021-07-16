@@ -94,7 +94,7 @@ void Overlay::MoveSelected(const bool up)
 	if (up)
 	{
 		selected--;
-		if (selected < 0) selected = refs.size() - 1;
+		if (selected < 0) selected = int(refs.size()) - 1;
 	}
 	else
 	{

@@ -1,6 +1,4 @@
 .vs/
-Debug/
-Release/
-Dungeon Generator/Debug/
-Dungeon Generator/Release/
+bin/
 *.dll
+*.7z
