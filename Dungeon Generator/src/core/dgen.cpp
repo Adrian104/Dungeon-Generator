@@ -415,7 +415,18 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 	r1Rect.w -= dX;
 	r1Rect.h -= dY;
 
-	if (r1Rect.w < 4 || r1Rect.h < 4) return;
+	if (r1Rect.w < 4 || r1Rect.h < 4)
+	{
+		r1Rect = cell.space;
+
+		dX = int(r1Rect.w * uniforms.uniRoom.min());
+		dY = int(r1Rect.h * uniforms.uniRoom.min());
+
+		r1Rect.w -= dX;
+		r1Rect.h -= dY;
+
+		if (r1Rect.w < 4 || r1Rect.h < 4) return;
+	}
 
 	if (doubleRoom)
 	{
