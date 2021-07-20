@@ -18,6 +18,11 @@ Application::Application() : quit(false), plus(false), factor(1), lastFactor(1),
 	overlay -> AddRef(PercRef("Maximum room size", &gInput.maxRoomSize));
 	overlay -> AddRef(PercRef("Space randomness", &gInput.spaceSizeRandomness));
 	overlay -> AddRef(PercRef("Double room probability", &gInput.doubleRoomProb));
+
+	overlay -> AddRef(ValRef("Random area size", &gInput.randAreaSize));
+	overlay -> AddRef(PercRef("Random area density", &gInput.randAreaDens));
+	overlay -> AddRef(PercRef("Random area probability", &gInput.randAreaProb));
+
 	overlay -> AddRef(BoolRef("Rooms visibility", &dInfo.roomsVisibility));
 	overlay -> AddRef(BoolRef("Paths visibility", &dInfo.pathsVisibility));
 	overlay -> AddRef(BoolRef("Entrances visibility", &dInfo.entrancesVisibility));
@@ -301,6 +306,10 @@ void Application::ApplyFactor()
 
 void Application::LoadDefaults()
 {
+	gInput.randAreaDens = gDefRandAreaDens;
+	gInput.randAreaProb = gDefRandAreaProb;
+	gInput.randAreaSize = gDefRandAreaSize;
+
 	gInput.xSize = windowWidth;
 	gInput.ySize = windowHeight;
 	gInput.minDepth = gDefMinDepth;

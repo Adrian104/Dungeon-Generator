@@ -23,7 +23,7 @@ struct Cell
 struct Node
 {
 	static Node *stop;
-	static Node reqLink;
+	static Node refNode;
 
 	static std::vector<std::pair<int, Node*>> *heap;
 
@@ -68,6 +68,7 @@ struct GenInput
 	int maxDepth, minDepth;
 	int spaceSizeRandomness;
 	int maxRoomSize, minRoomSize;
+	int randAreaDens, randAreaProb, randAreaSize;
 };
 
 struct GenOutput

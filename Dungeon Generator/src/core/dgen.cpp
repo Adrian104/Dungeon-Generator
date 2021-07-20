@@ -9,7 +9,7 @@ struct HeapCompare
 };
 
 Node *Node::stop = nullptr;
-Node Node::reqLink = Node(Node::Type::NORMAL);
+Node Node::refNode = Node(Node::Type::NORMAL);
 std::vector<std::pair<int, Node*>> *Node::heap = nullptr;
 
 void Node::Reset()
@@ -109,7 +109,7 @@ void Generator::LinkNodes()
 		Node *const node = &crrXIter -> second;
 		Node **links = node -> links;
 
-		if (links[Dir::SOUTH] == &Node::reqLink)
+		if (links[Dir::SOUTH] == &Node::refNode)
 		{
 			Node *const nextNode = &nextXIter -> second;
 			links[Dir::SOUTH] = nextNode;
@@ -133,7 +133,7 @@ void Generator::LinkNodes()
 		Node *const node = crrYIter -> second;
 		Node **links = node -> links;
 
-		if (links[Dir::EAST] == &Node::reqLink)
+		if (links[Dir::EAST] == &Node::refNode)
 		{
 			Node *const nextNode = nextYIter -> second;
 			links[Dir::EAST] = nextNode;
@@ -229,19 +229,25 @@ void Generator::GenerateOutput()
 
 bool Generator::Divide(bt::Node<Cell> &btNode, int left)
 {
-	if (left <= 0) goto nomore;
+	if (left <= 0)
+	{
+		nomore:
+		Rect &space = btNode.data.space;
+
+		space.x += 4; space.y += 4;
+		space.w -= 5; space.h -= 5;
+
+		return space.w < 5 || space.h < 5;
+	}
+
 	if (left <= deltaDepth)
 	{
-		if (left <= uniforms.uniDepth(mtEngine))
-		{
-			nomore:
-			Rect &space = btNode.data.space;
+		if (left <= uniforms.uniDepth(mtEngine)) goto nomore;
+	}
 
-			space.x += 4; space.y += 4;
-			space.w -= 5; space.h -= 5;
-
-			return space.w < 5 || space.h < 5;
-		}
+	if (left <= gInput -> randAreaSize)
+	{
+		if (uniforms.uni0to99(mtEngine) < gInput -> randAreaProb) btNode.data.selNode = &Node::refNode;
 	}
 
 	left--;
@@ -327,10 +333,10 @@ void Generator::CreateSpaceNodes(Cell &cell)
 	Node &SW = AddRegNode(xMin, yMax);
 	Node &SE = AddRegNode(xMax, yMax);
 
-	NW.links[Dir::EAST] = &Node::reqLink;
-	NW.links[Dir::SOUTH] = &Node::reqLink;
-	NE.links[Dir::SOUTH] = &Node::reqLink;
-	SW.links[Dir::EAST] = &Node::reqLink;
+	NW.links[Dir::EAST] = &Node::refNode;
+	NW.links[Dir::SOUTH] = &Node::refNode;
+	NE.links[Dir::SOUTH] = &Node::refNode;
+	SW.links[Dir::EAST] = &Node::refNode;
 }
 
 void Generator::CreateRoomNodes(Cell &cell, Room &room)
@@ -393,16 +399,22 @@ void Generator::CreateRoomNodes(Cell &cell, Room &room)
 	bNodes[Dir::SOUTH] -> links[Dir::NORTH] = &eNodes[Dir::SOUTH];
 	bNodes[Dir::WEST] -> links[Dir::EAST] = &eNodes[Dir::WEST];
 
-	bNodes[Dir::NORTH] -> links[Dir::EAST] = &Node::reqLink;
-	bNodes[Dir::EAST] -> links[Dir::SOUTH] = &Node::reqLink;
-	bNodes[Dir::SOUTH] -> links[Dir::EAST] = &Node::reqLink;
-	bNodes[Dir::WEST] -> links[Dir::SOUTH] = &Node::reqLink;
+	bNodes[Dir::NORTH] -> links[Dir::EAST] = &Node::refNode;
+	bNodes[Dir::EAST] -> links[Dir::SOUTH] = &Node::refNode;
+	bNodes[Dir::SOUTH] -> links[Dir::EAST] = &Node::refNode;
+	bNodes[Dir::WEST] -> links[Dir::SOUTH] = &Node::refNode;
 }
 
 void Generator::MakeRoom(bt::Node<Cell> &btNode)
 {
 	Cell &cell = btNode.data;
 	CreateSpaceNodes(cell);
+
+	if (cell.selNode == &Node::refNode)
+	{
+		cell.selNode = nullptr;
+		if (uniforms.uni0to99(mtEngine) >= gInput -> randAreaDens) return;
+	}
 
 	Rect r1Rect = cell.space;
 	Rect r2Rect;
@@ -490,15 +502,14 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 
 void Generator::FindPath(bt::Node<Cell> &btNode)
 {
+	Node **iNode = &btNode.data.selNode;
 	Node *start = btNode.left -> data.selNode;
 	Node::stop = btNode.right -> data.selNode;
 
 	const bool startNullptr = start == nullptr;
 	const bool stopNullptr = Node::stop == nullptr;
 
-	if (start == Node::stop) return;
-	Node **iNode = &btNode.data.selNode;
-
+	if (start == Node::stop) { *iNode = nullptr; return; }
 	if (!startNullptr && stopNullptr) { *iNode = start; return; }
 	if (startNullptr && !stopNullptr) { *iNode = Node::stop; return; }
 

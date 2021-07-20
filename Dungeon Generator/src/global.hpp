@@ -19,6 +19,10 @@ inline const int gDefMinRoomSize = 25;
 inline const int gDefDoubleRoomProb = 25;
 inline const int gDefSpaceSizeRandomness = 35;
 
+inline const int gDefRandAreaSize = 2;
+inline const int gDefRandAreaDens = 50;
+inline const int gDefRandAreaProb = 25;
+
 inline const bool gDefRoomsVisibility = true;
 inline const bool gDefPathsVisibility = true;
 inline const bool gDefEntrancesVisibility = false;
