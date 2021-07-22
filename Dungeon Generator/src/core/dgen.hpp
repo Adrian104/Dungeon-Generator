@@ -46,9 +46,7 @@ struct Node
 	Node(const Type pType) : type(pType), gCost(0), hCost(0), fCost(0), path(0), mode(Mode::UNVISITED), pos{ 0, 0 }, links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
 	Node(const Type pType, const int x, const int y) : type(pType), gCost(0), hCost(0), fCost(0), path(0), mode(Mode::UNVISITED), pos{ x, y }, links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
 	
-	void Reset();
 	void Open(Node *prev);
-
 	inline bool CheckIfGCost() const { return path == 0 && type == Type::NORMAL; }
 };
 

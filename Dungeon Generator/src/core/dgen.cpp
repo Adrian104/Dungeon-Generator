@@ -3,20 +3,14 @@
 #include "../logger.hpp"
 #include "guard.hpp"
 
-struct HeapCompare
+bool HeapCompare(const std::pair<int, Node*> &p1, const std::pair<int, Node*> &p2)
 {
-	bool operator() (const std::pair<int, Node*> &p1, const std::pair<int, Node*> &p2) { return p1.first > p2.first; }
-};
+	return p1.first > p2.first;
+}
 
 Node *Node::stop = nullptr;
 Node Node::refNode = Node(Node::Type::NORMAL);
 std::vector<std::pair<int, Node*>> *Node::heap = nullptr;
-
-void Node::Reset()
-{
-	gCost = 0;
-	mode = Mode::UNVISITED;
-}
 
 void Node::Open(Node *prev)
 {
@@ -45,8 +39,15 @@ void Node::Open(Node *prev)
 	if (newGCost < gCost)
 	{
 		{
-			std::pair<int, Node*> pair(fCost, this);
-			heap -> erase(std::remove_if(heap -> begin(), heap -> end(), [pair](std::pair<int, Node*> &in) -> bool { return pair.second == in.second; }), heap -> end());
+			const auto endIter = heap -> end();
+			for (auto iter = heap -> begin(); iter != endIter; iter++)
+			{
+				if (iter -> second == this)
+				{
+					heap -> erase(iter);
+					break;
+				}
+			}
 		}
 
 		next:
@@ -55,7 +56,7 @@ void Node::Open(Node *prev)
 		fCost = gCost + hCost;
 
 		heap -> push_back(std::make_pair(fCost, this));
-		std::push_heap(heap -> begin(), heap -> end(), HeapCompare());
+		std::push_heap(heap -> begin(), heap -> end(), &HeapCompare);
 	}
 }
 
@@ -506,14 +507,12 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 	Node *start = btNode.left -> data.selNode;
 	Node::stop = btNode.right -> data.selNode;
 
-	const bool startNullptr = start == nullptr;
-	const bool stopNullptr = Node::stop == nullptr;
-
 	if (start == Node::stop) { *iNode = nullptr; return; }
-	if (!startNullptr && stopNullptr) { *iNode = start; return; }
-	if (startNullptr && !stopNullptr) { *iNode = Node::stop; return; }
+	if (start == nullptr) { *iNode = Node::stop; return; }
+	if (Node::stop == nullptr) { *iNode = start; return; }
 
 	Node *crrNode = start;
+	start -> gCost = 0;
 
 	do
 	{
@@ -530,8 +529,8 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 		crrNode -> mode = Node::Mode::CLOSED;
 		usedNodes.push_back(crrNode);
 
-		crrNode = openNodes.at(0).second;
-		std::pop_heap(openNodes.begin(), openNodes.end(), HeapCompare());
+		crrNode = openNodes.front().second;
+		std::pop_heap(openNodes.begin(), openNodes.end(), &HeapCompare);
 		openNodes.pop_back();
 
 	} while (crrNode != Node::stop);
@@ -556,7 +555,7 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 			crrNode -> path |= 1 << Dir::SOUTH;
 			prevNode -> path |= 1 << Dir::NORTH;
 		}
-		else if (prevNode == links[3])
+		else
 		{
 			crrNode -> path |= 1 << Dir::WEST;
 			prevNode -> path |= 1 << Dir::EAST;
@@ -566,13 +565,13 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 
 	} while (crrNode != start);
 
-	Node::stop -> Reset();
+	Node::stop -> mode = Node::Mode::UNVISITED;
 	*iNode = RandomBool() ? start : Node::stop;
 
-	for (Node *&node : usedNodes) node -> Reset();
-	for (auto &[fCost, node] : openNodes) node -> Reset();
-
+	for (Node *&node : usedNodes) node -> mode = Node::Mode::UNVISITED;
 	usedNodes.clear();
+
+	for (auto &[fCost, node] : openNodes) node -> mode = Node::Mode::UNVISITED;
 	openNodes.clear();
 }
 
