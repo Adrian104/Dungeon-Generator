@@ -22,31 +22,25 @@ struct Cell
 
 struct Node
 {
-	static Node *stop;
-	static Node refNode;
-
-	static std::vector<std::pair<int, Node*>> *heap;
-
-	enum class Mode : byte { UNVISITED, OPEN, CLOSED };
 	enum class Type : byte { NORMAL, ENTRY, INTERNAL };
-
+	static Node refNode;
+	
 	const Type type;
+	unsigned int status;
 
 	int gCost;
 	int hCost;
 	int fCost;
 
 	byte path;
-	Mode mode;
 	Point pos;
 
 	Node *links[4];
 	Node *prevNode;
 
-	Node(const Type pType) : type(pType), gCost(0), hCost(0), fCost(0), path(0), mode(Mode::UNVISITED), pos{ 0, 0 }, links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
-	Node(const Type pType, const int x, const int y) : type(pType), gCost(0), hCost(0), fCost(0), path(0), mode(Mode::UNVISITED), pos{ x, y }, links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
-	
-	void Open(Node *prev);
+	Node(const Type pType) : type(pType), status(0), gCost(0), hCost(0), fCost(0), path(0), pos{ 0, 0 }, links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
+	Node(const Type pType, const int x, const int y) : type(pType), status(0), gCost(0), hCost(0), fCost(0), path(0), pos{ x, y }, links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
+
 	inline bool CheckIfGCost() const { return path == 0 && type == Type::NORMAL; }
 };
 
@@ -90,6 +84,8 @@ struct Generator
 	int roomCount;
 	int deltaDepth;
 
+	unsigned int statusCounter;
+
 	GenInput *gInput;
 	GenOutput *gOutput;
 
@@ -99,12 +95,10 @@ struct Generator
 
 	bt::Node<Cell> *root;
 	std::forward_list<Room> rooms;
+	std::vector<std::pair<int, Node*>> openNodes;
 
 	std::map<std::pair<int, int>, Node> posXNodes;
 	std::map<std::pair<int, int>, Node*> posYNodes;
-
-	std::vector<Node*> usedNodes;
-	std::vector<std::pair<int, Node*>> openNodes;
 	
 	void Clear();
 	void Prepare();

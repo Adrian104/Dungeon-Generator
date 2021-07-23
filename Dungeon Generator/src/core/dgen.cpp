@@ -3,64 +3,10 @@
 #include "../logger.hpp"
 #include "guard.hpp"
 
-bool HeapCompare(const std::pair<int, Node*> &p1, const std::pair<int, Node*> &p2)
-{
-	return p1.first > p2.first;
-}
-
-Node *Node::stop = nullptr;
 Node Node::refNode = Node(Node::Type::NORMAL);
-std::vector<std::pair<int, Node*>> *Node::heap = nullptr;
+bool HeapCompare(const std::pair<int, Node*> &p1, const std::pair<int, Node*> &p2) { return p1.first > p2.first; }
 
-void Node::Open(Node *prev)
-{
-	int newGCost = prev -> gCost;
-	if (prev -> CheckIfGCost() || CheckIfGCost())
-	{
-		int xDiff = prev -> pos.x - pos.x;
-		int yDiff = prev -> pos.y - pos.y;
-
-		if (xDiff < 0) xDiff = -xDiff;
-		if (yDiff < 0) yDiff = -yDiff;
-
-		newGCost += (xDiff > yDiff) ? xDiff : yDiff;
-	}
-
-	if (mode == Mode::UNVISITED)
-	{
-		const Vec diff = stop -> pos - pos;
-
-		hCost = int(sqrtf(float(diff.x * diff.x + diff.y * diff.y)));
-		mode = Mode::OPEN;
-
-		goto next;
-	}
-
-	if (newGCost < gCost)
-	{
-		{
-			const auto endIter = heap -> end();
-			for (auto iter = heap -> begin(); iter != endIter; iter++)
-			{
-				if (iter -> second == this)
-				{
-					heap -> erase(iter);
-					break;
-				}
-			}
-		}
-
-		next:
-		prevNode = prev;
-		gCost = newGCost;
-		fCost = gCost + hCost;
-
-		heap -> push_back(std::make_pair(fCost, this));
-		std::push_heap(heap -> begin(), heap -> end(), &HeapCompare);
-	}
-}
-
-Generator::Generator() : roomCount(0), deltaDepth(0), gInput(nullptr), gOutput(nullptr), bValues(0), uniforms{}, root(nullptr) { LOG_HEADER("Dungeon Generator"); }
+Generator::Generator() : roomCount(0), deltaDepth(0), statusCounter(1), gInput(nullptr), gOutput(nullptr), bValues(0), uniforms{}, root(nullptr) { LOG_HEADER("Dungeon Generator"); }
 Generator::~Generator() { Clear(); }
 
 void Generator::Clear()
@@ -68,7 +14,6 @@ void Generator::Clear()
 	posYNodes.clear();
 	posXNodes.clear();
 
-	usedNodes.clear();
 	openNodes.clear();
 	rooms.clear();
 
@@ -81,6 +26,7 @@ void Generator::Prepare()
 	root = new bt::Node<Cell>(nullptr, Cell(gInput -> xSize - 3, gInput -> ySize - 3));
 
 	roomCount = 0;
+	statusCounter = 1;
 	deltaDepth = gInput -> maxDepth - gInput -> minDepth;
 
 	uniforms.uni0to99 = std::uniform_int_distribution<int>(0, 99);
@@ -91,8 +37,6 @@ void Generator::Prepare()
 
 	bValues = 0;
 	RandomBool();
-
-	Node::heap = &openNodes;
 }
 
 void Generator::LinkNodes()
@@ -504,36 +448,78 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 void Generator::FindPath(bt::Node<Cell> &btNode)
 {
 	Node **iNode = &btNode.data.selNode;
-	Node *start = btNode.left -> data.selNode;
-	Node::stop = btNode.right -> data.selNode;
+	Node *const start = btNode.left -> data.selNode;
+	Node *const stop = btNode.right -> data.selNode;
 
-	if (start == Node::stop) { *iNode = nullptr; return; }
-	if (start == nullptr) { *iNode = Node::stop; return; }
-	if (Node::stop == nullptr) { *iNode = start; return; }
+	if (start == stop) { *iNode = nullptr; return; }
+	if (start == nullptr) { *iNode = stop; return; }
+	if (stop == nullptr) { *iNode = start; return; }
+
+	const unsigned int closed = statusCounter + 1;
 
 	Node *crrNode = start;
 	start -> gCost = 0;
 
 	do
 	{
-		for (Node *&neighbor : crrNode -> links)
+		for (Node *&nNode : crrNode -> links)
 		{
-			if (neighbor == nullptr) continue;
-			if (neighbor -> mode != Node::Mode::CLOSED) neighbor -> Open(crrNode);
+			if (nNode == nullptr) continue;
+			if (nNode -> status > statusCounter) continue;
+
+			int newGCost = crrNode -> gCost;
+			if (crrNode -> CheckIfGCost() || nNode -> CheckIfGCost())
+			{
+				int xDiff = crrNode -> pos.x - nNode -> pos.x;
+				int yDiff = crrNode -> pos.y - nNode -> pos.y;
+
+				if (xDiff < 0) xDiff = -xDiff;
+				if (yDiff < 0) yDiff = -yDiff;
+
+				newGCost += (xDiff > yDiff) ? xDiff : yDiff;
+			}
+
+			if (nNode -> status < statusCounter)
+			{
+				const Vec diff = stop -> pos - nNode -> pos;
+
+				nNode -> hCost = int(sqrtf(float(diff.x * diff.x + diff.y * diff.y)));
+				nNode -> status = statusCounter;
+			}
+			else
+			{
+				if (newGCost >= nNode -> gCost) continue;
+
+				const auto endIter = openNodes.end();
+				for (auto iter = openNodes.begin(); iter != endIter; iter++)
+				{
+					if (iter -> second == nNode)
+					{
+						openNodes.erase(iter);
+						break;
+					}
+				}
+			}
+
+			nNode -> prevNode = crrNode;
+			nNode -> gCost = newGCost;
+			nNode -> fCost = newGCost + nNode -> hCost;
+
+			openNodes.push_back(std::make_pair(nNode -> fCost, nNode));
+			std::push_heap(openNodes.begin(), openNodes.end(), &HeapCompare);
 		}
 
 		#ifdef _DEBUG
 		if (openNodes.empty()) throw -1;
 		#endif
 
-		crrNode -> mode = Node::Mode::CLOSED;
-		usedNodes.push_back(crrNode);
-
+		crrNode -> status = closed;
 		crrNode = openNodes.front().second;
+
 		std::pop_heap(openNodes.begin(), openNodes.end(), &HeapCompare);
 		openNodes.pop_back();
 
-	} while (crrNode != Node::stop);
+	} while (crrNode != stop);
 
 	do
 	{
@@ -565,13 +551,8 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 
 	} while (crrNode != start);
 
-	Node::stop -> mode = Node::Mode::UNVISITED;
-	*iNode = RandomBool() ? start : Node::stop;
-
-	for (Node *&node : usedNodes) node -> mode = Node::Mode::UNVISITED;
-	usedNodes.clear();
-
-	for (auto &[fCost, node] : openNodes) node -> mode = Node::Mode::UNVISITED;
+	*iNode = RandomBool() ? start : stop;
+	statusCounter += 2;
 	openNodes.clear();
 }
 
