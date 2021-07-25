@@ -274,14 +274,16 @@ void Generator::CreateSpaceNodes(Cell &cell)
 	const int yMax = space.y + space.h + 2;
 
 	Node &NW = AddRegNode(xMin, yMin);
-	Node &NE = AddRegNode(xMax, yMin);
-	Node &SW = AddRegNode(xMin, yMax);
-	Node &SE = AddRegNode(xMax, yMax);
-
 	NW.links[Dir::EAST] = &Node::refNode;
 	NW.links[Dir::SOUTH] = &Node::refNode;
+
+	Node &NE = AddRegNode(xMax, yMin);
 	NE.links[Dir::SOUTH] = &Node::refNode;
+
+	Node &SW = AddRegNode(xMin, yMax);
 	SW.links[Dir::EAST] = &Node::refNode;
+
+	AddRegNode(xMax, yMax);
 }
 
 void Generator::CreateRoomNodes(Cell &cell, Room &room)
@@ -290,20 +292,20 @@ void Generator::CreateRoomNodes(Cell &cell, Room &room)
 	const Point &iPoint = iNode.pos;
 
 	int edges[4] = { std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() };
-	for (Rect &room : room.rects)
+	for (Rect &rect : room.rects)
 	{
-		const int xPlusW = room.x + room.w;
-		const int yPlusH = room.y + room.h;
+		const int xPlusW = rect.x + rect.w;
+		const int yPlusH = rect.y + rect.h;
 
-		if (iPoint.x >= room.x && iPoint.x < xPlusW)
+		if (iPoint.x >= rect.x && iPoint.x < xPlusW)
 		{
-			if (edges[Dir::NORTH] > room.y) edges[Dir::NORTH] = room.y;
+			if (edges[Dir::NORTH] > rect.y) edges[Dir::NORTH] = rect.y;
 			if (edges[Dir::SOUTH] < yPlusH) edges[Dir::SOUTH] = yPlusH;
 		}
 
-		if (iPoint.y >= room.y && iPoint.y < yPlusH)
+		if (iPoint.y >= rect.y && iPoint.y < yPlusH)
 		{
-			if (edges[Dir::WEST] > room.x) edges[Dir::WEST] = room.x;
+			if (edges[Dir::WEST] > rect.x) edges[Dir::WEST] = rect.x;
 			if (edges[Dir::EAST] < xPlusW) edges[Dir::EAST] = xPlusW;
 		}
 	}
@@ -362,8 +364,6 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 	}
 
 	Rect r1Rect = cell.space;
-	Rect r2Rect;
-
 	bool doubleRoom = uniforms.uni0to99(mtEngine) < gInput -> doubleRoomProb;
 
 	int dX = int(r1Rect.w * uniforms.uniRoom(mtEngine));
@@ -385,6 +385,7 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 		if (r1Rect.w < 4 || r1Rect.h < 4) return;
 	}
 
+	Rect r2Rect;
 	if (doubleRoom)
 	{
 		r2Rect = r1Rect;
@@ -455,8 +456,6 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 	if (start == nullptr) { *iNode = stop; return; }
 	if (stop == nullptr) { *iNode = start; return; }
 
-	const unsigned int closed = statusCounter + 1;
-
 	Node *crrNode = start;
 	start -> gCost = 0;
 
@@ -513,7 +512,7 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 		if (openNodes.empty()) throw -1;
 		#endif
 
-		crrNode -> status = closed;
+		crrNode -> status = statusCounter + 1;
 		crrNode = openNodes.front().second;
 
 		std::pop_heap(openNodes.begin(), openNodes.end(), &HeapCompare);

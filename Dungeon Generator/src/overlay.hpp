@@ -8,10 +8,11 @@ struct RefInterface
 	std::string name;
 
 	RefInterface(const std::string &pName) : name(pName) {}
-	virtual std::string Get() = 0;
+	virtual ~RefInterface() {}
 
 	virtual void Plus() = 0;
 	virtual void Minus() = 0;
+	virtual std::string Get() = 0;
 };
 
 struct Overlay : public Animator
