@@ -98,31 +98,36 @@ void Generator::OptimizeNodes()
 	{
 		rep:
 		Node &node = iter -> second;
+		const auto &links = node.links;
 
-		if (node.path == 0b0101)
+		switch (node.path)
 		{
-			node.links[Dir::NORTH] -> links[Dir::SOUTH] = node.links[Dir::SOUTH];
-			node.links[Dir::SOUTH] -> links[Dir::NORTH] = node.links[Dir::NORTH];
+		case 0:
+			if (links[Dir::NORTH] != nullptr) links[Dir::NORTH] -> links[Dir::SOUTH] = nullptr;
+			if (links[Dir::SOUTH] != nullptr) links[Dir::SOUTH] -> links[Dir::NORTH] = nullptr;
+			if (links[Dir::WEST] != nullptr) links[Dir::WEST] -> links[Dir::EAST] = nullptr;
+			if (links[Dir::EAST] != nullptr) links[Dir::EAST] -> links[Dir::WEST] = nullptr;
+			break;
 
-			if (node.links[Dir::WEST] != nullptr) node.links[Dir::WEST] -> links[Dir::EAST] = nullptr;
-			if (node.links[Dir::EAST] != nullptr) node.links[Dir::EAST] -> links[Dir::WEST] = nullptr;
-		}
-		else if (node.path == 0b1010)
-		{
-			node.links[Dir::EAST] -> links[Dir::WEST] = node.links[Dir::WEST];
-			node.links[Dir::WEST] -> links[Dir::EAST] = node.links[Dir::EAST];
+		case 0b0101:
+			links[Dir::NORTH] -> links[Dir::SOUTH] = links[Dir::SOUTH];
+			links[Dir::SOUTH] -> links[Dir::NORTH] = links[Dir::NORTH];
 
-			if (node.links[Dir::NORTH] != nullptr) node.links[Dir::NORTH] -> links[Dir::SOUTH] = nullptr;
-			if (node.links[Dir::SOUTH] != nullptr) node.links[Dir::SOUTH] -> links[Dir::NORTH] = nullptr;
+			if (links[Dir::WEST] != nullptr) links[Dir::WEST] -> links[Dir::EAST] = nullptr;
+			if (links[Dir::EAST] != nullptr) links[Dir::EAST] -> links[Dir::WEST] = nullptr;
+			break;
+
+		case 0b1010:
+			links[Dir::EAST] -> links[Dir::WEST] = links[Dir::WEST];
+			links[Dir::WEST] -> links[Dir::EAST] = links[Dir::EAST];
+
+			if (links[Dir::NORTH] != nullptr) links[Dir::NORTH] -> links[Dir::SOUTH] = nullptr;
+			if (links[Dir::SOUTH] != nullptr) links[Dir::SOUTH] -> links[Dir::NORTH] = nullptr;
+			break;
+
+		default:
+			continue;
 		}
-		else if (node.path == 0)
-		{
-			if (node.links[Dir::NORTH] != nullptr) node.links[Dir::NORTH] -> links[Dir::SOUTH] = nullptr;
-			if (node.links[Dir::SOUTH] != nullptr) node.links[Dir::SOUTH] -> links[Dir::NORTH] = nullptr;
-			if (node.links[Dir::WEST] != nullptr) node.links[Dir::WEST] -> links[Dir::EAST] = nullptr;
-			if (node.links[Dir::EAST] != nullptr) node.links[Dir::EAST] -> links[Dir::WEST] = nullptr;
-		}
-		else continue;
 
 		iter = posXNodes.erase(iter);
 		if (iter == posXNodes.end()) break;
@@ -233,6 +238,7 @@ bool Generator::Divide(bt::Node<Cell> &btNode, int left)
 		goto nomore;
 	}
 
+	btNode.data.selNode = nullptr;
 	return false;
 }
 
@@ -352,6 +358,18 @@ void Generator::CreateRoomNodes(Cell &cell, Room &room)
 	bNodes[Dir::WEST] -> links[Dir::SOUTH] = &Node::refNode;
 }
 
+Node *Generator::GetRandomNode(bt::Node<Cell> *const btNode)
+{
+	if (btNode == nullptr) return nullptr;
+	const bool rBool = RandomBool();
+
+	Node *node = GetRandomNode(rBool ? btNode -> left : btNode -> right);
+	if (node != nullptr) return node;
+
+	node = GetRandomNode(rBool ? btNode -> right : btNode -> left);
+	return node != nullptr ? node : btNode -> data.selNode;
+}
+
 void Generator::MakeRoom(bt::Node<Cell> &btNode)
 {
 	Cell &cell = btNode.data;
@@ -448,13 +466,11 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 
 void Generator::FindPath(bt::Node<Cell> &btNode)
 {
-	Node **iNode = &btNode.data.selNode;
-	Node *const start = btNode.left -> data.selNode;
-	Node *const stop = btNode.right -> data.selNode;
+	Node *const start = GetRandomNode(btNode.left);
+	if (start == nullptr) return;
 
-	if (start == stop) { *iNode = nullptr; return; }
-	if (start == nullptr) { *iNode = stop; return; }
-	if (stop == nullptr) { *iNode = start; return; }
+	Node *const stop = GetRandomNode(btNode.right);
+	if (stop == nullptr || start == stop) return;
 
 	Node *crrNode = start;
 	start -> gCost = 0;
@@ -550,7 +566,6 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 
 	} while (crrNode != start);
 
-	*iNode = RandomBool() ? start : stop;
 	statusCounter += 2;
 	openNodes.clear();
 }
@@ -577,6 +592,7 @@ void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_
 
 	LOG_TIME("Finding paths");
 	root -> Execute(bt::Trav::POSTORDER, &Generator::FindPath, this, [](const bt::Info<Cell> &info) -> bool { return info.IsInternal(); });
+	for (int i = gInput -> additionalConnections; i > 0; i--) FindPath(*root);
 
 	LOG_TIME("Optimizing nodes");
 	OptimizeNodes();
@@ -610,6 +626,7 @@ void Generator::GenerateDebug(GenInput *genInput, GenOutput *genOutput, const ui
 	root -> Execute(bt::Trav::POSTORDER, &Generator::MakeRoom, this, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
 	LinkNodes();
 	root -> Execute(bt::Trav::POSTORDER, &Generator::FindPath, this, [](const bt::Info<Cell> &info) -> bool { return info.IsInternal(); });
+	for (int i = gInput -> additionalConnections; i > 0; i--) FindPath(*root);
 	OptimizeNodes();
 
 	LOG_TIME("Rendering objects");

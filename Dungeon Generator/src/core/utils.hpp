@@ -7,6 +7,8 @@ struct Rect { int x; int y; int w; int h; };
 typedef Point Vec;
 typedef unsigned char byte;
 
+enum Dir : byte { NORTH, EAST, SOUTH, WEST, INVALID };
+
 inline Vec operator+(const Point &p1, const Point &p2) { return Vec{ p1.x + p2.x, p1.y + p2.y }; }
 inline Vec operator-(const Point &p1, const Point &p2) { return Vec{ p1.x - p2.x, p1.y - p2.y }; }
 

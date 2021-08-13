@@ -1,6 +1,9 @@
 #include "pch.hpp"
 #include "overlay.hpp"
 
+const int gOverlayXMargin2 = gOverlayXMargin << 1;
+const int gOverlayYMargin2 = gOverlayYMargin << 1;
+
 Overlay::Overlay(AppManager &appManager) : Animator(std::chrono::milliseconds(gOverlayAnimTime)), selected(0), refresh(true), mgr(appManager)
 {
 	texture = SDL_CreateTexture(mgr.renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, gOverlayWidth, mgr.windowHeight);

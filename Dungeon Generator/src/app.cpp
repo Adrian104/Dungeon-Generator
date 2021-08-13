@@ -18,6 +18,7 @@ Application::Application() : quit(false), plus(false), factor(1), lastFactor(1),
 	overlay -> AddRef(PercRef("Maximum room size", &gInput.maxRoomSize));
 	overlay -> AddRef(PercRef("Space randomness", &gInput.spaceSizeRandomness));
 	overlay -> AddRef(PercRef("Double room probability", &gInput.doubleRoomProb));
+	overlay -> AddRef(ValRef("Additional connections", &gInput.additionalConnections));
 
 	overlay -> AddRef(ValRef("Random area size", &gInput.randAreaSize));
 	overlay -> AddRef(PercRef("Random area density", &gInput.randAreaDens));
@@ -318,6 +319,7 @@ void Application::LoadDefaults()
 	gInput.minRoomSize = gDefMinRoomSize;
 	gInput.doubleRoomProb = gDefDoubleRoomProb;
 	gInput.spaceSizeRandomness = gDefSpaceSizeRandomness;
+	gInput.additionalConnections = gDefAdditionalConnections;
 
 	dInfo.roomsVisibility = gDefRoomsVisibility;
 	dInfo.pathsVisibility = gDefPathsVisibility;
@@ -330,6 +332,7 @@ void Application::LoadDefaults()
 void Application::Generate(GenMode mode)
 {
 	if (lastFactor != factor) ApplyFactor();
+	if (gInput.randAreaSize > gInput.maxDepth) gInput.randAreaSize = gInput.maxDepth;
 
 	if (gInput.maxDepth < gInput.minDepth)
 	{

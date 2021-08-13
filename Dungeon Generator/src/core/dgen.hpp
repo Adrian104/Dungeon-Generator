@@ -9,8 +9,6 @@ struct GenInput;
 struct GenOutput;
 struct Generator;
 
-enum Dir : byte { NORTH, EAST, SOUTH, WEST, INVALID };
-
 struct Cell
 {
 	Rect space;
@@ -59,6 +57,7 @@ struct GenInput
 	int doubleRoomProb;
 	int maxDepth, minDepth;
 	int spaceSizeRandomness;
+	int additionalConnections;
 	int maxRoomSize, minRoomSize;
 	int randAreaDens, randAreaProb, randAreaSize;
 };
@@ -111,6 +110,7 @@ struct Generator
 	Node &AddRegNode(int x, int y);
 	void CreateSpaceNodes(Cell &cell);
 	void CreateRoomNodes(Cell &cell, Room &room);
+	Node *GetRandomNode(bt::Node<Cell> *const btNode);
 
 	void MakeRoom(bt::Node<Cell> &btNode);
 	void FindPath(bt::Node<Cell> &btNode);

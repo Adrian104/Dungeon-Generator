@@ -1,6 +1,8 @@
 #pragma once
 #include "global.hpp"
 
+inline const int gFontCount = sizeof(gFonts) / sizeof(*gFonts);
+
 struct AppManager
 {
 	struct TextTx
