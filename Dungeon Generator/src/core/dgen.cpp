@@ -518,9 +518,8 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 
 			nNode -> prevNode = crrNode;
 			nNode -> gCost = newGCost;
-			nNode -> fCost = newGCost + nNode -> hCost;
 
-			openNodes.push_back(std::make_pair(nNode -> fCost, nNode));
+			openNodes.push_back(std::make_pair(newGCost + nNode -> hCost, nNode));
 			std::push_heap(openNodes.begin(), openNodes.end(), &HeapCompare);
 		}
 

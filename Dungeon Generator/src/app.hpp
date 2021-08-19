@@ -4,18 +4,18 @@
 #include "core/dgen.hpp"
 #include "overlay.hpp"
 
-struct DrawInfo
-{
-	bool roomsVisibility;
-	bool pathsVisibility;
-	bool entrancesVisibility;
-};
-
 struct Application : public AppManager
 {
+	struct DrawInfo
+	{
+		bool roomsVisibility;
+		bool pathsVisibility;
+		bool entrancesVisibility;
+	};
+
 	enum class GenMode : byte { OLD_SEED, NEW_SEED, DEBUG_MODE };
 
-	bool quit, plus;
+	bool plus;
 	float factor, lastFactor;
 
 	Generator gen;
@@ -32,7 +32,7 @@ struct Application : public AppManager
 
 	void Run();
 	void Draw();
-	void Update();
+	bool Update();
 
 	void Render();
 	void RenderDebug();

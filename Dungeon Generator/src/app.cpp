@@ -4,7 +4,7 @@
 inline SDL_FPoint ToFPoint(const Point &point) { return { float(point.x), float(point.y) }; }
 inline SDL_FRect ToFRect(const Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
 
-Application::Application() : quit(false), plus(false), factor(1), lastFactor(1), gOutput(nullptr)
+Application::Application() : plus(false), factor(1), lastFactor(1), gOutput(nullptr)
 {
 	LoadDefaults();
 	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, windowWidth, windowHeight);
@@ -45,14 +45,7 @@ void Application::Run()
 	Render();
 	Draw();
 
-	while (!quit)
-	{
-		Update();
-
-		#ifndef NO_DELAY
-		SDL_Delay(1);
-		#endif
-	}
+	while (Update()) {}
 }
 
 void Application::Draw()
@@ -64,86 +57,88 @@ void Application::Draw()
 	SDL_RenderPresent(renderer);
 }
 
-void Application::Update()
+bool Application::Update()
 {
-	bool refresh = false;
-	if (SDL_Event sdlEvent; SDL_PollEvent(&sdlEvent))
+	SDL_Event sdlEvent;
+	sdlEvent.type = 0;
+
+	int mode = int(overlay -> Update());
+
+	if (mode) SDL_PollEvent(&sdlEvent);
+	else SDL_WaitEvent(&sdlEvent);
+
+	if (sdlEvent.type == SDL_QUIT) return false;
+	if (sdlEvent.type == SDL_KEYDOWN)
 	{
-		if (sdlEvent.type == SDL_QUIT) quit = true;
-		else if (sdlEvent.type == SDL_KEYDOWN)
+		switch (sdlEvent.key.keysym.sym)
 		{
-			switch (sdlEvent.key.keysym.sym)
+		case SDLK_ESCAPE:
+			return false;
+
+		case SDLK_g:
+			mode = 2;
+			Generate(GenMode::NEW_SEED);
+			break;
+
+		case SDLK_r:
+			mode = 2;
+			overlay -> refresh = true;
+
+			LoadDefaults();
+			Generate(GenMode::OLD_SEED);
+			break;
+
+		case SDLK_d:
+			Generate(GenMode::DEBUG_MODE);
+			Draw();
+			break;
+
+		case SDLK_m:
+			overlay -> ToggleAnim();
+			break;
+
+		case SDLK_UP:
+			overlay -> MoveSelected(true);
+			break;
+
+		case SDLK_DOWN:
+			overlay -> MoveSelected(false);
+			break;
+
+		case SDLK_RIGHT:
+		case SDLK_RETURN:
+		case SDLK_EQUALS:
+			if (overlay -> ChangeSelected(false))
 			{
-			case SDLK_ESCAPE:
-				quit = true;
-				break;
-
-			case SDLK_g:
-				refresh = true;
-				Generate(GenMode::NEW_SEED);
-				break;
-
-			case SDLK_r:
-				refresh = true;
-				overlay -> refresh = true;
-
-				LoadDefaults();
+				mode = 2;
+				plus = true;
 				Generate(GenMode::OLD_SEED);
-				break;
-
-			case SDLK_d:
-				Generate(GenMode::DEBUG_MODE);
-				Draw();
-				break;
-
-			case SDLK_m:
-				overlay -> ToggleAnim();
-				break;
-
-			case SDLK_UP:
-				overlay -> MoveSelected(true);
-				break;
-
-			case SDLK_DOWN:
-				overlay -> MoveSelected(false);
-				break;
-
-			case SDLK_RIGHT:
-			case SDLK_RETURN:
-			case SDLK_EQUALS:
-				if (overlay -> ChangeSelected(false))
-				{
-					plus = true;
-					refresh = true;
-					Generate(GenMode::OLD_SEED);
-				}
-				break;
-
-			case SDLK_LEFT:
-			case SDLK_MINUS:
-				if (overlay -> ChangeSelected(true))
-				{
-					plus = false;
-					refresh = true;
-					Generate(GenMode::OLD_SEED);
-				}
-				break;
-
-			default:
-				refresh = vPort.Update(sdlEvent);
 			}
+			break;
+
+		case SDLK_LEFT:
+		case SDLK_MINUS:
+			if (overlay -> ChangeSelected(true))
+			{
+				mode = 2;
+				plus = false;
+				Generate(GenMode::OLD_SEED);
+			}
+			break;
+
+		default:
+			if (vPort.Update(sdlEvent)) mode = 2;
 		}
-		else refresh = vPort.Update(sdlEvent);
 	}
+	else if (vPort.Update(sdlEvent)) mode = 2;
 
-	bool redraw = refresh;
-	redraw |= overlay -> Update();
-
-	if (redraw)
+	if (mode >= 1)
 	{
-		if (refresh) Render();
+		if (mode >= 2) Render();
 		Draw();
 	}
+
+	return true;
 }
 
 void Application::Render()
