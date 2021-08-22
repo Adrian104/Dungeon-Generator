@@ -103,7 +103,7 @@ struct Generator
 	void LinkNodes();
 	void OptimizeNodes();
 	void GenerateOutput();
-	bool Divide(bt::Node<Cell> &btNode, int left);
+	void Divide(bt::Node<Cell> &btNode, int left);
 
 	bool RandomBool();
 	Node &AddRegNode(int x, int y);

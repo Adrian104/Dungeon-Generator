@@ -177,7 +177,7 @@ void Generator::GenerateOutput()
 	}
 }
 
-bool Generator::Divide(bt::Node<Cell> &btNode, int left)
+void Generator::Divide(bt::Node<Cell> &btNode, int left)
 {
 	if (left <= 0)
 	{
@@ -187,7 +187,7 @@ bool Generator::Divide(bt::Node<Cell> &btNode, int left)
 		space.x += 4; space.y += 4;
 		space.w -= 5; space.h -= 5;
 
-		return space.w < 5 || space.h < 5;
+		return;
 	}
 
 	if (left <= deltaDepth)
@@ -200,46 +200,30 @@ bool Generator::Divide(bt::Node<Cell> &btNode, int left)
 		if (uniforms.uni0to99(mtEngine) < gInput -> randAreaProb) btNode.data.selNode = &Node::refNode;
 	}
 
-	left--;
+	int Rect::*xy; int Rect::*wh;
+	Rect &crrSpace = btNode.data.space;
 
-	int Rect::*xy;
-	int Rect::*wh;
-
-	Rect *crrSpace = &btNode.data.space;
-	const bool horizontal = crrSpace -> w < crrSpace -> h;
-
-	if (horizontal) { xy = &Rect::y; wh = &Rect::h; }
+	if (crrSpace.w < crrSpace.h) { xy = &Rect::y; wh = &Rect::h; }
 	else { xy = &Rect::x; wh = &Rect::w; }
 
-	const int totalSize = crrSpace ->* wh;
+	const int totalSize = crrSpace.*wh;
 	const int randSize = (totalSize >> 1) + int(totalSize * uniforms.uniSpace(mtEngine));
 
+	if (randSize < 10 || totalSize - randSize < 10) goto nomore;
+
 	btNode.left = new bt::Node<Cell>(&btNode, btNode.data);
-	btNode.left -> data.space.*wh = randSize;
-
-	bool notOk = Divide(*btNode.left, left);
-
 	btNode.right = new bt::Node<Cell>(&btNode, btNode.data);
-	crrSpace = &btNode.right -> data.space;
 
-	crrSpace ->* xy += randSize;
-	crrSpace ->* wh -= randSize;
+	btNode.left -> data.space.*wh = randSize;
+	btNode.right -> data.space.*xy += randSize;
+	btNode.right -> data.space.*wh -= randSize;
 
-	notOk |= Divide(*btNode.right, left);
+	left--;
 
-	if (notOk)
-	{
-		delete btNode.right;
-		btNode.right = nullptr;
-
-		delete btNode.left;
-		btNode.left = nullptr;
-
-		goto nomore;
-	}
+	Divide(*btNode.left, left);
+	Divide(*btNode.right, left);
 
 	btNode.data.selNode = nullptr;
-	return false;
 }
 
 bool Generator::RandomBool()
@@ -274,9 +258,9 @@ void Generator::CreateSpaceNodes(Cell &cell)
 	Rect &space = cell.space;
 
 	const int xMin = space.x - 3;
-	const int yMin = space.y - 3;
-
 	const int xMax = space.x + space.w + 2;
+
+	const int yMin = space.y - 3;
 	const int yMax = space.y + space.h + 2;
 
 	Node &NW = AddRegNode(xMin, yMin);
@@ -294,10 +278,9 @@ void Generator::CreateSpaceNodes(Cell &cell)
 
 void Generator::CreateRoomNodes(Cell &cell, Room &room)
 {
-	Node &iNode = room.iNode;
-	const Point &iPoint = iNode.pos;
-
+	const Point &iPoint = room.iNode.pos;
 	int edges[4] = { std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() };
+
 	for (Rect &rect : room.rects)
 	{
 		const int xPlusW = rect.x + rect.w;
@@ -316,6 +299,14 @@ void Generator::CreateRoomNodes(Cell &cell, Room &room)
 		}
 	}
 
+	Node &iNode = room.iNode;
+	Node *const eNodes = room.eNodes;
+
+	iNode.links[Dir::NORTH] = eNodes + Dir::NORTH;
+	iNode.links[Dir::EAST] = eNodes + Dir::EAST;
+	iNode.links[Dir::SOUTH] = eNodes + Dir::SOUTH;
+	iNode.links[Dir::WEST] = eNodes + Dir::WEST;
+
 	Node *const bNodes[4] =
 	{
 		&AddRegNode(iPoint.x, cell.space.y - 3),
@@ -323,13 +314,6 @@ void Generator::CreateRoomNodes(Cell &cell, Room &room)
 		&AddRegNode(iPoint.x, cell.space.y + cell.space.h + 2),
 		&AddRegNode(cell.space.x - 3, iPoint.y)
 	};
-
-	Node *const eNodes = room.eNodes;
-
-	iNode.links[Dir::NORTH] = &eNodes[Dir::NORTH];
-	iNode.links[Dir::EAST] = &eNodes[Dir::EAST];
-	iNode.links[Dir::SOUTH] = &eNodes[Dir::SOUTH];
-	iNode.links[Dir::WEST] = &eNodes[Dir::WEST];
 
 	eNodes[Dir::NORTH].links[Dir::SOUTH] = &iNode;
 	eNodes[Dir::NORTH].links[Dir::NORTH] = bNodes[Dir::NORTH];
@@ -348,13 +332,15 @@ void Generator::CreateRoomNodes(Cell &cell, Room &room)
 	eNodes[Dir::WEST].pos = Point{ edges[3], iPoint.y };
 
 	bNodes[Dir::NORTH] -> links[Dir::SOUTH] = &eNodes[Dir::NORTH];
-	bNodes[Dir::EAST] -> links[Dir::WEST] = &eNodes[Dir::EAST];
-	bNodes[Dir::SOUTH] -> links[Dir::NORTH] = &eNodes[Dir::SOUTH];
-	bNodes[Dir::WEST] -> links[Dir::EAST] = &eNodes[Dir::WEST];
-
 	bNodes[Dir::NORTH] -> links[Dir::EAST] = &Node::refNode;
+
+	bNodes[Dir::EAST] -> links[Dir::WEST] = &eNodes[Dir::EAST];
 	bNodes[Dir::EAST] -> links[Dir::SOUTH] = &Node::refNode;
+
+	bNodes[Dir::SOUTH] -> links[Dir::NORTH] = &eNodes[Dir::SOUTH];
 	bNodes[Dir::SOUTH] -> links[Dir::EAST] = &Node::refNode;
+
+	bNodes[Dir::WEST] -> links[Dir::EAST] = &eNodes[Dir::WEST];
 	bNodes[Dir::WEST] -> links[Dir::SOUTH] = &Node::refNode;
 }
 
@@ -453,7 +439,7 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 		roomCount++;
 	}
 
-	Rect *const selRoom = &rects.at(mtEngine() % rects.size());
+	Rect *const selRoom = rects.data() + mtEngine() % rects.size();
 
 	const int iNodeYPos = selRoom -> y + (mtEngine() % (selRoom -> h - 2)) + 1;
 	const int iNodeXPos = selRoom -> x + (mtEngine() % (selRoom -> w - 2)) + 1;
