@@ -94,9 +94,11 @@ void Generator::LinkNodes()
 
 void Generator::OptimizeNodes()
 {
-	for (auto iter = posXNodes.begin(); iter != posXNodes.end(); iter++)
+	auto iter = posXNodes.begin();
+	auto endIter = posXNodes.end();
+
+	while (iter != endIter)
 	{
-		rep:
 		Node &node = iter -> second;
 		const auto &links = node.links;
 
@@ -126,12 +128,12 @@ void Generator::OptimizeNodes()
 			break;
 
 		default:
+			iter++;
 			continue;
 		}
 
 		iter = posXNodes.erase(iter);
-		if (iter == posXNodes.end()) break;
-		goto rep;
+		endIter = posXNodes.end();
 	}
 }
 
@@ -177,7 +179,7 @@ void Generator::GenerateOutput()
 	}
 }
 
-void Generator::Divide(bt::Node<Cell> &btNode, int left)
+void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 {
 	if (left <= 0)
 	{
@@ -187,6 +189,7 @@ void Generator::Divide(bt::Node<Cell> &btNode, int left)
 		space.x += 4; space.y += 4;
 		space.w -= 5; space.h -= 5;
 
+		CreateSpaceNodes(space);
 		return;
 	}
 
@@ -220,8 +223,8 @@ void Generator::Divide(bt::Node<Cell> &btNode, int left)
 
 	left--;
 
-	Divide(*btNode.left, left);
-	Divide(*btNode.right, left);
+	GenerateTree(*btNode.left, left);
+	GenerateTree(*btNode.right, left);
 
 	btNode.data.selNode = nullptr;
 }
@@ -253,10 +256,8 @@ Node &Generator::AddRegNode(int x, int y)
 	return pair.first -> second;
 }
 
-void Generator::CreateSpaceNodes(Cell &cell)
+void Generator::CreateSpaceNodes(Rect &space)
 {
-	Rect &space = cell.space;
-
 	const int xMin = space.x - 3;
 	const int xMax = space.x + space.w + 2;
 
@@ -276,7 +277,7 @@ void Generator::CreateSpaceNodes(Cell &cell)
 	AddRegNode(xMax, yMax);
 }
 
-void Generator::CreateRoomNodes(Cell &cell, Room &room)
+void Generator::CreateRoomNodes(Rect &space, Room &room)
 {
 	const Point &iPoint = room.iNode.pos;
 	int edges[4] = { std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() };
@@ -309,10 +310,10 @@ void Generator::CreateRoomNodes(Cell &cell, Room &room)
 
 	Node *const bNodes[4] =
 	{
-		&AddRegNode(iPoint.x, cell.space.y - 3),
-		&AddRegNode(cell.space.x + cell.space.w + 2, iPoint.y),
-		&AddRegNode(iPoint.x, cell.space.y + cell.space.h + 2),
-		&AddRegNode(cell.space.x - 3, iPoint.y)
+		&AddRegNode(iPoint.x, space.y - 3),
+		&AddRegNode(space.x + space.w + 2, iPoint.y),
+		&AddRegNode(iPoint.x, space.y + space.h + 2),
+		&AddRegNode(space.x - 3, iPoint.y)
 	};
 
 	eNodes[Dir::NORTH].links[Dir::SOUTH] = &iNode;
@@ -359,8 +360,6 @@ Node *Generator::GetRandomNode(bt::Node<Cell> *const btNode)
 void Generator::MakeRoom(bt::Node<Cell> &btNode)
 {
 	Cell &cell = btNode.data;
-	CreateSpaceNodes(cell);
-
 	if (cell.selNode == &Node::refNode)
 	{
 		cell.selNode = nullptr;
@@ -368,7 +367,6 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 	}
 
 	Rect r1Rect = cell.space;
-	bool doubleRoom = uniforms.uni0to99(mtEngine) < gInput -> doubleRoomProb;
 
 	int dX = int(r1Rect.w * uniforms.uniRoom(mtEngine));
 	int dY = int(r1Rect.h * uniforms.uniRoom(mtEngine));
@@ -390,6 +388,8 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 	}
 
 	Rect r2Rect;
+	bool doubleRoom = uniforms.uni0to99(mtEngine) < gInput -> doubleRoomProb;
+
 	if (doubleRoom)
 	{
 		r2Rect = r1Rect;
@@ -447,7 +447,7 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 	room.iNode.pos = Point{ iNodeXPos, iNodeYPos };
 	cell.selNode = &room.iNode;
 
-	CreateRoomNodes(cell, room);
+	CreateRoomNodes(cell.space, room);
 }
 
 void Generator::FindPath(bt::Node<Cell> &btNode)
@@ -566,8 +566,8 @@ void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_
 	mtEngine.seed(seed);
 	Prepare();
 
-	LOG_TIME("Partitioning space");
-	Divide(*root, gInput -> maxDepth);
+	LOG_TIME("Generating tree");
+	GenerateTree(*root, gInput -> maxDepth);
 
 	LOG_TIME("Generating rooms");
 	root -> Execute(bt::Trav::POSTORDER, &Generator::MakeRoom, this, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
@@ -607,7 +607,7 @@ void Generator::GenerateDebug(GenInput *genInput, GenOutput *genOutput, const ui
 
 	LOG_TIME("Preparing for debugging");
 
-	Divide(*root, gInput -> maxDepth);
+	GenerateTree(*root, gInput -> maxDepth);
 	root -> Execute(bt::Trav::POSTORDER, &Generator::MakeRoom, this, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
 	LinkNodes();
 	root -> Execute(bt::Trav::POSTORDER, &Generator::FindPath, this, [](const bt::Info<Cell> &info) -> bool { return info.IsInternal(); });

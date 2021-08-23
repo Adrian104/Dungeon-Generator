@@ -103,12 +103,12 @@ struct Generator
 	void LinkNodes();
 	void OptimizeNodes();
 	void GenerateOutput();
-	void Divide(bt::Node<Cell> &btNode, int left);
+	void GenerateTree(bt::Node<Cell> &btNode, int left);
 
 	bool RandomBool();
 	Node &AddRegNode(int x, int y);
-	void CreateSpaceNodes(Cell &cell);
-	void CreateRoomNodes(Cell &cell, Room &room);
+	void CreateSpaceNodes(Rect &space);
+	void CreateRoomNodes(Rect &space, Room &room);
 	Node *GetRandomNode(bt::Node<Cell> *const btNode);
 
 	void MakeRoom(bt::Node<Cell> &btNode);
