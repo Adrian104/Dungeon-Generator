@@ -81,6 +81,7 @@ struct Generator
 
 	int roomCount;
 	int deltaDepth;
+	int minSpaceSize;
 
 	unsigned int statusCounter;
 
@@ -92,7 +93,7 @@ struct Generator
 	std::mt19937 mtEngine;
 
 	bt::Node<Cell> *root;
-	std::forward_list<Room> rooms;
+	std::vector<Room> rooms;
 	std::vector<std::pair<int, Node*>> openNodes;
 
 	std::map<std::pair<int, int>, Node> posXNodes;
@@ -102,6 +103,7 @@ struct Generator
 	void Prepare();
 	void LinkNodes();
 	void OptimizeNodes();
+	void GenerateRooms();
 	void GenerateOutput();
 	void GenerateTree(bt::Node<Cell> &btNode, int left);
 

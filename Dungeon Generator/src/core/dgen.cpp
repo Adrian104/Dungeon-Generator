@@ -6,7 +6,7 @@
 Node Node::refNode = Node(Node::Type::NORMAL);
 bool HeapCompare(const std::pair<int, Node*> &p1, const std::pair<int, Node*> &p2) { return p1.first > p2.first; }
 
-Generator::Generator() : roomCount(0), deltaDepth(0), statusCounter(1), gInput(nullptr), gOutput(nullptr), bValues(0), uniforms{}, root(nullptr) { LOG_HEADER("Dungeon Generator"); }
+Generator::Generator() : roomCount(0), deltaDepth(0), minSpaceSize(0), statusCounter(1), gInput(nullptr), gOutput(nullptr), bValues(0), uniforms{}, root(nullptr) { LOG_HEADER("Dungeon Generator"); }
 Generator::~Generator() { Clear(); }
 
 void Generator::Clear()
@@ -28,6 +28,7 @@ void Generator::Prepare()
 	roomCount = 0;
 	statusCounter = 1;
 	deltaDepth = gInput -> maxDepth - gInput -> minDepth;
+	minSpaceSize = int(400.0f / gInput -> maxRoomSize) + 5;
 
 	uniforms.uni0to99 = std::uniform_int_distribution<int>(0, 99);
 	uniforms.uni0to1f = std::uniform_real_distribution<float>(0, 1);
@@ -137,6 +138,14 @@ void Generator::OptimizeNodes()
 	}
 }
 
+void Generator::GenerateRooms()
+{
+	rooms.reserve(roomCount);
+	roomCount = 0;
+
+	root -> Execute(bt::Trav::POSTORDER, &Generator::MakeRoom, this, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
+}
+
 void Generator::GenerateOutput()
 {
 	int eCount = 0;
@@ -190,6 +199,13 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 		space.w -= 5; space.h -= 5;
 
 		CreateSpaceNodes(space);
+		if (btNode.data.selNode == &Node::refNode)
+		{
+			if (uniforms.uni0to99(mtEngine) < gInput -> randAreaDens) btNode.data.selNode = nullptr;
+			else return;
+		}
+
+		roomCount++;
 		return;
 	}
 
@@ -212,7 +228,7 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 	const int totalSize = crrSpace.*wh;
 	const int randSize = (totalSize >> 1) + int(totalSize * uniforms.uniSpace(mtEngine));
 
-	if (randSize < 10 || totalSize - randSize < 10) goto nomore;
+	if (randSize < minSpaceSize || totalSize - randSize < minSpaceSize) goto nomore;
 
 	btNode.left = new bt::Node<Cell>(&btNode, btNode.data);
 	btNode.right = new bt::Node<Cell>(&btNode, btNode.data);
@@ -363,7 +379,7 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 	if (cell.selNode == &Node::refNode)
 	{
 		cell.selNode = nullptr;
-		if (uniforms.uni0to99(mtEngine) >= gInput -> randAreaDens) return;
+		return;
 	}
 
 	Rect r1Rect = cell.space;
@@ -383,8 +399,6 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 
 		r1Rect.w -= dX;
 		r1Rect.h -= dY;
-
-		if (r1Rect.w < 4 || r1Rect.h < 4) return;
 	}
 
 	Rect r2Rect;
@@ -424,7 +438,7 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 	r1Rect.x += xOffset;
 	r1Rect.y += yOffset;
 
-	Room &room = rooms.emplace_front();
+	Room &room = rooms.emplace_back();
 	std::vector<Rect> &rects = room.rects;
 
 	rects.emplace_back(r1Rect);
@@ -570,7 +584,7 @@ void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_
 	GenerateTree(*root, gInput -> maxDepth);
 
 	LOG_TIME("Generating rooms");
-	root -> Execute(bt::Trav::POSTORDER, &Generator::MakeRoom, this, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
+	GenerateRooms();
 
 	LOG_TIME("Linking nodes");
 	LinkNodes();
@@ -608,7 +622,7 @@ void Generator::GenerateDebug(GenInput *genInput, GenOutput *genOutput, const ui
 	LOG_TIME("Preparing for debugging");
 
 	GenerateTree(*root, gInput -> maxDepth);
-	root -> Execute(bt::Trav::POSTORDER, &Generator::MakeRoom, this, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
+	GenerateRooms();
 	LinkNodes();
 	root -> Execute(bt::Trav::POSTORDER, &Generator::FindPath, this, [](const bt::Info<Cell> &info) -> bool { return info.IsInternal(); });
 	for (int i = gInput -> additionalConnections; i > 0; i--) FindPath(*root);
