@@ -28,7 +28,7 @@ void Generator::Prepare()
 	roomCount = 0;
 	statusCounter = 1;
 	deltaDepth = gInput -> maxDepth - gInput -> minDepth;
-	minSpaceSize = int(400.0f / gInput -> maxRoomSize) + 5;
+	minSpaceSize = gInput -> maxRoomSize != 0 ? int(400.0f / gInput -> maxRoomSize) + 5 : std::numeric_limits<int>::max();
 
 	uniforms.uni0to99 = std::uniform_int_distribution<int>(0, 99);
 	uniforms.uni0to1f = std::uniform_real_distribution<float>(0, 1);
@@ -38,6 +38,16 @@ void Generator::Prepare()
 
 	bValues = 0;
 	RandomBool();
+}
+
+bool Generator::Validate()
+{
+	bool errFlag = false;
+
+	errFlag |= root -> data.space.w < minSpaceSize;
+	errFlag |= root -> data.space.h < minSpaceSize;
+
+	return errFlag;
 }
 
 void Generator::LinkNodes()
@@ -580,6 +590,16 @@ void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_
 	mtEngine.seed(seed);
 	Prepare();
 
+	if (Validate())
+	{
+		LOG_MSG("Incorrect input data");
+		LOG_MSG("The generation will be stopped");
+		LOG_ENDL();
+
+		Clear();
+		return;
+	}
+
 	LOG_TIME("Generating tree");
 	GenerateTree(*root, gInput -> maxDepth);
 
@@ -618,6 +638,16 @@ void Generator::GenerateDebug(GenInput *genInput, GenOutput *genOutput, const ui
 
 	mtEngine.seed(seed);
 	Prepare();
+
+	if (Validate())
+	{
+		LOG_MSG("Incorrect input data");
+		LOG_MSG("The generation will be stopped");
+		LOG_ENDL();
+
+		Clear();
+		return;
+	}
 
 	LOG_TIME("Preparing for debugging");
 

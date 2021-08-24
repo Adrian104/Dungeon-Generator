@@ -31,9 +31,9 @@ inline const int gOverlayXMargin = 6;
 inline const int gOverlayYMargin = 4;
 inline const int gOverlayWidth = 300;
 inline const int gOverlayAnimTime = 350;
-inline const int gOverlayTitleYPos = 50;
+inline const int gOverlayTitleYPos = 40;
 inline const int gOverlayOutlineWidth = 3;
-inline const int gOverlayTitleYOffset = 60;
+inline const int gOverlayTitleYOffset = 50;
 inline const int gOverlayRefInternalOffset = 21;
 inline const int gOverlayRefExternalOffset = 36;
 

@@ -62,9 +62,10 @@ bool Application::Update()
 	SDL_Event sdlEvent;
 	sdlEvent.type = 0;
 
-	int mode = int(overlay -> Update());
+	bool render = false;
+	static bool poll = false;
 
-	if (mode) SDL_PollEvent(&sdlEvent);
+	if (poll) SDL_PollEvent(&sdlEvent);
 	else SDL_WaitEvent(&sdlEvent);
 
 	if (sdlEvent.type == SDL_QUIT) return false;
@@ -76,12 +77,12 @@ bool Application::Update()
 			return false;
 
 		case SDLK_g:
-			mode = 2;
+			render = true;
 			Generate(GenMode::NEW_SEED);
 			break;
 
 		case SDLK_r:
-			mode = 2;
+			render = true;
 			overlay -> refresh = true;
 
 			LoadDefaults();
@@ -110,8 +111,8 @@ bool Application::Update()
 		case SDLK_EQUALS:
 			if (overlay -> ChangeSelected(false))
 			{
-				mode = 2;
 				plus = true;
+				render = true;
 				Generate(GenMode::OLD_SEED);
 			}
 			break;
@@ -120,21 +121,28 @@ bool Application::Update()
 		case SDLK_MINUS:
 			if (overlay -> ChangeSelected(true))
 			{
-				mode = 2;
 				plus = false;
+				render = true;
 				Generate(GenMode::OLD_SEED);
 			}
 			break;
 
 		default:
-			if (vPort.Update(sdlEvent)) mode = 2;
+			render |= vPort.Update(sdlEvent);
 		}
 	}
-	else if (vPort.Update(sdlEvent)) mode = 2;
+	else render |= vPort.Update(sdlEvent);
 
-	if (mode >= 1)
+	poll = overlay -> Update();
+	if (render)
 	{
-		if (mode >= 2) Render();
+		Render();
+		goto draw;
+	}
+
+	if (poll)
+	{
+		draw:
 		Draw();
 	}
 
@@ -353,7 +361,7 @@ void Application::Generate(GenMode mode)
 		#endif
 
 		#ifdef INCREMENTAL_SEED
-		if (mode == GenMode::NEW_SEED) seed++;
+		seed += mode == GenMode::NEW_SEED;
 		#endif
 
 		gen.Generate(&gInput, gOutput, seed);

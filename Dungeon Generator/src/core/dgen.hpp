@@ -101,6 +101,7 @@ struct Generator
 	
 	void Clear();
 	void Prepare();
+	bool Validate();
 	void LinkNodes();
 	void OptimizeNodes();
 	void GenerateRooms();
