@@ -37,8 +37,6 @@ struct Node
 
 	Node(const Type pType) : type(pType), status(0), gCost(0), hCost(0), path(0), pos{ 0, 0 }, links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
 	Node(const Type pType, const int x, const int y) : type(pType), status(0), gCost(0), hCost(0), path(0), pos{ x, y }, links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
-
-	inline bool CheckIfGCost() const { return path == 0 && type == Type::NORMAL; }
 };
 
 struct Room
@@ -103,6 +101,7 @@ struct Generator
 	void Prepare();
 	bool Validate();
 	void LinkNodes();
+	void FindPaths();
 	void OptimizeNodes();
 	void GenerateRooms();
 	void GenerateOutput();
