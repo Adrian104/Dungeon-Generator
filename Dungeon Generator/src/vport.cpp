@@ -15,42 +15,49 @@ bool Viewport::Update(SDL_Event &sdlEvent)
 	static bool pressed = false;
 
 	int xTemp, yTemp;
+	float xAfter, yAfter;
+	float xBefore, yBefore;
+
 	pressed &= SDL_GetMouseState(&xTemp, &yTemp) & SDL_BUTTON(SDL_BUTTON_LEFT);
 
-	if (sdlEvent.type == SDL_MOUSEBUTTONDOWN)
+	switch (sdlEvent.type)
 	{
+	case SDL_MOUSEBUTTONDOWN:
 		xStart = xTemp;
 		yStart = yTemp;
 		pressed = true;
-	}
-	else if (sdlEvent.type == SDL_MOUSEMOTION && pressed)
-	{
+		break;
+
+	case SDL_MOUSEMOTION:
+		if (!pressed) return false;
+
 		xOffset += (xStart - xTemp) / scale;
 		yOffset += (yStart - yTemp) / scale;
 
 		xStart = xTemp;
 		yStart = yTemp;
-	}
-	else if (sdlEvent.type == SDL_MOUSEWHEEL)
-	{
-		float xBefore, yBefore;
+		break;
+
+	case SDL_MOUSEWHEEL:
 		ToWorld(xTemp, yTemp, xBefore, yBefore);
 
 		if (sdlEvent.wheel.y > 0) scale *= (1 + scaleStep);
 		else if (sdlEvent.wheel.y < 0) scale *= (1 - scaleStep);
 
-		float xAfter, yAfter;
 		ToWorld(xTemp, yTemp, xAfter, yAfter);
 
 		xOffset += xBefore - xAfter;
 		yOffset += yBefore - yAfter;
-	}
-	else if (sdlEvent.type == SDL_KEYDOWN)
-	{
+		break;
+
+	case SDL_KEYDOWN:
 		if (sdlEvent.key.keysym.sym == SDLK_TAB) Reset();
 		else return false;
+		break;
+
+	default:
+		return false;
 	}
-	else return false;
 
 	return true;
 }

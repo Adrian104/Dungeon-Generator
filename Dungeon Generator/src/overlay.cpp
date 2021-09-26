@@ -34,7 +34,7 @@ void Overlay::Render()
 	SDL_RenderFillRect(mgr.renderer, &rect);
 
 	AppManager::TextTx &text = mgr.text;
-	mgr.RenderText("Dungeon Generator", 0, TTF_STYLE_BOLD);
+	mgr.RenderText(gTitle, 0, TTF_STYLE_BOLD);
 
 	int xCenter = XCenter();
 

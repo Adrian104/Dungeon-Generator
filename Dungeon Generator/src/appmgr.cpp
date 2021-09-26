@@ -1,7 +1,7 @@
 #include "pch.hpp"
 #include "appmgr.hpp"
 
-AppManager::AppManager() : text(), fonts()
+AppManager::AppManager(const std::string &pTitle) : text(), fonts()
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
 	TTF_Init();
@@ -10,11 +10,11 @@ AppManager::AppManager() : text(), fonts()
 	SDL_GetCurrentDisplayMode(0, &dm);
 
 	#ifdef FULL_SCREEN
-		window = SDL_CreateWindow("Dungeon Generator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w, dm.h, SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN);
+		window = SDL_CreateWindow(pTitle.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w, dm.h, SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN);
 		windowWidth = dm.w;
 		windowHeight = dm.h;
 	#else
-		window = SDL_CreateWindow("Dungeon Generator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w - 30, dm.h - 100, SDL_WINDOW_SHOWN);
+		window = SDL_CreateWindow(pTitle.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w - 30, dm.h - 100, SDL_WINDOW_SHOWN);
 		windowWidth = dm.w - 30;
 		windowHeight = dm.h - 100;
 	#endif

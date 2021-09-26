@@ -19,7 +19,7 @@ struct AppManager
 	SDL_Renderer *renderer;
 	TTF_Font *fonts[gFontCount];
 
-	AppManager();
+	AppManager(const std::string &pTitle);
 	~AppManager();
 
 	void RenderText(const std::string &str, int fontId, int style, const SDL_Color &color = { 0xFF, 0xFF, 0xFF, 0xFF });

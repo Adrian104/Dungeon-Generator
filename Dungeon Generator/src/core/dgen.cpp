@@ -541,7 +541,7 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 			std::push_heap(openNodes.begin(), openNodes.end(), &HeapCompare);
 		}
 
-		#ifdef _DEBUG
+		#ifdef DEBUG_ENABLED
 		if (openNodes.empty()) throw -1;
 		#endif
 

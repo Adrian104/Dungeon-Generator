@@ -4,7 +4,7 @@
 inline SDL_FPoint ToFPoint(const Point &point) { return { float(point.x), float(point.y) }; }
 inline SDL_FRect ToFRect(const Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
 
-Application::Application() : plus(false), factor(1), lastFactor(1), gOutput(nullptr)
+Application::Application() : AppManager(gTitle), plus(false), factor(1), lastFactor(1), gOutput(nullptr)
 {
 	LoadDefaults();
 	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, windowWidth, windowHeight);
