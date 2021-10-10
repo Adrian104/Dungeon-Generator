@@ -23,12 +23,18 @@ void Generator::Clear()
 
 void Generator::Prepare()
 {
-	root = new bt::Node<Cell>(nullptr, Cell(gInput -> xSize - 3, gInput -> ySize - 3));
+	if (gInput -> maxRoomSize <= 0) throw std::runtime_error("Variable 'maxRoomSize' is not a positive number");
+	minSpaceSize = int(400.0f / gInput -> maxRoomSize) + 5;
+
+	const int width = gInput -> xSize - 3;
+	const int height = gInput -> ySize - 3;
+
+	if (width < minSpaceSize || height < minSpaceSize) throw std::runtime_error("Root node is too small");
+	root = new bt::Node<Cell>(nullptr, Cell(width, height));
 
 	roomCount = 0;
 	statusCounter = 1;
 	deltaDepth = gInput -> maxDepth - gInput -> minDepth;
-	minSpaceSize = gInput -> maxRoomSize != 0 ? int(400.0f / gInput -> maxRoomSize) + 5 : std::numeric_limits<int>::max();
 
 	uniforms.uni0to99 = std::uniform_int_distribution<int>(0, 99);
 	uniforms.uni0to1f = std::uniform_real_distribution<float>(0, 1);
@@ -38,16 +44,6 @@ void Generator::Prepare()
 
 	bValues = 0;
 	RandomBool();
-}
-
-bool Generator::Validate()
-{
-	bool errFlag = false;
-
-	errFlag |= root -> data.space.w < minSpaceSize;
-	errFlag |= root -> data.space.h < minSpaceSize;
-
-	return errFlag;
 }
 
 void Generator::LinkNodes()
@@ -594,17 +590,16 @@ void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_
 
 	gInput = genInput;
 	gOutput = genOutput;
-
 	mtEngine.seed(seed);
-	Prepare();
 
-	if (Validate())
+	try { Prepare(); }
+	catch (const std::exception &error)
 	{
 		LOG_MSG("Incorrect input data");
 		LOG_MSG("The generation will be stopped");
+		LOG_MSG(std::string("Exception reason: ") + error.what());
 		LOG_ENDL();
 
-		Clear();
 		return;
 	}
 
@@ -642,17 +637,16 @@ void Generator::GenerateDebug(GenInput *genInput, GenOutput *genOutput, const ui
 
 	gInput = genInput;
 	gOutput = genOutput;
-
 	mtEngine.seed(seed);
-	Prepare();
 
-	if (Validate())
+	try { Prepare(); }
+	catch (const std::exception &error)
 	{
 		LOG_MSG("Incorrect input data");
 		LOG_MSG("The generation will be stopped");
+		LOG_MSG(std::string("Exception reason: ") + error.what());
 		LOG_ENDL();
 
-		Clear();
 		return;
 	}
 

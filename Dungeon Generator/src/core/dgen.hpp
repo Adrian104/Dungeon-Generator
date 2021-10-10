@@ -99,7 +99,6 @@ struct Generator
 	
 	void Clear();
 	void Prepare();
-	bool Validate();
 	void LinkNodes();
 	void FindPaths();
 	void OptimizeNodes();
