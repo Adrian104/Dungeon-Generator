@@ -80,6 +80,9 @@
     <ClInclude Include="src\core\guard.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
+    <ClInclude Include="src\core\heap.hpp">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Font Include="res\Quicksand-Regular.ttf" />

@@ -14,7 +14,7 @@ void Generator::Clear()
 	posYNodes.clear();
 	posXNodes.clear();
 
-	heap.clear();
+	heap.Reset();
 	rooms.clear();
 
 	delete root;
@@ -526,23 +526,16 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 				nNode -> gCost = newGCost;
 				nNode -> prevNode = crrNode;
 
-				heap.push_back(std::make_pair(newGCost + nNode -> hCost, nNode));
-				std::push_heap(heap.begin(), heap.end(), &HeapCompare);
+				heap.Push(newGCost + nNode -> hCost, nNode);
 			}
 		}
 
-		do
-		{
-			crrNode = heap.front().second;
-			std::pop_heap(heap.begin(), heap.end(), &HeapCompare);
-			heap.pop_back();
-
-		} while (crrNode -> status > statusCounter);
+		do { crrNode = heap.Pop(); } while (crrNode -> status > statusCounter);
 
 	} while (crrNode != stop);
 
 	statusCounter += 2;
-	heap.clear();
+	heap.Clear();
 
 	do
 	{

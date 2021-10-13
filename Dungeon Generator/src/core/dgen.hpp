@@ -1,6 +1,7 @@
 #pragma once
 #include "utils.hpp"
 #include "btree.hpp"
+#include "heap.hpp"
 
 struct Cell;
 struct Node;
@@ -90,9 +91,10 @@ struct Generator
 	Uniforms uniforms;
 	std::mt19937 mtEngine;
 
+	Heap<int, Node*> heap;
+
 	bt::Node<Cell> *root;
 	std::vector<Room> rooms;
-	std::vector<std::pair<int, Node*>> heap;
 
 	std::map<std::pair<int, int>, Node> posXNodes;
 	std::map<std::pair<int, int>, Node*> posYNodes;
