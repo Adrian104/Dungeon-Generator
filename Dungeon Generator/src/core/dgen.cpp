@@ -14,7 +14,7 @@ void Generator::Clear()
 	posYNodes.clear();
 	posXNodes.clear();
 
-	openNodes.clear();
+	heap.clear();
 	rooms.clear();
 
 	delete root;
@@ -489,7 +489,9 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 
 	do
 	{
+		crrNode -> status = statusCounter + 1;
 		byte crrPaths = crrNode -> path;
+
 		for (Node *&nNode : crrNode -> links)
 		{
 			const bool noPath = (crrPaths & 0b1) == 0;
@@ -514,40 +516,33 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 
 				nNode -> hCost = int(sqrtf(float(diff.x * diff.x + diff.y * diff.y)));
 				nNode -> status = statusCounter;
+
+				goto add_to_heap;
 			}
-			else
+
+			if (newGCost < nNode -> gCost)
 			{
-				if (newGCost >= nNode -> gCost) continue;
+				add_to_heap:
+				nNode -> gCost = newGCost;
+				nNode -> prevNode = crrNode;
 
-				const auto endIter = openNodes.end();
-				for (auto iter = openNodes.begin(); iter != endIter; iter++)
-				{
-					if (iter -> second == nNode)
-					{
-						openNodes.erase(iter);
-						break;
-					}
-				}
+				heap.push_back(std::make_pair(newGCost + nNode -> hCost, nNode));
+				std::push_heap(heap.begin(), heap.end(), &HeapCompare);
 			}
-
-			nNode -> prevNode = crrNode;
-			nNode -> gCost = newGCost;
-
-			openNodes.push_back(std::make_pair(newGCost + nNode -> hCost, nNode));
-			std::push_heap(openNodes.begin(), openNodes.end(), &HeapCompare);
 		}
 
-		#ifdef DEBUG_ENABLED
-		if (openNodes.empty()) throw -1;
-		#endif
+		do
+		{
+			crrNode = heap.front().second;
+			std::pop_heap(heap.begin(), heap.end(), &HeapCompare);
+			heap.pop_back();
 
-		crrNode -> status = statusCounter + 1;
-		crrNode = openNodes.front().second;
-
-		std::pop_heap(openNodes.begin(), openNodes.end(), &HeapCompare);
-		openNodes.pop_back();
+		} while (crrNode -> status > statusCounter);
 
 	} while (crrNode != stop);
+
+	statusCounter += 2;
+	heap.clear();
 
 	do
 	{
@@ -578,9 +573,6 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 		crrNode = prevNode;
 
 	} while (crrNode != start);
-
-	statusCounter += 2;
-	openNodes.clear();
 }
 
 void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_t seed)

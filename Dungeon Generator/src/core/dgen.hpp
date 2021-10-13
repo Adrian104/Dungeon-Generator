@@ -92,7 +92,7 @@ struct Generator
 
 	bt::Node<Cell> *root;
 	std::vector<Room> rooms;
-	std::vector<std::pair<int, Node*>> openNodes;
+	std::vector<std::pair<int, Node*>> heap;
 
 	std::map<std::pair<int, int>, Node> posXNodes;
 	std::map<std::pair<int, int>, Node*> posYNodes;
