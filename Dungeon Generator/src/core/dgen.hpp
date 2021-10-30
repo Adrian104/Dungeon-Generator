@@ -21,32 +21,33 @@ struct Cell
 
 struct Node
 {
-	enum class Type : byte { NORMAL, ENTRY, INTERNAL };
 	static Node refNode;
-	
-	const Type type;
-	unsigned int status;
 
 	int gCost;
 	int hCost;
 
 	byte path;
 	Point pos;
+	uint status;
 
 	Node *links[4];
 	Node *prevNode;
 
-	Node(const Type pType) : type(pType), status(0), gCost(0), hCost(0), path(0), pos{ 0, 0 }, links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
-	Node(const Type pType, const int x, const int y) : type(pType), status(0), gCost(0), hCost(0), path(0), pos{ x, y }, links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
+	Node() : gCost(0), hCost(0), path(0), pos{ 0, 0 }, status(0), links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
+	Node(int x, int y) : gCost(0), hCost(0), path(0), pos{ x, y }, status(0), links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
+
+	virtual Room *ToRoom() { return nullptr; }
 };
 
-struct Room
+struct Room : public Node
 {
-	Node iNode;
-	Node eNodes[4];
+	int edges[4];
 	std::vector<Rect> rects;
 
-	Room() : iNode(Node::Type::INTERNAL), eNodes{ Node(Node::Type::ENTRY), Node(Node::Type::ENTRY), Node(Node::Type::ENTRY), Node(Node::Type::ENTRY) } {}
+	Room() : Node(), edges{ std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() } {}
+	Room(int x, int y) : Node(x, y), edges{ std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() } {}
+
+	Room *ToRoom() override { return this; }
 };
 
 struct GenInput
@@ -82,7 +83,7 @@ struct Generator
 	int deltaDepth;
 	int minSpaceSize;
 
-	unsigned int statusCounter;
+	uint statusCounter;
 
 	GenInput *gInput;
 	GenOutput *gOutput;

@@ -277,20 +277,14 @@ void Application::RenderDebug()
 		}
 
 		SDL_SetRenderDrawColor(renderer, 0x50, 0x50, 0x50, 0xFF);
-		DrawLinks(room.iNode);
-
-		for (Node &node : room.eNodes) DrawLinks(node);
+		DrawLinks(room);
 	}
 
 	SDL_SetRenderDrawColor(renderer, 0x50, 0x50, 0x50, 0xFF);
 	for (auto &[pair, node] : gen.posXNodes) DrawLinks(node);
 
 	SDL_SetRenderDrawColor(renderer, 0, 0xC0, 0, 0xFF);
-	for (Room &room : gen.rooms)
-	{
-		DrawNode(room.iNode);
-		for (Node &node : room.eNodes) DrawNode(node);
-	}
+	for (Room &room : gen.rooms) DrawNode(room);
 
 	for (auto &[pair, node] : gen.posXNodes) DrawNode(node);
 }

@@ -3,8 +3,7 @@
 #include "../logger.hpp"
 #include "guard.hpp"
 
-Node Node::refNode = Node(Node::Type::NORMAL);
-bool HeapCompare(const std::pair<int, Node*> &p1, const std::pair<int, Node*> &p2) { return p1.first > p2.first; }
+Node Node::refNode = Node();
 
 Generator::Generator() : roomCount(0), deltaDepth(0), minSpaceSize(0), statusCounter(1), gInput(nullptr), gOutput(nullptr), bValues(0), uniforms{}, root(nullptr) { LOG_HEADER("Dungeon Generator"); }
 Generator::~Generator() { Clear(); }
@@ -125,6 +124,8 @@ void Generator::OptimizeNodes()
 			break;
 
 		case 0b0101:
+			if (links[Dir::NORTH] -> ToRoom() != nullptr && links[Dir::SOUTH] -> ToRoom() != nullptr) goto def;
+
 			links[Dir::NORTH] -> links[Dir::SOUTH] = links[Dir::SOUTH];
 			links[Dir::SOUTH] -> links[Dir::NORTH] = links[Dir::NORTH];
 
@@ -133,6 +134,8 @@ void Generator::OptimizeNodes()
 			break;
 
 		case 0b1010:
+			if (links[Dir::EAST] -> ToRoom() != nullptr && links[Dir::WEST] -> ToRoom() != nullptr) goto def;
+
 			links[Dir::EAST] -> links[Dir::WEST] = links[Dir::WEST];
 			links[Dir::WEST] -> links[Dir::EAST] = links[Dir::EAST];
 
@@ -140,7 +143,7 @@ void Generator::OptimizeNodes()
 			if (links[Dir::SOUTH] != nullptr) links[Dir::SOUTH] -> links[Dir::NORTH] = nullptr;
 			break;
 
-		default:
+		default: def:
 			iter++;
 			continue;
 		}
@@ -162,41 +165,49 @@ void Generator::GenerateOutput()
 {
 	gOutput -> rooms.reserve(roomCount);
 
-	int eCount = 0;
-	int pCount = 0;
-
+	int c = 0;
 	for (Room &room : rooms)
 	{
-		pCount += (room.eNodes[Dir::NORTH].path & (1 << Dir::NORTH)) != 0;
-		pCount += (room.eNodes[Dir::EAST].path & (1 << Dir::EAST)) != 0;
-
-		for (Node &node : room.eNodes) eCount += node.path != 0;
+		for (uint path = uint(room.path); path; path >>= 1) c += path & 1;
 		for (Rect &rect : room.rects) gOutput -> rooms.push_back(rect);
 	}
 
-	gOutput -> entrances.reserve(eCount);
+	gOutput -> entrances.reserve(c);
 	for (auto &[pair, node] : posXNodes)
 	{
-		pCount += (node.path & (1 << Dir::NORTH)) != 0;
-		pCount += (node.path & (1 << Dir::EAST)) != 0;
+		if ((node.path & (1 << Dir::NORTH)) != 0) c += node.links[Dir::NORTH] -> ToRoom() == nullptr;
+		if ((node.path & (1 << Dir::EAST)) != 0) c += node.links[Dir::EAST] -> ToRoom() == nullptr;
 	}
 
-	gOutput -> paths.reserve(pCount);
+	gOutput -> paths.reserve(c);
 	for (Room &room : rooms)
 	{
-		if (Node &node = room.eNodes[Dir::NORTH]; node.path & (1 << Dir::NORTH)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::NORTH] -> pos - node.pos));
-		if (Node &node = room.eNodes[Dir::EAST]; node.path & (1 << Dir::EAST)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::EAST] -> pos - node.pos));
-
-		for (Node &node : room.eNodes)
+		c = 0;
+		for (uint path = uint(room.path); path; path >>= 1, c++)
 		{
-			if (node.path != 0) gOutput -> entrances.push_back(node.pos);
+			if (!bool(path & 1)) continue;
+
+			const Point bPos = room.links[c] -> pos;
+			const Point ePos = bool(c & 1) ? Point{ room.edges[c], bPos.y } : Point{ bPos.x, room.edges[c] };
+
+			gOutput -> entrances.push_back(ePos);
+			gOutput -> paths.push_back(std::make_pair(ePos, bPos - ePos));
 		}
 	}
 
 	for (auto &[pair, node] : posXNodes)
 	{
-		if (node.path & (1 << Dir::NORTH)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::NORTH] -> pos - node.pos));
-		if (node.path & (1 << Dir::EAST)) gOutput -> paths.push_back(std::make_pair(node.pos, node.links[Dir::EAST] -> pos - node.pos));
+		if ((node.path & (1 << Dir::NORTH)) != 0)
+		{
+			Node *const nNode = node.links[Dir::NORTH];
+			if (nNode -> ToRoom() == nullptr) gOutput -> paths.push_back(std::make_pair(node.pos, nNode -> pos - node.pos));
+		}
+
+		if ((node.path & (1 << Dir::EAST)) != 0)
+		{
+			Node *const nNode = node.links[Dir::EAST];
+			if (nNode -> ToRoom() == nullptr) gOutput -> paths.push_back(std::make_pair(node.pos, nNode -> pos - node.pos));
+		}
 	}
 }
 
@@ -278,7 +289,7 @@ bool Generator::RandomBool()
 
 Node &Generator::AddRegNode(int x, int y)
 {
-	auto pair = posXNodes.emplace(std::make_pair(x, y), Node(Node::Type::NORMAL, x, y));
+	auto pair = posXNodes.emplace(std::make_pair(x, y), Node(x, y));
 	if (pair.second) posYNodes.emplace(std::make_pair(y, x), &pair.first -> second);
 
 	return pair.first -> second;
@@ -307,8 +318,8 @@ void Generator::CreateSpaceNodes(Rect &space)
 
 void Generator::CreateRoomNodes(Rect &space, Room &room)
 {
-	const Point &iPoint = room.iNode.pos;
-	int edges[4] = { std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() };
+	int *const edges = room.edges;
+	const Point iPoint = room.pos;
 
 	for (Rect &rect : room.rects)
 	{
@@ -328,13 +339,8 @@ void Generator::CreateRoomNodes(Rect &space, Room &room)
 		}
 	}
 
-	Node *const iNode = &room.iNode;
-	Node *const eNodes = room.eNodes;
-
-	iNode -> links[Dir::NORTH] = eNodes + Dir::NORTH;
-	iNode -> links[Dir::EAST] = eNodes + Dir::EAST;
-	iNode -> links[Dir::SOUTH] = eNodes + Dir::SOUTH;
-	iNode -> links[Dir::WEST] = eNodes + Dir::WEST;
+	edges[Dir::EAST]--;
+	edges[Dir::SOUTH]--;
 
 	Node *const bNodes[4] =
 	{
@@ -344,33 +350,14 @@ void Generator::CreateRoomNodes(Rect &space, Room &room)
 		&AddRegNode(space.x - 3, iPoint.y)
 	};
 
-	eNodes[Dir::NORTH].links[Dir::SOUTH] = iNode;
-	eNodes[Dir::NORTH].links[Dir::NORTH] = bNodes[Dir::NORTH];
-	eNodes[Dir::NORTH].pos = Point{ iPoint.x, edges[0] };
+	for (int i = 0; i < 4; i++)
+	{
+		Node *const bNode = bNodes[i];
+		room.links[i] = bNode;
 
-	eNodes[Dir::EAST].links[Dir::WEST] = iNode;
-	eNodes[Dir::EAST].links[Dir::EAST] = bNodes[Dir::EAST];
-	eNodes[Dir::EAST].pos = Point{ edges[1] - 1, iPoint.y };
-
-	eNodes[Dir::SOUTH].links[Dir::NORTH] = iNode;
-	eNodes[Dir::SOUTH].links[Dir::SOUTH] = bNodes[Dir::SOUTH];
-	eNodes[Dir::SOUTH].pos = Point{ iPoint.x, edges[2] - 1 };
-
-	eNodes[Dir::WEST].links[Dir::EAST] = iNode;
-	eNodes[Dir::WEST].links[Dir::WEST] = bNodes[Dir::WEST];
-	eNodes[Dir::WEST].pos = Point{ edges[3], iPoint.y };
-
-	bNodes[Dir::NORTH] -> links[Dir::SOUTH] = &eNodes[Dir::NORTH];
-	bNodes[Dir::NORTH] -> links[Dir::EAST] = &Node::refNode;
-
-	bNodes[Dir::EAST] -> links[Dir::WEST] = &eNodes[Dir::EAST];
-	bNodes[Dir::EAST] -> links[Dir::SOUTH] = &Node::refNode;
-
-	bNodes[Dir::SOUTH] -> links[Dir::NORTH] = &eNodes[Dir::SOUTH];
-	bNodes[Dir::SOUTH] -> links[Dir::EAST] = &Node::refNode;
-
-	bNodes[Dir::WEST] -> links[Dir::EAST] = &eNodes[Dir::WEST];
-	bNodes[Dir::WEST] -> links[Dir::SOUTH] = &Node::refNode;
+		bNode -> links[(i + 2) & 0b11] = &room;
+		bNode -> links[(i & 0b1) + 1] = &Node::refNode;
+	}
 }
 
 Node *Generator::GetRandomNode(bt::Node<Cell> *const btNode)
@@ -467,12 +454,10 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 
 	Rect *const selRoom = rects.data() + mtEngine() % rects.size();
 
-	const int iNodeYPos = selRoom -> y + (mtEngine() % (selRoom -> h - 2)) + 1;
-	const int iNodeXPos = selRoom -> x + (mtEngine() % (selRoom -> w - 2)) + 1;
+	room.pos.y = selRoom -> y + (mtEngine() % (selRoom -> h - 2)) + 1;
+	room.pos.x = selRoom -> x + (mtEngine() % (selRoom -> w - 2)) + 1;
 
-	room.iNode.pos = Point{ iNodeXPos, iNodeYPos };
-	cell.selNode = &room.iNode;
-
+	cell.selNode = &room;
 	CreateRoomNodes(cell.space, room);
 }
 
@@ -490,24 +475,33 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 	do
 	{
 		crrNode -> status = statusCounter + 1;
-		byte crrPaths = crrNode -> path;
 
-		for (Node *&nNode : crrNode -> links)
+		byte crrPaths = crrNode -> path;
+		Room *const crrRoom = crrNode -> ToRoom();
+
+		for (int i = 0; i < 4; i++, crrPaths >>= 1)
 		{
-			const bool noPath = (crrPaths & 0b1) == 0;
-			crrPaths >>= 1;
+			Node *const nNode = crrNode -> links[i];
 
 			if (nNode == nullptr) continue;
 			if (nNode -> status > statusCounter) continue;
 
 			int newGCost = crrNode -> gCost;
-			if (noPath && (crrNode -> type == Node::Type::NORMAL || nNode -> type == Node::Type::NORMAL))
+			if ((crrPaths & 1) == 0)
 			{
-				const int xDiff = crrNode -> pos.x - nNode -> pos.x;
-				newGCost += xDiff < 0 ? -xDiff : xDiff;
+				int diff;
+				int Point::*const axis = bool(i & 1) ? &Point::x : &Point::y;
 
-				const int yDiff = crrNode -> pos.y - nNode -> pos.y;
-				newGCost += yDiff < 0 ? -yDiff : yDiff;
+				if (crrRoom == nullptr)
+				{
+					Room *const nRoom = nNode -> ToRoom();
+
+					diff = crrNode -> pos.*axis;
+					diff -= (nRoom != nullptr) ? (nRoom -> edges[(i + 2) & 0b11]) : (nNode -> pos.*axis);
+				}
+				else diff = nNode -> pos.*axis - crrRoom -> edges[i];
+
+				newGCost += diff < 0 ? -diff : diff;
 			}
 
 			if (nNode -> status < statusCounter)

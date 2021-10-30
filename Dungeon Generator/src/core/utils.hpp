@@ -5,6 +5,7 @@ struct Point { int x; int y; };
 struct Rect { int x; int y; int w; int h; };
 
 typedef Point Vec;
+typedef unsigned int uint;
 typedef unsigned char byte;
 
 enum Dir : byte { NORTH, EAST, SOUTH, WEST, INVALID };
