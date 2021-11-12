@@ -3,16 +3,17 @@
 #include "appmgr.hpp"
 #include "anim.hpp"
 
-struct RefInterface
+struct Modifier
 {
 	std::string name;
 
-	RefInterface(const std::string &pName) : name(pName) {}
-	virtual ~RefInterface() {}
+	Modifier(const std::string &pName) : name(pName) {}
+	virtual ~Modifier() {}
 
-	virtual void Plus() = 0;
-	virtual void Minus() = 0;
-	virtual std::string Get() = 0;
+	virtual void Increment() = 0;
+	virtual void Decrement() = 0;
+
+	virtual std::string GetValue() const = 0;
 };
 
 struct Overlay : public Animator
@@ -22,7 +23,7 @@ struct Overlay : public Animator
 
 	AppManager &mgr;
 	SDL_Texture *texture;
-	std::vector<RefInterface*> refs;
+	std::vector<Modifier*> mods;
 
 	inline int XCenter() const { return (gOverlayWidth - mgr.text.width) >> 1; }
 
@@ -37,64 +38,56 @@ struct Overlay : public Animator
 	bool ChangeSelected(const bool minus);
 
 	template <typename Type>
-	inline void AddRef(const Type &ref) { refs.push_back(new Type(ref)); }
+	inline void AddMod(const Type &mod) { mods.push_back(new Type(mod)); }
 };
 
-template <typename Type>
-struct ValRef : public RefInterface
+struct FactorMod : public Modifier
 {
-	Type *ref;
+	float &ref;
+	float step;
 
-	ValRef(const std::string &pName, Type *pRef) : RefInterface(pName), ref(pRef) {}
-	std::string Get() override { return std::to_string(*ref); }
+	FactorMod(const std::string &pName, float &pRef, float pStep = 0.1f) : Modifier(pName), ref(pRef), step(pStep) {}
 
-	void Plus() override { ++(*ref); }
-	void Minus() override { --(*ref); if (*ref < 0) *ref = 0; }
+	void Increment() override { ref *= (1.0f + step); }
+	void Decrement() override { ref *= (1.0f - step); }
+
+	std::string GetValue() const override { return std::to_string(ref); }
 };
 
-template <typename Type>
-struct PercRef : public RefInterface
+struct PercentMod : public Modifier
 {
-	Type *ref;
+	float &ref;
+	float step;
 
-	PercRef(const std::string &pName, Type *pRef) : RefInterface(pName), ref(pRef) {}
-	std::string Get() override { return std::to_string(*ref) + " %"; }
+	PercentMod(const std::string &pName, float &pRef, float pStep = 0.05f) : Modifier(pName), ref(pRef), step(pStep) {}
 
-	void Plus() override { *ref += 5; if (*ref > 100) *ref = 100; }
-	void Minus() override { *ref -= 5; if (*ref < 0) *ref = 0; }
+	void Increment() override { ref += step; if (ref > 1.0f) ref = 1.0f; }
+	void Decrement() override { ref -= step; if (ref < 0.0f) ref = 0.0f; }
+
+	std::string GetValue() const override { return std::to_string(int(std::roundf(ref * 100.0f))) + " %"; }
 };
 
-struct BoolRef : public RefInterface
+struct BoolMod : public Modifier
 {
-	bool *ref;
+	bool &ref;
 
-	BoolRef(const std::string &pName, bool *pRef) : RefInterface(pName), ref(pRef) {}
-	std::string Get() override { return *ref ? "Enabled" : "Disabled"; }
+	BoolMod(const std::string &pName, bool &pRef) : Modifier(pName), ref(pRef) {}
 
-	void Plus() override { *ref = !(*ref); }
-	void Minus() override { *ref = !(*ref); }
+	void Increment() override { ref = !ref; }
+	void Decrement() override { ref = !ref; }
+
+	std::string GetValue() const override { return ref ? "Enabled" : "Disabled"; }
 };
 
-struct FactRef : public RefInterface
+struct IntMod : public Modifier
 {
-	float *ref;
+	int &ref;
+	int min, max;
 
-	FactRef(const std::string &pName, float *pRef) : RefInterface(pName), ref(pRef) {}
-	std::string Get() override { return std::to_string(*ref); }
+	IntMod(const std::string &pName, int &pRef, int pMin = 0, int pMax = std::numeric_limits<int>::max()) : Modifier(pName), ref(pRef), min(pMin), max(pMax) {}
 
-	void Plus() override { *ref *= 1.1f; }
-	void Minus() override { *ref *= 0.9f; }
-};
+	void Increment() override { if (++ref > max) ref = max; }
+	void Decrement() override { if (--ref < min) ref = min; }
 
-template <size_t size>
-struct ModeRef : public RefInterface
-{
-	int *ref;
-	const std::string *modeNames;
-
-	ModeRef(const std::string &pName, int *pRef, const std::string *pModeNames) : RefInterface(pName), ref(pRef), modeNames(pModeNames) {}
-	std::string Get() override { return modeNames[*ref]; }
-
-	void Plus() override { ++(*ref); if (*ref >= size) *ref = 0; }
-	void Minus() override { --(*ref); if (*ref < 0) *ref = (size - 1); }
+	std::string GetValue() const override { return std::to_string(ref); }
 };

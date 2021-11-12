@@ -22,14 +22,16 @@
 	inline const int gDefMaxDepth = 10;
 #endif
 
-inline const int gDefMaxRoomSize = 75;
-inline const int gDefMinRoomSize = 25;
-inline const int gDefRandAreaDens = 50;
-inline const int gDefRandAreaProb = 25;
 inline const int gDefRandAreaDepth = 2;
-inline const int gDefDoubleRoomProb = 25;
-inline const int gDefSpaceSizeRandomness = 35;
 inline const int gDefAdditionalConnections = 2;
+
+inline const float gDefMaxRoomSize = 0.75f;
+inline const float gDefMinRoomSize = 0.25f;
+inline const float gDefRandAreaDens = 0.5f;
+inline const float gDefRandAreaProb = 0.25f;
+inline const float gDefDoubleRoomProb = 0.25f;
+inline const float gDefHeuristicFactor = 0.75f;
+inline const float gDefSpaceSizeRandomness = 0.35f;
 
 inline const bool gDefRoomsVisibility = true;
 inline const bool gDefPathsVisibility = true;

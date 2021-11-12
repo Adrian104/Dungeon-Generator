@@ -11,22 +11,23 @@ Application::Application() : AppManager(gTitle), plus(false), factor(1), lastFac
 
 	overlay = new Overlay(*this);
 
-	overlay -> AddRef(FactRef("Size factor", &factor));
-	overlay -> AddRef(ValRef("Minimum depth", &gInput.minDepth));
-	overlay -> AddRef(ValRef("Maximum depth", &gInput.maxDepth));
-	overlay -> AddRef(PercRef("Minimum room size", &gInput.minRoomSize));
-	overlay -> AddRef(PercRef("Maximum room size", &gInput.maxRoomSize));
-	overlay -> AddRef(PercRef("Space randomness", &gInput.spaceSizeRandomness));
-	overlay -> AddRef(PercRef("Double room probability", &gInput.doubleRoomProb));
-	overlay -> AddRef(ValRef("Additional connections", &gInput.additionalConnections));
+	overlay -> AddMod(FactorMod("Size factor", factor));
+	overlay -> AddMod(IntMod("Minimum depth", gInput.minDepth));
+	overlay -> AddMod(IntMod("Maximum depth", gInput.maxDepth));
+	overlay -> AddMod(PercentMod("Heuristic", gInput.heuristicFactor));
+	overlay -> AddMod(PercentMod("Minimum room size", gInput.minRoomSize));
+	overlay -> AddMod(PercentMod("Maximum room size", gInput.maxRoomSize));
+	overlay -> AddMod(PercentMod("Space randomness", gInput.spaceSizeRandomness));
+	overlay -> AddMod(PercentMod("Double room probability", gInput.doubleRoomProb));
+	overlay -> AddMod(IntMod("Additional connections", gInput.additionalConnections));
 
-	overlay -> AddRef(ValRef("Random area depth", &gInput.randAreaDepth));
-	overlay -> AddRef(PercRef("Random area density", &gInput.randAreaDens));
-	overlay -> AddRef(PercRef("Random area probability", &gInput.randAreaProb));
+	overlay -> AddMod(IntMod("Random area depth", gInput.randAreaDepth));
+	overlay -> AddMod(PercentMod("Random area density", gInput.randAreaDens));
+	overlay -> AddMod(PercentMod("Random area probability", gInput.randAreaProb));
 
-	overlay -> AddRef(BoolRef("Rooms visibility", &dInfo.roomsVisibility));
-	overlay -> AddRef(BoolRef("Paths visibility", &dInfo.pathsVisibility));
-	overlay -> AddRef(BoolRef("Entrances visibility", &dInfo.entrancesVisibility));
+	overlay -> AddMod(BoolMod("Rooms visibility", dInfo.roomsVisibility));
+	overlay -> AddMod(BoolMod("Paths visibility", dInfo.pathsVisibility));
+	overlay -> AddMod(BoolMod("Entrances visibility", dInfo.entrancesVisibility));
 }
 
 Application::~Application()
@@ -315,6 +316,7 @@ void Application::LoadDefaults()
 	gInput.maxRoomSize = gDefMaxRoomSize;
 	gInput.minRoomSize = gDefMinRoomSize;
 	gInput.doubleRoomProb = gDefDoubleRoomProb;
+	gInput.heuristicFactor = gDefHeuristicFactor;
 	gInput.spaceSizeRandomness = gDefSpaceSizeRandomness;
 	gInput.additionalConnections = gDefAdditionalConnections;
 

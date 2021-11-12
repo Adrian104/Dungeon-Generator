@@ -53,12 +53,15 @@ struct Room : public Node
 struct GenInput
 {
 	int xSize, ySize;
-	int doubleRoomProb;
+	int randAreaDepth;
 	int maxDepth, minDepth;
-	int spaceSizeRandomness;
 	int additionalConnections;
-	int maxRoomSize, minRoomSize;
-	int randAreaDens, randAreaProb, randAreaDepth;
+
+	float doubleRoomProb;
+	float heuristicFactor;
+	float spaceSizeRandomness;
+	float maxRoomSize, minRoomSize;
+	float randAreaDens, randAreaProb;
 };
 
 struct GenOutput
@@ -72,7 +75,6 @@ struct Generator
 {
 	struct Uniforms
 	{
-		std::uniform_int_distribution<int> uni0to99;
 		std::uniform_int_distribution<int> uniDepth;
 		std::uniform_real_distribution<float> uniRoom;
 		std::uniform_real_distribution<float> uniSpace;

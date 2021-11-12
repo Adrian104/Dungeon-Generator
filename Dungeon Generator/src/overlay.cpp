@@ -12,7 +12,7 @@ Overlay::Overlay(AppManager &appManager) : Animator(std::chrono::milliseconds(gO
 
 Overlay::~Overlay()
 {
-	for (RefInterface *&ref : refs) delete ref;
+	for (Modifier *&mod : mods) delete mod;
 	SDL_DestroyTexture(texture);
 }
 
@@ -47,18 +47,18 @@ void Overlay::Render()
 	int crrIndex = 0;
 	int crrPos = gOverlayTitleYPos + gOverlayTitleYOffset;
 
-	for (RefInterface *&ref : refs)
+	for (Modifier *&mod : mods)
 	{
 		const uint8_t colorVal = crrIndex == selected ? 0 : 0xFF;
 
-		mgr.RenderText(ref -> name, 0, TTF_STYLE_BOLD, { colorVal, 0xFF, colorVal, 0xFF });
+		mgr.RenderText(mod -> name, 0, TTF_STYLE_BOLD, { colorVal, 0xFF, colorVal, 0xFF });
 		xCenter = XCenter();
 
 		rect = { xCenter, crrPos, text.width, text.height };
 		SDL_RenderCopy(mgr.renderer, text.texture, nullptr, &rect);
 		crrPos += gOverlayInternalOffset;
 
-		mgr.RenderText(ref -> Get(), 0, TTF_STYLE_NORMAL);
+		mgr.RenderText(mod -> GetValue(), 0, TTF_STYLE_NORMAL);
 		xCenter = XCenter();
 
 		rect = { xCenter, crrPos, text.width, text.height };
@@ -93,17 +93,17 @@ bool Overlay::Update()
 void Overlay::MoveSelected(const bool up)
 {
 	if (GetAnimPhase() == 1.0f) return;
-	const int refCount = int(refs.size());
+	const int modCount = int(mods.size());
 
 	if (up)
 	{
 		selected--;
-		if (selected < 0) selected = refCount - 1;
+		if (selected < 0) selected = modCount - 1;
 	}
 	else
 	{
 		selected++;
-		if (selected >= refCount) selected = 0;
+		if (selected >= modCount) selected = 0;
 	}
 
 	refresh = true;
@@ -112,10 +112,10 @@ void Overlay::MoveSelected(const bool up)
 bool Overlay::ChangeSelected(const bool minus)
 {
 	if (GetAnimPhase() == 1.0f) return false;
-	RefInterface *const ref = refs.at(selected);
+	Modifier *const mod = mods.at(selected);
 
-	if (minus) ref -> Minus();
-	else ref -> Plus();
+	if (minus) mod -> Decrement();
+	else mod -> Increment();
 
 	refresh = true;
 	return true;

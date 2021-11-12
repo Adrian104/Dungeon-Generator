@@ -23,7 +23,7 @@ void Generator::Clear()
 void Generator::Prepare()
 {
 	if (gInput -> maxRoomSize <= 0) throw std::runtime_error("Variable 'maxRoomSize' is not a positive number");
-	minSpaceSize = int(400.0f / gInput -> maxRoomSize) + 5;
+	minSpaceSize = int(4.0f / gInput -> maxRoomSize) + 5;
 
 	const int width = gInput -> xSize - 3;
 	const int height = gInput -> ySize - 3;
@@ -35,11 +35,10 @@ void Generator::Prepare()
 	statusCounter = 1;
 	deltaDepth = gInput -> maxDepth - gInput -> minDepth;
 
-	uniforms.uni0to99 = std::uniform_int_distribution<int>(0, 99);
 	uniforms.uni0to1f = std::uniform_real_distribution<float>(0, 1);
 	uniforms.uniDepth = std::uniform_int_distribution<int>(0, deltaDepth);
-	uniforms.uniRoom = std::uniform_real_distribution<float>(1.0f - gInput -> maxRoomSize / 100.0f, 1.0f - gInput -> minRoomSize / 100.0f);
-	uniforms.uniSpace = std::uniform_real_distribution<float>((gInput -> spaceSizeRandomness >> 1) / -100.0f, (gInput -> spaceSizeRandomness >> 1) / 100.0f);
+	uniforms.uniRoom = std::uniform_real_distribution<float>(1.0f - gInput -> maxRoomSize, 1.0f - gInput -> minRoomSize);
+	uniforms.uniSpace = std::uniform_real_distribution<float>(gInput -> spaceSizeRandomness / -2.0f, gInput -> spaceSizeRandomness / 2.0f);
 
 	bValues = 0;
 	RandomBool();
@@ -224,7 +223,7 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 		CreateSpaceNodes(space);
 		if (btNode.data.room == &Room::flag)
 		{
-			if (uniforms.uni0to99(mtEngine) < gInput -> randAreaDens) btNode.data.room = nullptr;
+			if (uniforms.uni0to1f(mtEngine) < gInput -> randAreaDens) btNode.data.room = nullptr;
 			else return;
 		}
 
@@ -239,7 +238,7 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 
 	if (left <= gInput -> randAreaDepth)
 	{
-		if (uniforms.uni0to99(mtEngine) < gInput -> randAreaProb) btNode.data.room = &Room::flag;
+		if (uniforms.uni0to1f(mtEngine) < gInput -> randAreaProb) btNode.data.room = &Room::flag;
 	}
 
 	int Rect::*xy; int Rect::*wh;
@@ -404,7 +403,7 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 	}
 
 	Rect r2Rect;
-	bool doubleRoom = uniforms.uni0to99(mtEngine) < gInput -> doubleRoomProb;
+	bool doubleRoom = uniforms.uni0to1f(mtEngine) < gInput -> doubleRoomProb;
 
 	if (doubleRoom)
 	{
@@ -511,7 +510,7 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 			{
 				const Vec diff = stop -> pos - nNode -> pos;
 
-				nNode -> hCost = int(sqrtf(float(diff.x * diff.x + diff.y * diff.y)));
+				nNode -> hCost = int(sqrtf(float(diff.x * diff.x + diff.y * diff.y)) * gInput -> heuristicFactor);
 				nNode -> status = statusCounter;
 
 				goto add_to_heap;
