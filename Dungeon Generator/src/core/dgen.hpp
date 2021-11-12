@@ -13,16 +13,14 @@ struct Generator;
 struct Cell
 {
 	Rect space;
-	Node *selNode;
+	Room *room;
 
-	Cell() : space{}, selNode(nullptr) {}
-	Cell(int w, int h) : space{ 0, 0, w, h }, selNode(nullptr) {}
+	Cell() : space{}, room(nullptr) {}
+	Cell(int w, int h) : space{ 0, 0, w, h }, room(nullptr) {}
 };
 
 struct Node
 {
-	static Node refNode;
-
 	int gCost;
 	int hCost;
 
@@ -41,6 +39,8 @@ struct Node
 
 struct Room : public Node
 {
+	static Room flag;
+
 	int edges[4];
 	std::vector<Rect> rects;
 
@@ -58,7 +58,7 @@ struct GenInput
 	int spaceSizeRandomness;
 	int additionalConnections;
 	int maxRoomSize, minRoomSize;
-	int randAreaDens, randAreaProb, randAreaSize;
+	int randAreaDens, randAreaProb, randAreaDepth;
 };
 
 struct GenOutput
@@ -88,7 +88,7 @@ struct Generator
 	GenInput *gInput;
 	GenOutput *gOutput;
 
-	uint32_t bValues;
+	uint bValues;
 	Uniforms uniforms;
 	std::mt19937 mtEngine;
 
@@ -113,7 +113,7 @@ struct Generator
 	Node &AddRegNode(int x, int y);
 	void CreateSpaceNodes(Rect &space);
 	void CreateRoomNodes(Rect &space, Room &room);
-	Node *GetRandomNode(bt::Node<Cell> *const btNode);
+	Room *GetRandomRoom(bt::Node<Cell> *const btNode);
 
 	void MakeRoom(bt::Node<Cell> &btNode);
 	void FindPath(bt::Node<Cell> &btNode);
@@ -121,6 +121,6 @@ struct Generator
 	Generator();
 	~Generator();
 
-	void Generate(GenInput *genInput, GenOutput *genOutput, const uint32_t seed);
-	void GenerateDebug(GenInput *genInput, GenOutput *genOutput, const uint32_t seed, Caller<void> &callback);
+	void Generate(GenInput *genInput, GenOutput *genOutput, const uint seed);
+	void GenerateDebug(GenInput *genInput, GenOutput *genOutput, const uint seed, Caller<void> &callback);
 };

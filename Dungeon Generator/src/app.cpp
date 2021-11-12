@@ -20,7 +20,7 @@ Application::Application() : AppManager(gTitle), plus(false), factor(1), lastFac
 	overlay -> AddRef(PercRef("Double room probability", &gInput.doubleRoomProb));
 	overlay -> AddRef(ValRef("Additional connections", &gInput.additionalConnections));
 
-	overlay -> AddRef(ValRef("Random area size", &gInput.randAreaSize));
+	overlay -> AddRef(ValRef("Random area depth", &gInput.randAreaDepth));
 	overlay -> AddRef(PercRef("Random area density", &gInput.randAreaDens));
 	overlay -> AddRef(PercRef("Random area probability", &gInput.randAreaProb));
 
@@ -306,7 +306,7 @@ void Application::LoadDefaults()
 {
 	gInput.randAreaDens = gDefRandAreaDens;
 	gInput.randAreaProb = gDefRandAreaProb;
-	gInput.randAreaSize = gDefRandAreaSize;
+	gInput.randAreaDepth = gDefRandAreaDepth;
 
 	gInput.xSize = windowWidth;
 	gInput.ySize = windowHeight;
@@ -329,7 +329,7 @@ void Application::LoadDefaults()
 void Application::Generate(GenMode mode)
 {
 	if (lastFactor != factor) ApplyFactor();
-	if (gInput.randAreaSize > gInput.maxDepth) gInput.randAreaSize = gInput.maxDepth;
+	if (gInput.randAreaDepth > gInput.maxDepth) gInput.randAreaDepth = gInput.maxDepth;
 
 	if (gInput.maxDepth < gInput.minDepth)
 	{
@@ -346,7 +346,7 @@ void Application::Generate(GenMode mode)
 	delete gOutput;
 	gOutput = new GenOutput;
 
-	static uint32_t seed = 0;
+	static uint seed = 0;
 	if (mode != GenMode::DEBUG_MODE)
 	{
 		#ifdef RANDOM_SEED

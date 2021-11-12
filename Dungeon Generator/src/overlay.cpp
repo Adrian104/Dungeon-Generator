@@ -56,14 +56,14 @@ void Overlay::Render()
 
 		rect = { xCenter, crrPos, text.width, text.height };
 		SDL_RenderCopy(mgr.renderer, text.texture, nullptr, &rect);
-		crrPos += gOverlayRefInternalOffset;
+		crrPos += gOverlayInternalOffset;
 
 		mgr.RenderText(ref -> Get(), 0, TTF_STYLE_NORMAL);
 		xCenter = XCenter();
 
 		rect = { xCenter, crrPos, text.width, text.height };
 		SDL_RenderCopy(mgr.renderer, text.texture, nullptr, &rect);
-		crrPos += gOverlayRefExternalOffset;
+		crrPos += gOverlayExternalOffset;
 
 		crrIndex++;
 	}
@@ -93,16 +93,17 @@ bool Overlay::Update()
 void Overlay::MoveSelected(const bool up)
 {
 	if (GetAnimPhase() == 1.0f) return;
+	const int refCount = int(refs.size());
 
 	if (up)
 	{
 		selected--;
-		if (selected < 0) selected = int(refs.size()) - 1;
+		if (selected < 0) selected = refCount - 1;
 	}
 	else
 	{
 		selected++;
-		if (selected >= int(refs.size())) selected = 0;
+		if (selected >= refCount) selected = 0;
 	}
 
 	refresh = true;

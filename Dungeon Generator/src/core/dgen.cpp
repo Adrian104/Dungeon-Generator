@@ -3,7 +3,7 @@
 #include "../logger.hpp"
 #include "guard.hpp"
 
-Node Node::refNode = Node();
+Room Room::flag = Room();
 
 Generator::Generator() : roomCount(0), deltaDepth(0), minSpaceSize(0), statusCounter(1), gInput(nullptr), gOutput(nullptr), bValues(0), uniforms{}, root(nullptr) { LOG_HEADER("Dungeon Generator"); }
 Generator::~Generator() { Clear(); }
@@ -60,7 +60,7 @@ void Generator::LinkNodes()
 		Node *const node = &crrXIter -> second;
 		Node **links = node -> links;
 
-		if (links[Dir::SOUTH] == &Node::refNode)
+		if (links[Dir::SOUTH] == &Room::flag)
 		{
 			Node *const nextNode = &nextXIter -> second;
 			links[Dir::SOUTH] = nextNode;
@@ -84,7 +84,7 @@ void Generator::LinkNodes()
 		Node *const node = crrYIter -> second;
 		Node **links = node -> links;
 
-		if (links[Dir::EAST] == &Node::refNode)
+		if (links[Dir::EAST] == &Room::flag)
 		{
 			Node *const nextNode = nextYIter -> second;
 			links[Dir::EAST] = nextNode;
@@ -222,9 +222,9 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 		space.w -= 5; space.h -= 5;
 
 		CreateSpaceNodes(space);
-		if (btNode.data.selNode == &Node::refNode)
+		if (btNode.data.room == &Room::flag)
 		{
-			if (uniforms.uni0to99(mtEngine) < gInput -> randAreaDens) btNode.data.selNode = nullptr;
+			if (uniforms.uni0to99(mtEngine) < gInput -> randAreaDens) btNode.data.room = nullptr;
 			else return;
 		}
 
@@ -237,9 +237,9 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 		if (left <= uniforms.uniDepth(mtEngine)) goto nomore;
 	}
 
-	if (left <= gInput -> randAreaSize)
+	if (left <= gInput -> randAreaDepth)
 	{
-		if (uniforms.uni0to99(mtEngine) < gInput -> randAreaProb) btNode.data.selNode = &Node::refNode;
+		if (uniforms.uni0to99(mtEngine) < gInput -> randAreaProb) btNode.data.room = &Room::flag;
 	}
 
 	int Rect::*xy; int Rect::*wh;
@@ -265,12 +265,12 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 	GenerateTree(*btNode.left, left);
 	GenerateTree(*btNode.right, left);
 
-	btNode.data.selNode = nullptr;
+	btNode.data.room = nullptr;
 }
 
 bool Generator::RandomBool()
 {
-	static uint32_t randValue = 0;
+	static uint randValue = 0;
 	const bool ret = randValue & 1;
 
 	if (bValues > 1)
@@ -304,14 +304,14 @@ void Generator::CreateSpaceNodes(Rect &space)
 	const int yMax = space.y + space.h + 2;
 
 	Node &NW = AddRegNode(xMin, yMin);
-	NW.links[Dir::EAST] = &Node::refNode;
-	NW.links[Dir::SOUTH] = &Node::refNode;
+	NW.links[Dir::EAST] = &Room::flag;
+	NW.links[Dir::SOUTH] = &Room::flag;
 
 	Node &NE = AddRegNode(xMax, yMin);
-	NE.links[Dir::SOUTH] = &Node::refNode;
+	NE.links[Dir::SOUTH] = &Room::flag;
 
 	Node &SW = AddRegNode(xMin, yMax);
-	SW.links[Dir::EAST] = &Node::refNode;
+	SW.links[Dir::EAST] = &Room::flag;
 
 	AddRegNode(xMax, yMax);
 }
@@ -356,28 +356,28 @@ void Generator::CreateRoomNodes(Rect &space, Room &room)
 		room.links[i] = bNode;
 
 		bNode -> links[(i + 2) & 0b11] = &room;
-		bNode -> links[(i & 0b1) + 1] = &Node::refNode;
+		bNode -> links[(i & 0b1) + 1] = &Room::flag;
 	}
 }
 
-Node *Generator::GetRandomNode(bt::Node<Cell> *const btNode)
+Room *Generator::GetRandomRoom(bt::Node<Cell> *const btNode)
 {
 	if (btNode == nullptr) return nullptr;
 	const bool firstLeft = RandomBool();
 
-	Node *node = GetRandomNode(firstLeft ? btNode -> left : btNode -> right);
-	if (node != nullptr) return node;
+	Room *room = GetRandomRoom(firstLeft ? btNode -> left : btNode -> right);
+	if (room != nullptr) return room;
 
-	node = GetRandomNode(firstLeft ? btNode -> right : btNode -> left);
-	return node != nullptr ? node : btNode -> data.selNode;
+	room = GetRandomRoom(firstLeft ? btNode -> right : btNode -> left);
+	return room != nullptr ? room : btNode -> data.room;
 }
 
 void Generator::MakeRoom(bt::Node<Cell> &btNode)
 {
 	Cell &cell = btNode.data;
-	if (cell.selNode == &Node::refNode)
+	if (cell.room == &Room::flag)
 	{
-		cell.selNode = nullptr;
+		cell.room = nullptr;
 		return;
 	}
 
@@ -389,15 +389,18 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 	r1Rect.w -= dX;
 	r1Rect.h -= dY;
 
-	if (r1Rect.w < 4 || r1Rect.h < 4)
+	static const int hardLimit = 4;
+
+	if (r1Rect.w < hardLimit)
 	{
-		r1Rect = cell.space;
+		r1Rect.w = hardLimit;
+		dX = cell.space.w - hardLimit;
+	}
 
-		dX = int(r1Rect.w * uniforms.uniRoom.min());
-		dY = int(r1Rect.h * uniforms.uniRoom.min());
-
-		r1Rect.w -= dX;
-		r1Rect.h -= dY;
+	if (r1Rect.h < hardLimit)
+	{
+		r1Rect.h = hardLimit;
+		dY = cell.space.h - hardLimit;
 	}
 
 	Rect r2Rect;
@@ -428,7 +431,7 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 			if (RandomBool()) r2Rect.x = r1Rect.x + r1Rect.w - r2Rect.w;
 		}
 
-		doubleRoom = r2Rect.w >= 4 && r2Rect.h >= 4;
+		doubleRoom = r2Rect.w >= hardLimit && r2Rect.h >= hardLimit;
 	}
 
 	const int xOffset = int(dX * uniforms.uni0to1f(mtEngine));
@@ -457,16 +460,16 @@ void Generator::MakeRoom(bt::Node<Cell> &btNode)
 	room.pos.y = selRoom -> y + (mtEngine() % (selRoom -> h - 2)) + 1;
 	room.pos.x = selRoom -> x + (mtEngine() % (selRoom -> w - 2)) + 1;
 
-	cell.selNode = &room;
+	cell.room = &room;
 	CreateRoomNodes(cell.space, room);
 }
 
 void Generator::FindPath(bt::Node<Cell> &btNode)
 {
-	Node *const start = GetRandomNode(btNode.left);
+	Room *const start = GetRandomRoom(btNode.left);
 	if (start == nullptr) return;
 
-	Node *const stop = GetRandomNode(btNode.right);
+	Room *const stop = GetRandomRoom(btNode.right);
 	if (stop == nullptr || start == stop) return;
 
 	Node *crrNode = start;
@@ -562,7 +565,7 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 	} while (crrNode != start);
 }
 
-void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_t seed)
+void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint seed)
 {
 	LOG_MSG("Generation started");
 	LOG_ENDL();
@@ -609,7 +612,7 @@ void Generator::Generate(GenInput *genInput, GenOutput *genOutput, const uint32_
 	LOG_ENDL();
 }
 
-void Generator::GenerateDebug(GenInput *genInput, GenOutput *genOutput, const uint32_t seed, Caller<void> &callback)
+void Generator::GenerateDebug(GenInput *genInput, GenOutput *genOutput, const uint seed, Caller<void> &callback)
 {
 	LOG_MSG("Generation started (with debugging)");
 	LOG_ENDL();

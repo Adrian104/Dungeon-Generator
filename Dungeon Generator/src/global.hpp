@@ -24,9 +24,9 @@
 
 inline const int gDefMaxRoomSize = 75;
 inline const int gDefMinRoomSize = 25;
-inline const int gDefRandAreaSize = 2;
 inline const int gDefRandAreaDens = 50;
 inline const int gDefRandAreaProb = 25;
+inline const int gDefRandAreaDepth = 2;
 inline const int gDefDoubleRoomProb = 25;
 inline const int gDefSpaceSizeRandomness = 35;
 inline const int gDefAdditionalConnections = 2;
@@ -43,8 +43,8 @@ inline const int gOverlayAnimTime = 350;
 inline const int gOverlayTitleYPos = 40;
 inline const int gOverlayOutlineWidth = 3;
 inline const int gOverlayTitleYOffset = 50;
-inline const int gOverlayRefInternalOffset = 21;
-inline const int gOverlayRefExternalOffset = 36;
+inline const int gOverlayInternalOffset = 21;
+inline const int gOverlayExternalOffset = 36;
 
 inline const std::string gTitle = "Dungeon Generator";
 inline const std::pair<std::string, int> gFonts[] = { std::pair<std::string, int>("res/Quicksand-Regular.ttf", 16) };
