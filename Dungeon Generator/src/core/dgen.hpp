@@ -2,6 +2,7 @@
 #include "utils.hpp"
 #include "btree.hpp"
 #include "heap.hpp"
+#include "rand.hpp"
 
 struct Cell;
 struct Node;
@@ -73,27 +74,16 @@ struct GenOutput
 
 struct Generator
 {
-	struct Uniforms
-	{
-		std::uniform_int_distribution<int> uniDepth;
-		std::uniform_real_distribution<float> uniRoom;
-		std::uniform_real_distribution<float> uniSpace;
-		std::uniform_real_distribution<float> uni0to1f;
-	};
-
 	int roomCount;
 	int deltaDepth;
 	int minSpaceSize;
 
 	uint statusCounter;
 
-	GenInput *gInput;
 	GenOutput *gOutput;
+	const GenInput *gInput;
 
-	uint bValues;
-	Uniforms uniforms;
-	std::mt19937 mtEngine;
-
+	Random random;
 	Heap<int, Node*> heap;
 
 	bt::Node<Cell> *root;
@@ -101,6 +91,10 @@ struct Generator
 
 	std::map<std::pair<int, int>, Node> posXNodes;
 	std::map<std::pair<int, int>, Node*> posYNodes;
+
+	std::uniform_int_distribution<int> uniDepth;
+	std::uniform_real_distribution<float> uniRoom;
+	std::uniform_real_distribution<float> uniSpace;
 	
 	void Clear();
 	void Prepare();
@@ -111,7 +105,6 @@ struct Generator
 	void GenerateOutput();
 	void GenerateTree(bt::Node<Cell> &btNode, int left);
 
-	bool RandomBool();
 	Node &AddRegNode(int x, int y);
 	void CreateSpaceNodes(Rect &space);
 	void CreateRoomNodes(Rect &space, Room &room);
@@ -123,6 +116,6 @@ struct Generator
 	Generator();
 	~Generator();
 
-	void Generate(GenInput *genInput, GenOutput *genOutput, const uint seed);
-	void GenerateDebug(GenInput *genInput, GenOutput *genOutput, const uint seed, Caller<void> &callback);
+	void Generate(const GenInput *genInput, GenOutput *genOutput, const Random::var_type seed);
+	void GenerateDebug(const GenInput *genInput, GenOutput *genOutput, const Random::var_type seed, Caller<void> &callback);
 };

@@ -202,6 +202,7 @@
     <ClCompile Include="src\anim.cpp" />
     <ClCompile Include="src\appmgr.cpp" />
     <ClCompile Include="src\core\dgen.cpp" />
+    <ClCompile Include="src\core\rand.cpp" />
     <ClCompile Include="src\logger.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\app.cpp" />
@@ -221,6 +222,7 @@
     <ClInclude Include="src\core\dgen.hpp" />
     <ClInclude Include="src\core\guard.hpp" />
     <ClInclude Include="src\core\heap.hpp" />
+    <ClInclude Include="src\core\rand.hpp" />
     <ClInclude Include="src\core\utils.hpp" />
     <ClInclude Include="src\logger.hpp" />
     <ClInclude Include="src\global.hpp" />
