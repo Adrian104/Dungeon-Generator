@@ -80,28 +80,28 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)src\pch</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)src\core;$(ProjectDir)src\pch</IncludePath>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>C:\Dev\Intermediates\$(SolutionName)\$(ProjectName)_$(Configuration)_$(PlatformShortName)\</IntDir>
     <TargetName>$(ProjectName)_$(Configuration)_$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)src\pch</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)src\core;$(ProjectDir)src\pch</IncludePath>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>C:\Dev\Intermediates\$(SolutionName)\$(ProjectName)_$(Configuration)_$(PlatformShortName)\</IntDir>
     <TargetName>$(ProjectName)_$(Configuration)_$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)src\pch</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)src\core;$(ProjectDir)src\pch</IncludePath>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>C:\Dev\Intermediates\$(SolutionName)\$(ProjectName)_$(Configuration)_$(PlatformShortName)\</IntDir>
     <TargetName>$(ProjectName)_$(Configuration)_$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)src\pch</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)src\core;$(ProjectDir)src\pch</IncludePath>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>C:\Dev\Intermediates\$(SolutionName)\$(ProjectName)_$(Configuration)_$(PlatformShortName)\</IntDir>
     <TargetName>$(ProjectName)_$(Configuration)_$(PlatformShortName)</TargetName>

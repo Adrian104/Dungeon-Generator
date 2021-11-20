@@ -1,7 +1,7 @@
 #include "pch.hpp"
 #include "appmgr.hpp"
 
-AppManager::AppManager(const std::string &pTitle) : text(), fonts()
+AppManager::AppManager(const std::string &pTitle) : errorFlag(false), text(), fonts()
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
 	TTF_Init();
@@ -10,11 +10,11 @@ AppManager::AppManager(const std::string &pTitle) : text(), fonts()
 	SDL_GetCurrentDisplayMode(0, &dm);
 
 	#ifdef FULL_SCREEN
-		window = SDL_CreateWindow(pTitle.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w, dm.h, SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN);
+		window = SDL_CreateWindow(pTitle.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w, dm.h, SDL_WINDOW_HIDDEN | SDL_WINDOW_FULLSCREEN);
 		windowWidth = dm.w;
 		windowHeight = dm.h;
 	#else
-		window = SDL_CreateWindow(pTitle.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w - 30, dm.h - 100, SDL_WINDOW_SHOWN);
+		window = SDL_CreateWindow(pTitle.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w - 30, dm.h - 100, SDL_WINDOW_HIDDEN);
 		windowWidth = dm.w - 30;
 		windowHeight = dm.h - 100;
 	#endif
@@ -24,9 +24,18 @@ AppManager::AppManager(const std::string &pTitle) : text(), fonts()
 	TTF_Font **crrFont = fonts;
 	for (auto &[name, size] : gFonts)
 	{
-		*crrFont = TTF_OpenFont(name.c_str(), size);
+		TTF_Font *const font = TTF_OpenFont(name.c_str(), size);
+		if (font == nullptr)
+		{
+			Error("File \"" + name + "\" not found");
+			return;
+		}
+
+		*crrFont = font;
 		crrFont++;
 	}
+
+	SDL_ShowWindow(window);
 }
 
 AppManager::~AppManager()
@@ -39,6 +48,12 @@ AppManager::~AppManager()
 
 	TTF_Quit();
 	SDL_Quit();
+}
+
+void AppManager::Error(const std::string &msg)
+{
+	errorFlag = true;
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", msg.c_str(), window);
 }
 
 void AppManager::RenderText(const std::string &str, int fontId, int style, const SDL_Color &color)

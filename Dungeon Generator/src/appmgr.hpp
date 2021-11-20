@@ -11,6 +11,7 @@ struct AppManager
 		SDL_Texture *texture;
 	};
 
+	bool errorFlag;
 	int windowWidth;
 	int windowHeight;
 
@@ -22,5 +23,6 @@ struct AppManager
 	AppManager(const std::string &pTitle);
 	~AppManager();
 
+	void Error(const std::string &msg);
 	void RenderText(const std::string &str, int fontId, int style, const SDL_Color &color = { 0xFF, 0xFF, 0xFF, 0xFF });
 };

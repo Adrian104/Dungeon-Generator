@@ -23,14 +23,12 @@ bool Random::GetBool()
 
 float Random::GetFloat()
 {
-	static const std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
-	return uniform(engine);
+	return engine() / float(std::numeric_limits<var_type>::max());
 }
 
 double Random::GetDouble()
 {
-	static const std::uniform_real_distribution<double> uniform(0.0, 1.0);
-	return uniform(engine);
+	return engine() / double(std::numeric_limits<var_type>::max());
 }
 
 auto Random::operator()() -> var_type { return engine(); }

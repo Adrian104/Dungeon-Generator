@@ -32,7 +32,17 @@ void Heap<ValType, ObjType>::Expand()
 	capacity <<= 1;
 
 	Pair *const newArr = (Pair*)operator new(sizeof(Pair) * capacity);
-	std::memcpy(newArr, arr, sizeof(Pair) * size);
+	Pair *const arrEndIter = arr + size;
+	Pair *newArrIter = newArr;
+	Pair *arrIter = arr;
+
+	while (arrIter != arrEndIter)
+	{
+		*newArrIter = *arrIter;
+
+		arrIter++;
+		newArrIter++;
+	}
 
 	operator delete[](arr);
 	arr = newArr;
