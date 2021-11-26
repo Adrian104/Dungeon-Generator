@@ -5,7 +5,7 @@
 
 Room Room::flag = Room();
 
-Generator::Generator() : roomCount(0), deltaDepth(0), minSpaceSize(0), statusCounter(1), gOutput(nullptr), gInput(nullptr), root(nullptr) { LOG_HEADER("Dungeon Generator"); }
+Generator::Generator() : roomCount(0), deltaDepth(0), targetDepth(0), minSpaceSize(0), statusCounter(1), gOutput(nullptr), gInput(nullptr), root(nullptr) { LOG_HEADER("Dungeon Generator"); }
 Generator::~Generator() { Clear(); }
 
 void Generator::Clear()
@@ -32,10 +32,10 @@ void Generator::Prepare()
 	root = new bt::Node<Cell>(nullptr, Cell(width, height));
 
 	roomCount = 0;
+	targetDepth = 0;
 	statusCounter = 1;
 	deltaDepth = gInput -> maxDepth - gInput -> minDepth;
 
-	uniDepth = std::uniform_int_distribution<int>(0, deltaDepth);
 	uniRoom = std::uniform_real_distribution<float>(1.0f - gInput -> maxRoomSize, 1.0f - gInput -> minRoomSize);
 	uniSpace = std::uniform_real_distribution<float>(gInput -> spaceSizeRandomness / -2.0f, gInput -> spaceSizeRandomness / 2.0f);
 }
@@ -208,9 +208,20 @@ void Generator::GenerateOutput()
 
 void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 {
-	if (left <= 0)
+	if (left <= gInput -> randAreaDepth)
 	{
-		nomore:
+		if (random.GetFloat() < gInput -> randAreaProb) btNode.data.room = &Room::flag;
+	}
+
+	if (left == deltaDepth)
+	{
+		if (deltaDepth > 0) targetDepth = random() % (deltaDepth + 1);
+		else goto no_more;
+	}
+
+	if (left <= targetDepth)
+	{
+		no_more:
 		Rect &space = btNode.data.space;
 
 		space.x += 4; space.y += 4;
@@ -227,16 +238,6 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 		return;
 	}
 
-	if (left <= deltaDepth)
-	{
-		if (left <= uniDepth(random.GetEngine())) goto nomore;
-	}
-
-	if (left <= gInput -> randAreaDepth)
-	{
-		if (random.GetFloat() < gInput -> randAreaProb) btNode.data.room = &Room::flag;
-	}
-
 	int Rect::*xy; int Rect::*wh;
 	Rect &crrSpace = btNode.data.space;
 
@@ -246,7 +247,7 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 	const int totalSize = crrSpace.*wh;
 	const int randSize = (totalSize >> 1) + int(totalSize * uniSpace(random.GetEngine()));
 
-	if (randSize < minSpaceSize || totalSize - randSize < minSpaceSize) goto nomore;
+	if (randSize < minSpaceSize || totalSize - randSize < minSpaceSize) goto no_more;
 
 	btNode.left = new bt::Node<Cell>(&btNode, btNode.data);
 	btNode.right = new bt::Node<Cell>(&btNode, btNode.data);
@@ -541,7 +542,7 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 	} while (crrNode != start);
 }
 
-void Generator::Generate(const GenInput *genInput, GenOutput *genOutput, const Random::var_type seed)
+void Generator::Generate(const GenInput *genInput, GenOutput *genOutput, const Random::seed_type seed)
 {
 	LOG_MSG("Generation started");
 	LOG_ENDL();
@@ -588,7 +589,7 @@ void Generator::Generate(const GenInput *genInput, GenOutput *genOutput, const R
 	LOG_ENDL();
 }
 
-void Generator::GenerateDebug(const GenInput *genInput, GenOutput *genOutput, const Random::var_type seed, Caller<void> &callback)
+void Generator::GenerateDebug(const GenInput *genInput, GenOutput *genOutput, const Random::seed_type seed, Caller<void> &callback)
 {
 	LOG_MSG("Generation started (with debugging)");
 	LOG_ENDL();

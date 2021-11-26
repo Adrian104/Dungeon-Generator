@@ -3,8 +3,16 @@
 
 int main(int argc, char **argv)
 {
-	Application app;
-	app.Run();
+	try
+	{
+		Application app;
+		app.Run();
+	}
+	catch (const std::exception &error)
+	{
+		std::cout << error.what();
+		return EXIT_FAILURE;
+	}
 
-	return 0;
+	return EXIT_SUCCESS;
 }

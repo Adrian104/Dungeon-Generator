@@ -76,6 +76,7 @@ struct Generator
 {
 	int roomCount;
 	int deltaDepth;
+	int targetDepth;
 	int minSpaceSize;
 
 	uint statusCounter;
@@ -92,7 +93,6 @@ struct Generator
 	std::map<std::pair<int, int>, Node> posXNodes;
 	std::map<std::pair<int, int>, Node*> posYNodes;
 
-	std::uniform_int_distribution<int> uniDepth;
 	std::uniform_real_distribution<float> uniRoom;
 	std::uniform_real_distribution<float> uniSpace;
 	
@@ -116,6 +116,6 @@ struct Generator
 	Generator();
 	~Generator();
 
-	void Generate(const GenInput *genInput, GenOutput *genOutput, const Random::var_type seed);
-	void GenerateDebug(const GenInput *genInput, GenOutput *genOutput, const Random::var_type seed, Caller<void> &callback);
+	void Generate(const GenInput *genInput, GenOutput *genOutput, const Random::seed_type seed);
+	void GenerateDebug(const GenInput *genInput, GenOutput *genOutput, const Random::seed_type seed, Caller<void> &callback);
 };

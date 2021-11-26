@@ -1,7 +1,7 @@
 #include "pch.hpp"
 #include "appmgr.hpp"
 
-AppManager::AppManager(const std::string &pTitle) : errorFlag(false), text(), fonts()
+AppManager::AppManager(const std::string &pTitle) : text(), fonts()
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
 	TTF_Init();
@@ -25,11 +25,7 @@ AppManager::AppManager(const std::string &pTitle) : errorFlag(false), text(), fo
 	for (auto &[name, size] : gFonts)
 	{
 		TTF_Font *const font = TTF_OpenFont(name.c_str(), size);
-		if (font == nullptr)
-		{
-			Error("File \"" + name + "\" not found");
-			return;
-		}
+		if (font == nullptr) throw std::runtime_error(TTF_GetError());
 
 		*crrFont = font;
 		crrFont++;
@@ -48,12 +44,6 @@ AppManager::~AppManager()
 
 	TTF_Quit();
 	SDL_Quit();
-}
-
-void AppManager::Error(const std::string &msg)
-{
-	errorFlag = true;
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", msg.c_str(), window);
 }
 
 void AppManager::RenderText(const std::string &str, int fontId, int style, const SDL_Color &color)

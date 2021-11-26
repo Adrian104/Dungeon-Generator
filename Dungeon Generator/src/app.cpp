@@ -40,8 +40,6 @@ Application::~Application()
 
 void Application::Run()
 {
-	if (errorFlag) return;
-
 	Generate(GenMode::NEW_SEED);
 	overlay -> Render();
 
