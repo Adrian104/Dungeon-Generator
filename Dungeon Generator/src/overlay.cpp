@@ -18,7 +18,7 @@ Overlay::~Overlay()
 
 void Overlay::Draw()
 {
-	const SDL_Rect dest = { int(-gOverlayWidth * GetAnimPhase()), 0, gOverlayWidth, mgr.windowHeight };
+	const SDL_Rect dest = { int(-gOverlayWidth * GetPhase()), 0, gOverlayWidth, mgr.windowHeight };
 	SDL_RenderCopy(mgr.renderer, texture, nullptr, &dest);
 }
 
@@ -76,14 +76,14 @@ bool Overlay::Update()
 	if (refresh)
 	{
 		Render();
-		if (IsAnimating()) UpdateAnim();
+		if (IsPlaying()) Animator::Update();
 
 		return true;
 	}
 
-	if (IsAnimating())
+	if (IsPlaying())
 	{
-		UpdateAnim();
+		Animator::Update();
 		return true;
 	}
 
@@ -92,7 +92,7 @@ bool Overlay::Update()
 
 void Overlay::MoveSelected(const bool up)
 {
-	if (GetAnimPhase() == 1.0f) return;
+	if (IsElapsedMax()) return;
 	const int modCount = int(mods.size());
 
 	if (up)
@@ -111,7 +111,7 @@ void Overlay::MoveSelected(const bool up)
 
 bool Overlay::ChangeSelected(const bool minus)
 {
-	if (GetAnimPhase() == 1.0f) return false;
+	if (IsElapsedMax()) return false;
 	Modifier *const mod = mods.at(selected);
 
 	if (minus) mod -> Decrement();

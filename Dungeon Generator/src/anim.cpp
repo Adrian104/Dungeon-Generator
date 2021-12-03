@@ -1,33 +1,96 @@
 #include "pch.hpp"
 #include "anim.hpp"
 
-Animator::Animator(std::chrono::duration<float> pTotalTime) : phase(0), state(0), totalTime(pTotalTime) {}
-
-void Animator::UpdateAnim()
+void Animator::ToggleState()
 {
-	std::chrono::steady_clock::time_point crrTimePoint = std::chrono::steady_clock::now();
-	const float diff = (crrTimePoint - prevTimePoint) / totalTime;
-
-	phase += diff * state;
-	const bool overOne = phase > 1;
-
-	if (phase < 0 || overOne)
+	switch (m_loopMode)
 	{
-		phase = float(overOne);
-		state = 0;
-	}
+	case LoopMode::ONLY_FORWARD:
+		m_elapsed = zero;
+		[[fallthrough]];
 
-	prevTimePoint = crrTimePoint;
+	case LoopMode::NO_LOOP:
+		m_playing = false;
+		break;
+
+	case LoopMode::LOOP:
+		m_backward = !m_backward;
+		break;
+
+	case LoopMode::BOUNCE_BACK:
+		if (m_backward) m_playing = false;
+		else m_backward = true;
+	}
 }
 
-void Animator::ToggleAnim(int8_t dir)
-{
-	if (dir == 0)
-	{
-		if (state == 0) state = phase < 0.5f ? 1 : -1;
-		else state = -state;
-	}
-	else state = dir;
+Animator::Animator(duration_type p_totalTime, LoopMode p_loopMode)
+	: m_elapsed(), m_prevTimePoint(), m_totalTime(p_totalTime), m_loopMode(p_loopMode) {}
 
-	prevTimePoint = std::chrono::steady_clock::now();
+void Animator::Update()
+{
+	if (!m_playing) return;
+
+	const time_type crrTimePoint = clock_type::now();
+	const duration_type deltaTime = crrTimePoint - m_prevTimePoint;
+
+	m_prevTimePoint = crrTimePoint;
+
+	if (m_backward)
+	{
+		m_elapsed -= deltaTime;
+		if (m_elapsed <= zero)
+		{
+			m_elapsed = zero;
+			ToggleState();
+		}
+	}
+	else
+	{
+		m_elapsed += deltaTime;
+		if (m_elapsed >= m_totalTime)
+		{
+			m_elapsed = m_totalTime;
+			ToggleState();
+		}
+	}
+}
+
+void Animator::Play(DirMode p_dirMode)
+{
+	if (m_loopMode == LoopMode::ONLY_FORWARD)
+		goto forward;
+
+	switch (p_dirMode)
+	{
+	case DirMode::FORWARD: forward:
+		m_backward = false;
+		break;
+
+	case DirMode::BACKWARD:
+		m_backward = true;
+		break;
+
+	case DirMode::TOGGLE:
+		m_backward = !m_backward;
+		break;
+
+	case DirMode::SWITCH:
+		if (m_elapsed <= zero) m_backward = false;
+		else if (m_elapsed >= m_totalTime) m_backward = true;
+		break;
+
+	case DirMode::TOGGLE_OR_SWITCH:
+		if (m_elapsed <= zero) m_backward = false;
+		else if (m_elapsed >= m_totalTime) m_backward = true;
+		else m_backward = !m_backward;
+		break;
+
+	case DirMode::AUTO:
+		if (m_elapsed <= zero) m_backward = false;
+		else if (m_elapsed >= m_totalTime) m_backward = true;
+		else if (m_playing) m_backward = !m_backward;
+	}
+
+	m_playing = true;
+	m_prevTimePoint = clock_type::now();
 }

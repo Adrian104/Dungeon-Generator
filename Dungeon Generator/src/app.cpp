@@ -96,7 +96,7 @@ bool Application::Update()
 			break;
 
 		case SDLK_m:
-			overlay -> ToggleAnim();
+			overlay -> Play(Animator::DirMode::AUTO);
 			break;
 
 		case SDLK_UP:
