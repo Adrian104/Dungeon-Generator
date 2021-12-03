@@ -27,9 +27,6 @@
     <ClCompile Include="src\app.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="src\logger.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
     <ClCompile Include="src\appmgr.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
@@ -62,9 +59,6 @@
     <ClInclude Include="src\global.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="src\logger.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
     <ClInclude Include="src\appmgr.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
@@ -78,9 +72,6 @@
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="src\core\utils.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
-    <ClInclude Include="src\core\guard.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="src\core\heap.hpp">

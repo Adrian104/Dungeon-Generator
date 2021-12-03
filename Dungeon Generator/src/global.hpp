@@ -5,7 +5,6 @@
 #endif
 
 #ifdef DEBUG_ENABLED
-	#define LOGGER_ENABLED
 	#define INCREMENTAL_SEED
 #else
 	#define FULL_SCREEN

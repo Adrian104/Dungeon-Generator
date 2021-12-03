@@ -347,24 +347,28 @@ void Application::Generate(GenMode mode)
 
 	delete gOutput;
 	gOutput = new GenOutput;
-
 	static uint seed = 0;
-	if (mode != GenMode::DEBUG_MODE)
-	{
-		#ifdef RANDOM_SEED
-		static std::random_device rd;
-		if (mode == GenMode::NEW_SEED) seed = rd();
-		#endif
 
-		#ifdef INCREMENTAL_SEED
-		seed += mode == GenMode::NEW_SEED;
-		#endif
-
-		gen.Generate(&gInput, gOutput, seed);
-	}
-	else
+	try
 	{
-		MCaller<void, Application> caller(&Application::RenderDebug, this);
-		gen.GenerateDebug(&gInput, gOutput, seed, caller);
+		if (mode != GenMode::DEBUG_MODE)
+		{
+			#ifdef RANDOM_SEED
+			static std::random_device rd;
+			if (mode == GenMode::NEW_SEED) seed = rd();
+			#endif
+
+			#ifdef INCREMENTAL_SEED
+			seed += mode == GenMode::NEW_SEED;
+			#endif
+
+			gen.Generate(&gInput, gOutput, seed);
+		}
+		else
+		{
+			MCaller<void, Application> caller(&Application::RenderDebug, this);
+			gen.GenerateDebug(&gInput, gOutput, seed, caller);
+		}
 	}
+	catch (const std::exception &error) { std::cerr << error.what() << "\n"; }
 }

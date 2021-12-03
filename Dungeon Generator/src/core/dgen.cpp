@@ -1,11 +1,9 @@
 #include "pch.hpp"
 #include "dgen.hpp"
-#include "../logger.hpp"
-#include "guard.hpp"
 
 Room Room::flag = Room();
 
-Generator::Generator() : roomCount(0), deltaDepth(0), targetDepth(0), minSpaceSize(0), statusCounter(1), gOutput(nullptr), gInput(nullptr), root(nullptr) { LOG_HEADER("Dungeon Generator"); }
+Generator::Generator() : roomCount(0), deltaDepth(0), targetDepth(0), minSpaceSize(0), statusCounter(1), gOutput(nullptr), gInput(nullptr), root(nullptr) {}
 Generator::~Generator() { Clear(); }
 
 void Generator::Clear()
@@ -544,89 +542,35 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 
 void Generator::Generate(const GenInput *genInput, GenOutput *genOutput, const Random::seed_type seed)
 {
-	LOG_MSG("Generation started");
-	LOG_ENDL();
-
 	gInput = genInput;
 	gOutput = genOutput;
 	random.Init(seed);
 
-	try { Prepare(); }
-	catch (const std::exception &error)
-	{
-		LOG_MSG("Incorrect input data");
-		LOG_MSG("The generation will be stopped");
-		LOG_MSG(std::string("Exception reason: ") + error.what());
-		LOG_ENDL();
-
-		return;
-	}
-
-	LOG_TIME("Generating tree");
+	Prepare();
 	GenerateTree(*root, gInput -> maxDepth);
-
-	LOG_TIME("Generating rooms");
 	GenerateRooms();
-
-	LOG_TIME("Linking nodes");
 	LinkNodes();
-
-	LOG_TIME("Finding paths");
 	FindPaths();
-
-	LOG_TIME("Optimizing nodes");
 	OptimizeNodes();
-
-	LOG_TIME("Generating output");
 	GenerateOutput();
-
-	LOG_TIME("Deallocating memory");
 	Clear();
-
-	LOG_ENDL();
-	LOG_MSG("Done!");
-	LOG_TOTAL_TIME("Total time: ");
-	LOG_ENDL();
 }
 
 void Generator::GenerateDebug(const GenInput *genInput, GenOutput *genOutput, const Random::seed_type seed, Caller<void> &callback)
 {
-	LOG_MSG("Generation started (with debugging)");
-	LOG_ENDL();
-
 	gInput = genInput;
 	gOutput = genOutput;
 	random.Init(seed);
 
-	try { Prepare(); }
-	catch (const std::exception &error)
-	{
-		LOG_MSG("Incorrect input data");
-		LOG_MSG("The generation will be stopped");
-		LOG_MSG(std::string("Exception reason: ") + error.what());
-		LOG_ENDL();
-
-		return;
-	}
-
-	LOG_TIME("Preparing for debugging");
-
+	Prepare();
 	GenerateTree(*root, gInput -> maxDepth);
 	GenerateRooms();
 	LinkNodes();
 	FindPaths();
 	OptimizeNodes();
 
-	LOG_TIME("Rendering objects");
 	callback.Call();
-
-	LOG_TIME("Continuing work");
 
 	GenerateOutput();
 	Clear();
-
-	LOG_ENDL();
-	LOG_MSG("Done!");
-	LOG_TOTAL_TIME("Total time: ");
-	LOG_ENDL();
 }
