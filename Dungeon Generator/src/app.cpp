@@ -77,6 +77,11 @@ bool Application::Update()
 		case SDLK_ESCAPE:
 			return false;
 
+		case SDLK_TAB:
+			render = true;
+			vPort.Reset();
+			break;
+
 		case SDLK_g:
 			render = true;
 			Generate(GenMode::NEW_SEED);

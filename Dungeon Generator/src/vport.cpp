@@ -1,58 +1,51 @@
 #include "pch.hpp"
 #include "vport.hpp"
 
-void Viewport::Reset()
+void Viewport::Move(int p_xMouse, int p_yMouse)
 {
-	xOffset = 0;
-	yOffset = 0;
-	scale = defScale;
+	m_xOffset += (m_xStart - p_xMouse) / m_scale;
+	m_yOffset += (m_yStart - p_yMouse) / m_scale;
+
+	m_xStart = p_xMouse;
+	m_yStart = p_yMouse;
 }
 
-bool Viewport::Update(SDL_Event &sdlEvent)
+void Viewport::Scale(int p_xMouse, int p_yMouse, float p_factor)
 {
-	static int xStart = 0;
-	static int yStart = 0;
-	static bool pressed = false;
+	const float before = 1 / m_scale;
+	m_scale *= (m_scaleStep * p_factor) + 1;
 
-	int xTemp, yTemp;
-	float xAfter, yAfter;
-	float xBefore, yBefore;
+	const float after = 1 / m_scale;
+	const float diff = before - after;
 
-	pressed &= SDL_GetMouseState(&xTemp, &yTemp) & SDL_BUTTON(SDL_BUTTON_LEFT);
+	m_xOffset += p_xMouse * diff;
+	m_yOffset += p_yMouse * diff;
+}
 
-	switch (sdlEvent.type)
+bool Viewport::Update(SDL_Event& p_sdlEvent)
+{
+	int xMouse, yMouse;
+	SDL_GetMouseState(&xMouse, &yMouse);
+
+	switch (p_sdlEvent.type)
 	{
 	case SDL_MOUSEBUTTONDOWN:
-		xStart = xTemp;
-		yStart = yTemp;
-		pressed = true;
+		m_xStart = xMouse;
+		m_yStart = yMouse;
+		m_pressed = true;
+		break;
+
+	case SDL_MOUSEBUTTONUP:
+		m_pressed = false;
 		break;
 
 	case SDL_MOUSEMOTION:
-		if (!pressed) return false;
-
-		xOffset += (xStart - xTemp) / scale;
-		yOffset += (yStart - yTemp) / scale;
-
-		xStart = xTemp;
-		yStart = yTemp;
+		if (!m_pressed) return false;
+		Move(xMouse, yMouse);
 		break;
 
 	case SDL_MOUSEWHEEL:
-		ToWorld(xTemp, yTemp, xBefore, yBefore);
-
-		if (sdlEvent.wheel.y > 0) scale *= (1 + scaleStep);
-		else if (sdlEvent.wheel.y < 0) scale *= (1 - scaleStep);
-
-		ToWorld(xTemp, yTemp, xAfter, yAfter);
-
-		xOffset += xBefore - xAfter;
-		yOffset += yBefore - yAfter;
-		break;
-
-	case SDL_KEYDOWN:
-		if (sdlEvent.key.keysym.sym == SDLK_TAB) Reset();
-		else return false;
+		Scale(xMouse, yMouse, static_cast<float>(p_sdlEvent.wheel.y));
 		break;
 
 	default:
@@ -60,74 +53,4 @@ bool Viewport::Update(SDL_Event &sdlEvent)
 	}
 
 	return true;
-}
-
-void Viewport::SetScaleStep(float pScaleStep)
-{
-	scaleStep = pScaleStep;
-}
-
-void Viewport::SetDefaultScale(float pDefScale)
-{
-	if (pDefScale != 0) defScale = pDefScale;
-}
-
-void Viewport::Scale(float wFrom, float hFrom, int &wTo, int &hTo) const
-{
-	wTo = int(wFrom * scale);
-	hTo = int(hFrom * scale);
-}
-
-void Viewport::ToWorld(int xScreen, int yScreen, float &xWorld, float &yWorld) const
-{
-	xWorld = float(xScreen) / scale + xOffset;
-	yWorld = float(yScreen) / scale + yOffset;
-}
-
-void Viewport::ToScreen(float xWorld, float yWorld, int &xScreen, int &yScreen) const
-{
-	xScreen = int((xWorld - xOffset) * scale);
-	yScreen = int((yWorld - yOffset) * scale);
-}
-
-void Viewport::Scale(float wFrom, float hFrom, float &wTo, float &hTo) const
-{
-	wTo = wFrom * scale;
-	hTo = hFrom * scale;
-}
-
-void Viewport::ToWorld(float xScreen, float yScreen, float &xWorld, float &yWorld) const
-{
-	xWorld = xScreen / scale + xOffset;
-	yWorld = yScreen / scale + yOffset;
-}
-
-void Viewport::ToScreen(float xWorld, float yWorld, float &xScreen, float &yScreen) const
-{
-	xScreen = (xWorld - xOffset) * scale;
-	yScreen = (yWorld - yOffset) * scale;
-}
-
-void Viewport::RectToScreen(SDL_Rect &from, SDL_Rect &to) const
-{
-	ToScreen(float(from.x), float(from.y), to.x, to.y);
-	Scale(float(from.w), float(from.h), to.w, to.h);
-}
-
-void Viewport::RectToScreen(SDL_FRect &from, SDL_FRect &to) const
-{
-	ToScreen(from.x, from.y, to.x, to.y);
-	Scale(from.w, from.h, to.w, to.h);
-}
-
-void Viewport::RectToScreen(float xWorld, float yWorld, float width, float height, SDL_Rect &rect) const
-{
-	ToScreen(xWorld, yWorld, rect.x, rect.y);
-	Scale(width, height, rect.w, rect.h);
-}
-
-void Viewport::RectToScreen(float xWorld, float yWorld, float width, float height, SDL_FRect &rect) const
-{
-	ToScreen(xWorld, yWorld, rect.x, rect.y);
-	Scale(width, height, rect.w, rect.h);
 }
