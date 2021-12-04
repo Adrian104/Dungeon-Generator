@@ -1,33 +1,33 @@
 #include "pch.hpp"
 #include "vport.hpp"
 
-void Viewport::Move(int p_xMouse, int p_yMouse)
+void Viewport::Move(int xMouse, int yMouse)
 {
-	m_xOffset += (m_xStart - p_xMouse) / m_scale;
-	m_yOffset += (m_yStart - p_yMouse) / m_scale;
+	m_xOffset += (m_xStart - xMouse) / m_scale;
+	m_yOffset += (m_yStart - yMouse) / m_scale;
 
-	m_xStart = p_xMouse;
-	m_yStart = p_yMouse;
+	m_xStart = xMouse;
+	m_yStart = yMouse;
 }
 
-void Viewport::Scale(int p_xMouse, int p_yMouse, float p_factor)
+void Viewport::Scale(int xMouse, int yMouse, float factor)
 {
 	const float before = 1 / m_scale;
-	m_scale *= (m_scaleStep * p_factor) + 1;
+	m_scale *= (m_scaleStep * factor) + 1;
 
 	const float after = 1 / m_scale;
 	const float diff = before - after;
 
-	m_xOffset += p_xMouse * diff;
-	m_yOffset += p_yMouse * diff;
+	m_xOffset += xMouse * diff;
+	m_yOffset += yMouse * diff;
 }
 
-bool Viewport::Update(SDL_Event& p_sdlEvent)
+bool Viewport::Update(SDL_Event& sdlEvent)
 {
 	int xMouse, yMouse;
 	SDL_GetMouseState(&xMouse, &yMouse);
 
-	switch (p_sdlEvent.type)
+	switch (sdlEvent.type)
 	{
 	case SDL_MOUSEBUTTONDOWN:
 		m_xStart = xMouse;
@@ -45,7 +45,7 @@ bool Viewport::Update(SDL_Event& p_sdlEvent)
 		break;
 
 	case SDL_MOUSEWHEEL:
-		Scale(xMouse, yMouse, static_cast<float>(p_sdlEvent.wheel.y));
+		Scale(xMouse, yMouse, static_cast<float>(sdlEvent.wheel.y));
 		break;
 
 	default:

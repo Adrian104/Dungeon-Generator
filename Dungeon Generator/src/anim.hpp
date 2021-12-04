@@ -24,13 +24,13 @@ class Animator
 	LoopMode m_loopMode;
 	duration_type m_totalTime;
 
-	Animator(duration_type p_totalTime, LoopMode p_loopMode = LoopMode::NO_LOOP);
+	Animator(duration_type totalTime, LoopMode loopMode = LoopMode::NO_LOOP);
 
 	void Stop();
 	void Pause();
 	void Update();
 
-	void Play(DirMode p_dirMode);
+	void Play(DirMode dirMode);
 
 	float GetPhase() const;
 	bool IsPlaying() const;

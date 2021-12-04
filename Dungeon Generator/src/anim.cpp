@@ -23,8 +23,8 @@ void Animator::ToggleState()
 	}
 }
 
-Animator::Animator(duration_type p_totalTime, LoopMode p_loopMode)
-	: m_elapsed(), m_prevTimePoint(), m_totalTime(p_totalTime), m_loopMode(p_loopMode) {}
+Animator::Animator(duration_type totalTime, LoopMode loopMode)
+	: m_elapsed(), m_prevTimePoint(), m_totalTime(totalTime), m_loopMode(loopMode) {}
 
 void Animator::Update()
 {
@@ -55,12 +55,12 @@ void Animator::Update()
 	}
 }
 
-void Animator::Play(DirMode p_dirMode)
+void Animator::Play(DirMode dirMode)
 {
 	if (m_loopMode == LoopMode::ONLY_FORWARD)
 		goto forward;
 
-	switch (p_dirMode)
+	switch (dirMode)
 	{
 	case DirMode::FORWARD: forward:
 		m_backward = false;

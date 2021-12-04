@@ -36,7 +36,6 @@ inline const bool gDefRoomsVisibility = true;
 inline const bool gDefPathsVisibility = true;
 inline const bool gDefEntrancesVisibility = false;
 
-inline const float gDefScaleStep = 0.25f;
 inline const int gOverlayXMargin = 6;
 inline const int gOverlayYMargin = 4;
 inline const int gOverlayWidth = 300;
