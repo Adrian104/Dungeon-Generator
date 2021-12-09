@@ -181,7 +181,7 @@ void Generator::GenerateOutput()
 			if (!bool(path & 1)) continue;
 
 			const Point bPos = room.links[c] -> pos;
-			const Point ePos = bool(c & 1) ? Point{ room.edges[c], bPos.y } : Point{ bPos.x, room.edges[c] };
+			const Point ePos = bool(c & 1) ? Point(room.edges[c], bPos.y) : Point(bPos.x, room.edges[c]);
 
 			gOutput -> entrances.push_back(ePos);
 			gOutput -> paths.push_back(std::make_pair(ePos, bPos - ePos));
