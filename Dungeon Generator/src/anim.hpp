@@ -53,7 +53,7 @@ inline void Animator::Pause()
 
 inline float Animator::GetPhase() const
 {
-	return m_elapsed.count() / float(m_totalTime.count());
+	return m_elapsed.count() / static_cast<float>(m_totalTime.count());
 }
 
 inline bool Animator::IsPlaying() const

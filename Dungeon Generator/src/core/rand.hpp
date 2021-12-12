@@ -9,12 +9,13 @@ class Random
 	typedef std::remove_const<decltype(engine_type::default_seed)>::type seed_type;
 
 	private:
-	int bValueCount;
-	result_type bValues;
-	engine_type engine;
+	int m_bitCount = 0;
+	result_type m_bits = 0;
+	engine_type m_engine;
 
 	public:
 	Random();
+	Random(const seed_type seed);
 
 	bool GetBool();
 	float GetFloat();

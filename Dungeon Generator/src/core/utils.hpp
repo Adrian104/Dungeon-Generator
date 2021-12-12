@@ -17,20 +17,6 @@ struct Rect
 	Rect(int pX, int pY, int pW, int pH) : x(pX), y(pY), w(pW), h(pH) {}
 };
 
-struct NonCopyable
-{
-	NonCopyable() = default;
-	NonCopyable(const NonCopyable&) = delete;
-	NonCopyable& operator=(const NonCopyable&) = delete;
-};
-
-struct NonMovable
-{
-	NonMovable() = default;
-	NonMovable(NonMovable&&) = delete;
-	NonMovable& operator=(NonMovable&&) = delete;
-};
-
 template <typename RType, typename ...CArgs>
 struct Caller
 {

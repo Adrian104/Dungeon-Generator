@@ -2,47 +2,62 @@
 #include "rand.hpp"
 
 template <typename Type>
-constexpr uint CountBits(Type var)
+static constexpr uint CountBits(Type var)
 {
-	uint c = 0;
+	uint count = 0;
 	while (var != 0)
 	{
 		var >>= 1;
-		c++;
+		count++;
 	}
 
-	return c;
+	return count;
 }
 
-Random::Random() : bValueCount(0), bValues(0) { Init(); }
+Random::Random() { Init(); }
+Random::Random(const seed_type seed) { Init(seed); }
 
 bool Random::GetBool()
 {
-	const bool out = bool(bValues & 0b1);
+	const bool output = static_cast<bool>(m_bits & 0b1);
 
-	if (bValueCount > 1)
+	if (m_bitCount > 1)
 	{
-		bValues >>= 1;
-		bValueCount--;
+		m_bits >>= 1;
+		m_bitCount--;
 	}
 	else
 	{
-		bValues = engine();
-		bValueCount = CountBits(engine_type::max());
+		m_bits = m_engine();
+		m_bitCount = CountBits(engine_type::max());
 	}
 
-	return out;
+	return output;
 }
 
-float Random::GetFloat() { return engine() / float(engine_type::max()); }
-double Random::GetDouble() { return engine() / double(engine_type::max()); }
+float Random::GetFloat()
+{
+	return m_engine() / static_cast<float>(engine_type::max());
+}
 
-auto Random::operator()() -> result_type { return engine(); }
-auto Random::GetEngine() -> engine_type& { return engine; }
+double Random::GetDouble()
+{
+	return m_engine() / static_cast<double>(engine_type::max());
+}
+
+auto Random::operator()() -> result_type
+{
+	return m_engine();
+}
+
+auto Random::GetEngine() -> engine_type&
+{
+	return m_engine;
+}
 
 void Random::Init(const seed_type seed)
 {
-	engine.seed(seed);
-	bValues = engine();
-	bValueCount = CountBits(engine_type::max());
+	m_engine.seed(seed);
+	m_bits = m_engine();
+	m_bitCount = CountBits(engine_type::max());
 }
