@@ -11,7 +11,7 @@ void Generator::Clear()
 	posYNodes.clear();
 	posXNodes.clear();
 
-	heap.Reset();
+	heap.Clear(true);
 	rooms.clear();
 
 	delete root;
@@ -502,7 +502,12 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 			}
 		}
 
-		do { crrNode = heap.Pop(); } while (crrNode -> status > statusCounter);
+		do
+		{
+			crrNode = heap.Top();
+			heap.Pop();
+
+		} while (crrNode -> status > statusCounter);
 
 	} while (crrNode != stop);
 
