@@ -2,9 +2,9 @@
 #include "rand.hpp"
 
 template <typename Type>
-static constexpr uint CountBits(Type var)
+static constexpr unsigned int CountBits(Type var)
 {
-	uint count = 0;
+	unsigned int count = 0;
 	while (var != 0)
 	{
 		var >>= 1;
@@ -13,9 +13,6 @@ static constexpr uint CountBits(Type var)
 
 	return count;
 }
-
-Random::Random() { Init(); }
-Random::Random(const seed_type seed) { Init(seed); }
 
 bool Random::GetBool()
 {
@@ -43,16 +40,6 @@ float Random::GetFloat()
 double Random::GetDouble()
 {
 	return m_engine() / static_cast<double>(engine_type::max());
-}
-
-auto Random::operator()() -> result_type
-{
-	return m_engine();
-}
-
-auto Random::GetEngine() -> engine_type&
-{
-	return m_engine;
 }
 
 void Random::Init(const seed_type seed)

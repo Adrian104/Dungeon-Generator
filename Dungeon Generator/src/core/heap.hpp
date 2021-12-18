@@ -13,8 +13,8 @@ class Heap
 	void Expand();
 
 	public:
-	Heap();
-	~Heap();
+	Heap() = default;
+	~Heap() { Clear(true); }
 
 	Heap(const Heap& ref);
 	auto operator=(const Heap& ref) -> Heap&;
@@ -58,12 +58,6 @@ void Heap<KeyType, ObjType>::Expand()
 		m_data = static_cast<pair_type*>(operator new(sizeof(pair_type)));
 	}
 }
-
-template <typename KeyType, typename ObjType>
-inline Heap<KeyType, ObjType>::Heap() {}
-
-template <typename KeyType, typename ObjType>
-inline Heap<KeyType, ObjType>::~Heap() { Clear(true); }
 
 template <typename KeyType, typename ObjType>
 Heap<KeyType, ObjType>::Heap(const Heap& ref) : m_size(ref.m_size), m_capacity(ref.m_capacity)
@@ -131,7 +125,7 @@ auto Heap<KeyType, ObjType>::operator=(Heap&& ref) noexcept -> Heap&
 template <typename KeyType, typename ObjType>
 void Heap<KeyType, ObjType>::Pop()
 {
-	if (m_size == 0) throw std::runtime_error("Calling Pop() on empty heap");
+	if (m_size == 0) return;
 
 	m_data -> ~pair_type();
 	if (--m_size == 0) return;

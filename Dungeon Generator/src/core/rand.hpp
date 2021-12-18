@@ -1,5 +1,4 @@
 #pragma once
-#include "utils.hpp"
 
 class Random
 {
@@ -14,8 +13,8 @@ class Random
 	engine_type m_engine;
 
 	public:
-	Random();
-	Random(const seed_type seed);
+	Random() { Init(); }
+	Random(const seed_type seed) { Init(seed); }
 
 	bool GetBool();
 	float GetFloat();
@@ -26,3 +25,13 @@ class Random
 
 	void Init(const seed_type seed = engine_type::default_seed);
 };
+
+inline auto Random::operator()() -> result_type
+{
+	return m_engine();
+}
+
+inline auto Random::GetEngine() -> engine_type&
+{
+	return m_engine;
+}
