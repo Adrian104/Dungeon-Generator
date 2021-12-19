@@ -25,7 +25,7 @@ struct Overlay : public Animator
 	SDL_Texture *texture;
 	std::vector<Modifier*> mods;
 
-	inline int XCenter() const { return (gOverlayWidth - mgr.text.width) >> 1; }
+	inline int XCenter(Text& text) const { return (gOverlayWidth - text.GetSize().x) >> 1; }
 
 	Overlay(AppManager &appManager);
 	~Overlay();

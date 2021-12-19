@@ -4,10 +4,25 @@
 inline SDL_FPoint ToFPoint(const Point &point) { return { float(point.x), float(point.y) }; }
 inline SDL_FRect ToFRect(const Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
 
-Application::Application() : AppManager(gTitle), plus(false), factor(1), lastFactor(1), gOutput(nullptr)
+Application::Application() : plus(false), factor(1), lastFactor(1), gOutput(nullptr)
 {
+	for (int i = 0; i < sizeof(gFonts) / sizeof(*gFonts); i++)
+	{
+		const auto& font = gFonts[i];
+		LoadFont(i, font.second, font.first);
+	}
+
+	SDL_DisplayMode dm;
+	SDL_GetCurrentDisplayMode(0, &dm);
+
+	#ifdef FULL_SCREEN
+		CreateWindow(gTitle, dm.w, dm.h, SDL_WINDOW_HIDDEN | SDL_WINDOW_FULLSCREEN);
+	#else
+		CreateWindow(gTitle, dm.w - 30, dm.h - 100, SDL_WINDOW_HIDDEN);
+	#endif
+
 	LoadDefaults();
-	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, windowWidth, windowHeight);
+	texture = SDL_CreateTexture(GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GetSize().x, GetSize().y);
 
 	overlay = new Overlay(*this);
 
@@ -28,6 +43,8 @@ Application::Application() : AppManager(gTitle), plus(false), factor(1), lastFac
 	overlay -> AddMod(BoolMod("Rooms visibility", dInfo.roomsVisibility));
 	overlay -> AddMod(BoolMod("Paths visibility", dInfo.pathsVisibility));
 	overlay -> AddMod(BoolMod("Entrances visibility", dInfo.entrancesVisibility));
+
+	SDL_ShowWindow(GetWindow());
 }
 
 Application::~Application()
@@ -51,11 +68,11 @@ void Application::Run()
 
 void Application::Draw()
 {
-	SDL_SetRenderTarget(renderer, nullptr);
-	SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+	SDL_SetRenderTarget(GetRenderer(), nullptr);
+	SDL_RenderCopy(GetRenderer(), texture, nullptr, nullptr);
 
 	overlay -> Draw();
-	SDL_RenderPresent(renderer);
+	SDL_RenderPresent(GetRenderer());
 }
 
 bool Application::Update()
@@ -157,24 +174,24 @@ bool Application::Update()
 
 void Application::Render()
 {
-	SDL_SetRenderTarget(renderer, texture);
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
-	SDL_RenderClear(renderer);
+	SDL_SetRenderTarget(GetRenderer(), texture);
+	SDL_SetRenderDrawColor(GetRenderer(), 0, 0, 0, 0xFF);
+	SDL_RenderClear(GetRenderer());
 
 	if (dInfo.roomsVisibility)
 	{
-		SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
+		SDL_SetRenderDrawColor(GetRenderer(), 0, 0xAA, 0xAA, 0xFF);
 		for (Rect &room : gOutput -> rooms)
 		{
 			SDL_FRect rect = ToFRect(room);
 			vPort.RectToScreen(rect, rect);
-			SDL_RenderDrawRectF(renderer, &rect);
+			SDL_RenderDrawRectF(GetRenderer(), &rect);
 		}
 	}
 
 	if (dInfo.pathsVisibility)
 	{
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+		SDL_SetRenderDrawColor(GetRenderer(), 0xFF, 0xFF, 0xFF, 0xFF);
 		for (std::pair<Point, Vec> &path : gOutput -> paths)
 		{
 			SDL_FPoint p1 = ToFPoint(path.first);
@@ -186,42 +203,42 @@ void Application::Render()
 			vPort.ToScreen(p1.x, p1.y, p1.x, p1.y);
 			vPort.ToScreen(p2.x, p2.y, p2.x, p2.y);
 
-			SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
+			SDL_RenderDrawLineF(GetRenderer(), p1.x, p1.y, p2.x, p2.y);
 		}
 	}
 
 	if (dInfo.entrancesVisibility)
 	{
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0x60, 0, 0xFF);
+		SDL_SetRenderDrawColor(GetRenderer(), 0xFF, 0x60, 0, 0xFF);
 		for (Point &entrance : gOutput -> entrances)
 		{
 			SDL_FPoint point = ToFPoint(entrance);
 			SDL_FRect rect = { point.x, point.y, 1, 1 };
 
 			vPort.RectToScreen(rect, rect);
-			SDL_RenderFillRectF(renderer, &rect);
+			SDL_RenderFillRectF(GetRenderer(), &rect);
 		}
 	}
 }
 
 void Application::RenderDebug()
 {
-	SDL_SetRenderTarget(renderer, texture);
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
-	SDL_RenderClear(renderer);
+	SDL_SetRenderTarget(GetRenderer(), texture);
+	SDL_SetRenderDrawColor(GetRenderer(), 0, 0, 0, 0xFF);
+	SDL_RenderClear(GetRenderer());
 
 	#ifdef SHOW_GRID
 	const float scale = vPort.GetScale();
 
 	SDL_FPoint a, b;
-	SDL_SetRenderDrawColor(renderer, 0x16, 0x16, 0x16, 0xFF);
+	SDL_SetRenderDrawColor(GetRenderer(), 0x16, 0x16, 0x16, 0xFF);
 
 	a = { -vPort.GetXOffset() * scale, -vPort.GetYOffset() * scale };
 	b = { a.x, a.y + float(gInput.ySize) * scale };
 
 	for (int x = 0; x <= gInput.xSize; x++)
 	{
-		SDL_RenderDrawLineF(renderer, a.x, a.y, b.x, b.y);
+		SDL_RenderDrawLineF(GetRenderer(), a.x, a.y, b.x, b.y);
 		a.x += scale; b.x += scale;
 	}
 
@@ -230,7 +247,7 @@ void Application::RenderDebug()
 
 	for (int y = 0; y <= gInput.ySize; y++)
 	{
-		SDL_RenderDrawLineF(renderer, a.x, a.y, b.x, b.y);
+		SDL_RenderDrawLineF(GetRenderer(), a.x, a.y, b.x, b.y);
 		a.y += scale; b.y += scale;
 	}
 	#endif
@@ -240,7 +257,7 @@ void Application::RenderDebug()
 		SDL_FRect rect = ToFRect(btNode.data.space);
 
 		vPort.RectToScreen(rect, rect);
-		SDL_RenderDrawRectF(renderer, &rect);
+		SDL_RenderDrawRectF(GetRenderer(), &rect);
 	};
 
 	const int offset = rand() & 0b10;
@@ -257,7 +274,7 @@ void Application::RenderDebug()
 			SDL_FPoint p2 = { float(node2 -> pos.x + 0.5f), float(node2 -> pos.y + 0.5f) };
 
 			vPort.ToScreen(p2.x, p2.y, p2.x, p2.y);
-			SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
+			SDL_RenderDrawLineF(GetRenderer(), p1.x, p1.y, p2.x, p2.y);
 		}
 	};
 
@@ -266,30 +283,30 @@ void Application::RenderDebug()
 		SDL_FRect rect = { float(node.pos.x), float(node.pos.y), 1, 1 };
 
 		vPort.RectToScreen(rect, rect);
-		SDL_RenderFillRectF(renderer, &rect);
+		SDL_RenderFillRectF(GetRenderer(), &rect);
 	};
 
-	SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
+	SDL_SetRenderDrawColor(GetRenderer(), 0xFF, 0, 0, 0xFF);
 	gen.root -> Execute(bt::Trav::PREORDER, DrawSpace, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
 
 	for (Room &room : gen.rooms)
 	{
-		SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
+		SDL_SetRenderDrawColor(GetRenderer(), 0, 0xAA, 0xAA, 0xFF);
 		for (Rect &rect : room.rects)
 		{
 			SDL_FRect sdlRect = ToFRect(rect);
 			vPort.RectToScreen(sdlRect, sdlRect);
-			SDL_RenderDrawRectF(renderer, &sdlRect);
+			SDL_RenderDrawRectF(GetRenderer(), &sdlRect);
 		}
 
-		SDL_SetRenderDrawColor(renderer, 0x50, 0x50, 0x50, 0xFF);
+		SDL_SetRenderDrawColor(GetRenderer(), 0x50, 0x50, 0x50, 0xFF);
 		DrawLinks(room);
 	}
 
-	SDL_SetRenderDrawColor(renderer, 0x50, 0x50, 0x50, 0xFF);
+	SDL_SetRenderDrawColor(GetRenderer(), 0x50, 0x50, 0x50, 0xFF);
 	for (auto &[pair, node] : gen.posXNodes) DrawLinks(node);
 
-	SDL_SetRenderDrawColor(renderer, 0, 0xC0, 0, 0xFF);
+	SDL_SetRenderDrawColor(GetRenderer(), 0, 0xC0, 0, 0xFF);
 	for (Room &room : gen.rooms) DrawNode(room);
 
 	for (auto &[pair, node] : gen.posXNodes) DrawNode(node);
@@ -299,8 +316,8 @@ void Application::ApplyFactor()
 {
 	const float invFactor = 1 / factor;
 
-	gInput.xSize = int(windowWidth * invFactor);
-	gInput.ySize = int(windowHeight * invFactor);
+	gInput.xSize = int(GetSize().x * invFactor);
+	gInput.ySize = int(GetSize().y * invFactor);
 
 	vPort.SetDefaultScale(factor);
 	vPort.Reset();
@@ -314,8 +331,8 @@ void Application::LoadDefaults()
 	gInput.randAreaProb = gDefRandAreaProb;
 	gInput.randAreaDepth = gDefRandAreaDepth;
 
-	gInput.xSize = windowWidth;
-	gInput.ySize = windowHeight;
+	gInput.xSize = GetSize().x;
+	gInput.ySize = GetSize().y;
 	gInput.minDepth = gDefMinDepth;
 	gInput.maxDepth = gDefMaxDepth;
 	gInput.maxRoomSize = gDefMaxRoomSize;
