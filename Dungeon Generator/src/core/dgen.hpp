@@ -85,7 +85,7 @@ struct Generator
 	const GenInput *gInput;
 
 	Random random;
-	Heap<int, Node*> heap;
+	MinHeap<int, Node*> heap;
 
 	bt::Node<Cell> *root;
 	std::vector<Room> rooms;

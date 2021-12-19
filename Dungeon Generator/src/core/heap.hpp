@@ -1,11 +1,13 @@
 #pragma once
 #include "pch.hpp"
 
-template <typename KeyType, typename ObjType>
+template <typename KeyType, typename ObjType, bool maxHeap>
 class Heap
 {
+	public:
 	typedef std::pair<KeyType, ObjType> pair_type;
 
+	private:
 	size_t m_size = 0;
 	size_t m_capacity = 0;
 	pair_type* m_data = nullptr;
@@ -26,13 +28,20 @@ class Heap
 	void Clear(bool reset = false);
 	void Push(KeyType key, const ObjType& object);
 
-	ObjType& Top() const;
-	size_t GetSize() const;
-	size_t GetCapacity() const;
+	auto Top() const -> ObjType&;
+	auto GetSize() const -> size_t;
+	auto GetData() const -> pair_type*;
+	auto GetCapacity() const -> size_t;
 };
 
 template <typename KeyType, typename ObjType>
-void Heap<KeyType, ObjType>::Expand()
+using MinHeap = Heap<KeyType, ObjType, false>;
+
+template <typename KeyType, typename ObjType>
+using MaxHeap = Heap<KeyType, ObjType, true>;
+
+template <typename KeyType, typename ObjType, bool maxHeap>
+void Heap<KeyType, ObjType, maxHeap>::Expand()
 {
 	if (m_data != nullptr)
 	{
@@ -59,8 +68,8 @@ void Heap<KeyType, ObjType>::Expand()
 	}
 }
 
-template <typename KeyType, typename ObjType>
-Heap<KeyType, ObjType>::Heap(const Heap& ref) : m_size(ref.m_size), m_capacity(ref.m_capacity)
+template <typename KeyType, typename ObjType, bool maxHeap>
+Heap<KeyType, ObjType, maxHeap>::Heap(const Heap& ref) : m_size(ref.m_size), m_capacity(ref.m_capacity)
 {
 	pair_type* refArr = ref.m_data + ref.m_size;
 	m_data = static_cast<pair_type*>(operator new(sizeof(pair_type) * m_capacity)) + m_size;
@@ -74,8 +83,8 @@ Heap<KeyType, ObjType>::Heap(const Heap& ref) : m_size(ref.m_size), m_capacity(r
 	}
 }
 
-template <typename KeyType, typename ObjType>
-auto Heap<KeyType, ObjType>::operator=(const Heap& ref) -> Heap&
+template <typename KeyType, typename ObjType, bool maxHeap>
+auto Heap<KeyType, ObjType, maxHeap>::operator=(const Heap& ref) -> Heap&
 {
 	if (&ref == this) return *this;
 	Clear(true);
@@ -97,16 +106,16 @@ auto Heap<KeyType, ObjType>::operator=(const Heap& ref) -> Heap&
 	return *this;
 }
 
-template <typename KeyType, typename ObjType>
-Heap<KeyType, ObjType>::Heap(Heap&& ref) noexcept : m_size(ref.m_size), m_capacity(ref.m_capacity), m_data(ref.m_data)
+template <typename KeyType, typename ObjType, bool maxHeap>
+Heap<KeyType, ObjType, maxHeap>::Heap(Heap&& ref) noexcept : m_size(ref.m_size), m_capacity(ref.m_capacity), m_data(ref.m_data)
 {
 	ref.m_size = 0;
 	ref.m_capacity = 0;
 	ref.m_data = nullptr;
 }
 
-template <typename KeyType, typename ObjType>
-auto Heap<KeyType, ObjType>::operator=(Heap&& ref) noexcept -> Heap&
+template <typename KeyType, typename ObjType, bool maxHeap>
+auto Heap<KeyType, ObjType, maxHeap>::operator=(Heap&& ref) noexcept -> Heap&
 {
 	if (&ref == this) return *this;
 	Clear(true);
@@ -122,8 +131,8 @@ auto Heap<KeyType, ObjType>::operator=(Heap&& ref) noexcept -> Heap&
 	return *this;
 }
 
-template <typename KeyType, typename ObjType>
-void Heap<KeyType, ObjType>::Pop()
+template <typename KeyType, typename ObjType, bool maxHeap>
+void Heap<KeyType, ObjType, maxHeap>::Pop()
 {
 	if (m_size == 0) return;
 
@@ -135,25 +144,39 @@ void Heap<KeyType, ObjType>::Pop()
 
 	while (true)
 	{
-		size_t minIndex = (crrIndex << 1) + 1;
-		if (const size_t rIndex = minIndex + 1; rIndex < m_size)
+		size_t chdIndex = (crrIndex << 1) + 1;
+		if (const size_t rIndex = chdIndex + 1; rIndex < m_size)
 		{
-			if (m_data[rIndex].first < m_data[minIndex].first) minIndex = rIndex;
+			if constexpr (maxHeap)
+			{
+				if (m_data[rIndex].first > m_data[chdIndex].first) chdIndex = rIndex;
+			}
+			else
+			{
+				if (m_data[rIndex].first < m_data[chdIndex].first) chdIndex = rIndex;
+			}
 		}
-		else if (minIndex >= m_size) break;
+		else if (chdIndex >= m_size) break;
 
 		pair_type& crrPair = m_data[crrIndex];
-		pair_type& minPair = m_data[minIndex];
+		pair_type& chdPair = m_data[chdIndex];
 
-		if (crrPair.first <= minPair.first) break;
+		if constexpr (maxHeap)
+		{
+			if (crrPair.first >= chdPair.first) break;
+		}
+		else
+		{
+			if (crrPair.first <= chdPair.first) break;
+		}
 
-		crrIndex = minIndex;
-		std::swap(crrPair, minPair);
+		crrIndex = chdIndex;
+		std::swap(crrPair, chdPair);
 	}
 }
 
-template <typename KeyType, typename ObjType>
-void Heap<KeyType, ObjType>::Clear(bool reset)
+template <typename KeyType, typename ObjType, bool maxHeap>
+void Heap<KeyType, ObjType, maxHeap>::Clear(bool reset)
 {
 	if (m_data == nullptr) return;
 
@@ -173,8 +196,8 @@ void Heap<KeyType, ObjType>::Clear(bool reset)
 	}
 }
 
-template <typename KeyType, typename ObjType>
-void Heap<KeyType, ObjType>::Push(KeyType key, const ObjType& object)
+template <typename KeyType, typename ObjType, bool maxHeap>
+void Heap<KeyType, ObjType, maxHeap>::Push(KeyType key, const ObjType& object)
 {
 	if (m_size >= m_capacity) Expand();
 
@@ -189,27 +212,40 @@ void Heap<KeyType, ObjType>::Push(KeyType key, const ObjType& object)
 		pair_type& parPair = m_data[parIndex];
 		pair_type& crrPair = m_data[crrIndex];
 
-		if (parPair.first <= crrPair.first) break;
+		if constexpr (maxHeap)
+		{
+			if (parPair.first >= crrPair.first) break;
+		}
+		else
+		{
+			if (parPair.first <= crrPair.first) break;
+		}
 
 		crrIndex = parIndex;
 		std::swap(crrPair, parPair);
 	}
 }
 
-template <typename KeyType, typename ObjType>
-inline ObjType& Heap<KeyType, ObjType>::Top() const
+template <typename KeyType, typename ObjType, bool maxHeap>
+inline auto Heap<KeyType, ObjType, maxHeap>::Top() const -> ObjType&
 {
 	return m_data -> second;
 }
 
-template <typename KeyType, typename ObjType>
-inline size_t Heap<KeyType, ObjType>::GetSize() const
+template <typename KeyType, typename ObjType, bool maxHeap>
+inline auto Heap<KeyType, ObjType, maxHeap>::GetSize() const -> size_t
 {
 	return m_size;
 }
 
-template <typename KeyType, typename ObjType>
-inline size_t Heap<KeyType, ObjType>::GetCapacity() const
+template <typename KeyType, typename ObjType, bool maxHeap>
+inline auto Heap<KeyType, ObjType, maxHeap>::GetData() const -> pair_type*
+{
+	return m_data;
+}
+
+template <typename KeyType, typename ObjType, bool maxHeap>
+inline auto Heap<KeyType, ObjType, maxHeap>::GetCapacity() const -> size_t
 {
 	return m_capacity;
 }

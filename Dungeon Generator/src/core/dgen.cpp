@@ -11,7 +11,7 @@ void Generator::Clear()
 	posYNodes.clear();
 	posXNodes.clear();
 
-	heap.Clear(true);
+	heap.Clear();
 	rooms.clear();
 
 	delete root;
