@@ -100,49 +100,69 @@ void Generator::FindPaths()
 void Generator::OptimizeNodes()
 {
 	auto iter = posXNodes.begin();
-	auto endIter = posXNodes.end();
+	const auto endIter = posXNodes.end();
+
+	const byte maskEW = gInput -> generateFewerPaths ? 0b1010 : 0b1111;
+	const byte maskNS = gInput -> generateFewerPaths ? 0b0101 : 0b1111;
 
 	while (iter != endIter)
 	{
-		Node &node = iter -> second;
-		const auto &links = node.links;
+		byte &path = iter -> second.path;
+		auto &links = iter -> second.links;
 
-		switch (node.path)
+		if (path != 0)
 		{
-		case 0:
-			if (links[Dir::NORTH] != nullptr) links[Dir::NORTH] -> links[Dir::SOUTH] = nullptr;
-			if (links[Dir::SOUTH] != nullptr) links[Dir::SOUTH] -> links[Dir::NORTH] = nullptr;
-			if (links[Dir::WEST] != nullptr) links[Dir::WEST] -> links[Dir::EAST] = nullptr;
-			if (links[Dir::EAST] != nullptr) links[Dir::EAST] -> links[Dir::WEST] = nullptr;
-			break;
+			if ((path & maskEW) == 0b1010)
+			{
+				Node *const east = links[Dir::EAST];
+				Node *const west = links[Dir::WEST];
 
-		case 0b0101:
-			if (links[Dir::NORTH] -> ToRoom() != nullptr && links[Dir::SOUTH] -> ToRoom() != nullptr) goto def;
+				if (east == nullptr || west == nullptr) goto skip1;
+				if (east -> ToRoom() != nullptr && west -> ToRoom() != nullptr) goto skip1;
 
-			links[Dir::NORTH] -> links[Dir::SOUTH] = links[Dir::SOUTH];
-			links[Dir::SOUTH] -> links[Dir::NORTH] = links[Dir::NORTH];
+				east -> links[Dir::WEST] = west;
+				west -> links[Dir::EAST] = east;
 
-			if (links[Dir::WEST] != nullptr) links[Dir::WEST] -> links[Dir::EAST] = nullptr;
-			if (links[Dir::EAST] != nullptr) links[Dir::EAST] -> links[Dir::WEST] = nullptr;
-			break;
+				links[Dir::EAST] = nullptr;
+				links[Dir::WEST] = nullptr;
 
-		case 0b1010:
-			if (links[Dir::EAST] -> ToRoom() != nullptr && links[Dir::WEST] -> ToRoom() != nullptr) goto def;
+				path &= ~0b1010;
+				if (path == 0) goto zero;
+			}
 
-			links[Dir::EAST] -> links[Dir::WEST] = links[Dir::WEST];
-			links[Dir::WEST] -> links[Dir::EAST] = links[Dir::EAST];
+			skip1:
+			if ((path & maskNS) == 0b0101)
+			{
+				Node *const north = links[Dir::NORTH];
+				Node *const south = links[Dir::SOUTH];
 
-			if (links[Dir::NORTH] != nullptr) links[Dir::NORTH] -> links[Dir::SOUTH] = nullptr;
-			if (links[Dir::SOUTH] != nullptr) links[Dir::SOUTH] -> links[Dir::NORTH] = nullptr;
-			break;
+				if (north == nullptr || south == nullptr) goto skip2;
+				if (north -> ToRoom() != nullptr && south -> ToRoom() != nullptr) goto skip2;
 
-		default: def:
+				north -> links[Dir::SOUTH] = south;
+				south -> links[Dir::NORTH] = north;
+
+				links[Dir::NORTH] = nullptr;
+				links[Dir::SOUTH] = nullptr;
+
+				path &= ~0b0101;
+				if (path == 0) goto zero;
+			}
+
+			skip2:
 			iter++;
-			continue;
 		}
+		else
+		{
+			zero:
+			for (int i = 0; i < 4; i++)
+			{
+				if (Node *const link = links[i]; link != nullptr)
+					link -> links[(i + 2) & 0b11] = nullptr;
+			}
 
-		iter = posXNodes.erase(iter);
-		endIter = posXNodes.end();
+			iter = posXNodes.erase(iter);
+		}
 	}
 }
 

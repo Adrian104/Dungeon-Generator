@@ -53,6 +53,8 @@ struct Room : public Node
 
 struct GenInput
 {
+	bool generateFewerPaths;
+
 	int xSize, ySize;
 	int randAreaDepth;
 	int maxDepth, minDepth;

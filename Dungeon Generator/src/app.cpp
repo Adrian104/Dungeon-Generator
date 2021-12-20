@@ -327,6 +327,8 @@ void Application::ApplyFactor()
 
 void Application::LoadDefaults()
 {
+	gInput.generateFewerPaths = true;
+
 	gInput.randAreaDens = gDefRandAreaDens;
 	gInput.randAreaProb = gDefRandAreaProb;
 	gInput.randAreaDepth = gDefRandAreaDepth;
