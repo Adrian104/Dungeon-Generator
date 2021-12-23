@@ -119,5 +119,27 @@ struct Generator
 	~Generator();
 
 	void Generate(const GenInput *genInput, GenOutput *genOutput, const Random::seed_type seed);
-	void GenerateDebug(const GenInput *genInput, GenOutput *genOutput, const Random::seed_type seed, Caller<void> &callback);
+
+	template <typename... Args>
+	void GenerateDebug(const GenInput *genInput, GenOutput *genOutput, const Random::seed_type seed, void (*callback)(Args...), Args... args);
 };
+
+template <typename... Args>
+void Generator::GenerateDebug(const GenInput *genInput, GenOutput *genOutput, const Random::seed_type seed, void (*callback)(Args...), Args... args)
+{
+	gInput = genInput;
+	gOutput = genOutput;
+	random.Init(seed);
+
+	Prepare();
+	GenerateTree(*root, gInput->maxDepth);
+	GenerateRooms();
+	LinkNodes();
+	FindPaths();
+	OptimizeNodes();
+
+	(*callback)(args...);
+
+	GenerateOutput();
+	Clear();
+}

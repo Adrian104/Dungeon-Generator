@@ -5,7 +5,7 @@ template <typename KeyType, typename ObjType, bool maxHeap>
 class Heap
 {
 	public:
-	typedef std::pair<KeyType, ObjType> pair_type;
+	using pair_type = std::pair<KeyType, ObjType>;
 
 	private:
 	size_t m_size = 0;

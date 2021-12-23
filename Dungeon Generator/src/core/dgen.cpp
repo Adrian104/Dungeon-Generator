@@ -580,22 +580,3 @@ void Generator::Generate(const GenInput *genInput, GenOutput *genOutput, const R
 	GenerateOutput();
 	Clear();
 }
-
-void Generator::GenerateDebug(const GenInput *genInput, GenOutput *genOutput, const Random::seed_type seed, Caller<void> &callback)
-{
-	gInput = genInput;
-	gOutput = genOutput;
-	random.Init(seed);
-
-	Prepare();
-	GenerateTree(*root, gInput -> maxDepth);
-	GenerateRooms();
-	LinkNodes();
-	FindPaths();
-	OptimizeNodes();
-
-	callback.Call();
-
-	GenerateOutput();
-	Clear();
-}

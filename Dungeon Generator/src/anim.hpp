@@ -3,9 +3,9 @@
 class Animator
 {
 	public:
-	typedef std::chrono::steady_clock clock_type;
-	typedef clock_type::duration duration_type;
-	typedef clock_type::time_point time_type;
+	using clock_type = std::chrono::steady_clock;
+	using duration_type = clock_type::duration;
+	using time_type = clock_type::time_point;
 
 	enum class LoopMode { ONLY_FORWARD, NO_LOOP, LOOP, BOUNCE_BACK };
 	enum class DirMode { FORWARD, BACKWARD, TOGGLE, SWITCH, TOGGLE_OR_SWITCH, AUTO, NO_CHANGE };

@@ -3,9 +3,9 @@
 class Random
 {
 	public:
-	typedef std::mt19937 engine_type;
-	typedef engine_type::result_type result_type;
-	typedef std::remove_const<decltype(engine_type::default_seed)>::type seed_type;
+	using engine_type = std::mt19937;
+	using result_type = engine_type::result_type;
+	using seed_type = std::remove_const<decltype(engine_type::default_seed)>::type;
 
 	private:
 	int m_bitCount = 0;

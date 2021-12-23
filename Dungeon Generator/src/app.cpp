@@ -1,6 +1,8 @@
 #include "pch.hpp"
 #include "app.hpp"
 
+void RenderDebugHelper(Application *app) { app -> RenderDebug(); }
+
 inline SDL_FPoint ToFPoint(const Point &point) { return { float(point.x), float(point.y) }; }
 inline SDL_FRect ToFRect(const Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
 
@@ -388,11 +390,7 @@ void Application::Generate(GenMode mode)
 
 			gen.Generate(&gInput, gOutput, seed);
 		}
-		else
-		{
-			MCaller<void, Application> caller(&Application::RenderDebug, this);
-			gen.GenerateDebug(&gInput, gOutput, seed, caller);
-		}
+		else gen.GenerateDebug(&gInput, gOutput, seed, &RenderDebugHelper, this);
 	}
 	catch (const std::exception &error) { std::cerr << error.what() << "\n"; }
 }
