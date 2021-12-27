@@ -8,7 +8,6 @@
 	#define INCREMENTAL_SEED
 #else
 	#define FULL_SCREEN
-	#define RANDOM_SEED
 #endif
 
 #ifdef CPU_DEMANDING_MODE

@@ -20,6 +20,10 @@ void Generator::Clear()
 
 void Generator::Prepare()
 {
+	gOutput -> rooms.clear();
+	gOutput -> entrances.clear();
+	gOutput -> paths.clear();
+
 	if (gInput -> maxRoomSize <= 0) throw std::runtime_error("Variable 'maxRoomSize' is not a positive number");
 	minSpaceSize = int(4.0f / gInput -> maxRoomSize) + 5;
 

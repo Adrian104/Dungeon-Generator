@@ -132,7 +132,7 @@ void Generator::GenerateDebug(const GenInput *genInput, GenOutput *genOutput, co
 	random.Init(seed);
 
 	Prepare();
-	GenerateTree(*root, gInput->maxDepth);
+	GenerateTree(*root, gInput -> maxDepth);
 	GenerateRooms();
 	LinkNodes();
 	FindPaths();

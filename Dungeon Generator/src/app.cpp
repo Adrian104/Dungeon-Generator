@@ -6,7 +6,7 @@ void RenderDebugHelper(Application *app) { app -> RenderDebug(); }
 inline SDL_FPoint ToFPoint(const Point &point) { return { float(point.x), float(point.y) }; }
 inline SDL_FRect ToFRect(const Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
 
-Application::Application() : plus(false), factor(1), lastFactor(1), gOutput(nullptr)
+Application::Application() : plus(false), factor(1), lastFactor(1)
 {
 	for (int i = 0; i < sizeof(gFonts) / sizeof(*gFonts); i++)
 	{
@@ -51,9 +51,7 @@ Application::Application() : plus(false), factor(1), lastFactor(1), gOutput(null
 
 Application::~Application()
 {
-	delete gOutput;
 	delete overlay;
-
 	SDL_DestroyTexture(texture);
 }
 
@@ -183,7 +181,7 @@ void Application::Render()
 	if (dInfo.roomsVisibility)
 	{
 		SDL_SetRenderDrawColor(GetRenderer(), 0, 0xAA, 0xAA, 0xFF);
-		for (Rect &room : gOutput -> rooms)
+		for (Rect &room : gOutput.rooms)
 		{
 			SDL_FRect rect = ToFRect(room);
 			vPort.RectToScreen(rect, rect);
@@ -194,7 +192,7 @@ void Application::Render()
 	if (dInfo.pathsVisibility)
 	{
 		SDL_SetRenderDrawColor(GetRenderer(), 0xFF, 0xFF, 0xFF, 0xFF);
-		for (std::pair<Point, Vec> &path : gOutput -> paths)
+		for (std::pair<Point, Vec> &path : gOutput.paths)
 		{
 			SDL_FPoint p1 = ToFPoint(path.first);
 			SDL_FPoint p2 = ToFPoint(path.first + path.second);
@@ -212,7 +210,7 @@ void Application::Render()
 	if (dInfo.entrancesVisibility)
 	{
 		SDL_SetRenderDrawColor(GetRenderer(), 0xFF, 0x60, 0, 0xFF);
-		for (Point &entrance : gOutput -> entrances)
+		for (Point &entrance : gOutput.entrances)
 		{
 			SDL_FPoint point = ToFPoint(entrance);
 			SDL_FRect rect = { point.x, point.y, 1, 1 };
@@ -371,26 +369,22 @@ void Application::Generate(GenMode mode)
 		else gInput.minRoomSize = gInput.maxRoomSize;
 	}
 
-	delete gOutput;
-	gOutput = new GenOutput;
 	static uint seed = 0;
 
 	try
 	{
 		if (mode != GenMode::DEBUG_MODE)
 		{
-			#ifdef RANDOM_SEED
+			#ifdef INCREMENTAL_SEED
+			seed += mode == GenMode::NEW_SEED;
+			#else
 			static std::random_device rd;
 			if (mode == GenMode::NEW_SEED) seed = rd();
 			#endif
 
-			#ifdef INCREMENTAL_SEED
-			seed += mode == GenMode::NEW_SEED;
-			#endif
-
-			gen.Generate(&gInput, gOutput, seed);
+			gen.Generate(&gInput, &gOutput, seed);
 		}
-		else gen.GenerateDebug(&gInput, gOutput, seed, &RenderDebugHelper, this);
+		else gen.GenerateDebug(&gInput, &gOutput, seed, &RenderDebugHelper, this);
 	}
 	catch (const std::exception &error) { std::cerr << error.what() << "\n"; }
 }
