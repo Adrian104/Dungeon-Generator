@@ -36,6 +36,7 @@ struct Application : public AppManager
 
 	void Render();
 	void RenderDebug();
+	void RenderCommon();
 
 	void ApplyFactor();
 	void LoadDefaults();

@@ -174,9 +174,7 @@ bool Application::Update()
 
 void Application::Render()
 {
-	SDL_SetRenderTarget(GetRenderer(), texture);
-	SDL_SetRenderDrawColor(GetRenderer(), 0, 0, 0, 0xFF);
-	SDL_RenderClear(GetRenderer());
+	RenderCommon();
 
 	if (dInfo.roomsVisibility)
 	{
@@ -223,34 +221,7 @@ void Application::Render()
 
 void Application::RenderDebug()
 {
-	SDL_SetRenderTarget(GetRenderer(), texture);
-	SDL_SetRenderDrawColor(GetRenderer(), 0, 0, 0, 0xFF);
-	SDL_RenderClear(GetRenderer());
-
-	#ifdef SHOW_GRID
-	const float scale = vPort.GetScale();
-
-	SDL_FPoint a, b;
-	SDL_SetRenderDrawColor(GetRenderer(), 0x16, 0x16, 0x16, 0xFF);
-
-	a = { -vPort.GetXOffset() * scale, -vPort.GetYOffset() * scale };
-	b = { a.x, a.y + float(gInput.ySize) * scale };
-
-	for (int x = 0; x <= gInput.xSize; x++)
-	{
-		SDL_RenderDrawLineF(GetRenderer(), a.x, a.y, b.x, b.y);
-		a.x += scale; b.x += scale;
-	}
-
-	a = { -vPort.GetXOffset() * scale, -vPort.GetYOffset() * scale };
-	b = { a.x + float(gInput.xSize) * scale, a.y };
-
-	for (int y = 0; y <= gInput.ySize; y++)
-	{
-		SDL_RenderDrawLineF(GetRenderer(), a.x, a.y, b.x, b.y);
-		a.y += scale; b.y += scale;
-	}
-	#endif
+	RenderCommon();
 
 	auto DrawSpace = [this](bt::Node<Cell> &btNode) -> void
 	{
@@ -310,6 +281,46 @@ void Application::RenderDebug()
 	for (Room &room : gen.rooms) DrawNode(room);
 
 	for (auto &[pair, node] : gen.posXNodes) DrawNode(node);
+}
+
+void Application::RenderCommon()
+{
+	SDL_Renderer *const renderer = GetRenderer();
+
+	SDL_SetRenderTarget(renderer, texture);
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
+	SDL_RenderClear(renderer);
+
+	const float scale = vPort.GetScale();
+	if (scale >= gGridMinimumScale)
+	{
+		SDL_SetRenderDrawColor(renderer, 0x16, 0x16, 0x16, 0xFF);
+
+		auto Limit = [scale](float& var, float min, float max) -> void
+		{
+			if (var < min) var += std::floorf((min - var) / scale) * scale;
+			else if (var > max) var -= std::floorf((var - max) / scale) * scale;
+		};
+
+		SDL_FPoint p1, p2;
+
+		vPort.ToScreen(0.0f, 0.0f, p1.x, p1.y);
+		vPort.ToScreen(static_cast<float>(gInput.xSize), static_cast<float>(gInput.ySize), p2.x, p2.y);
+
+		const float xMax = static_cast<float>(GetSize().x);
+		const float yMax = static_cast<float>(GetSize().y);
+
+		Limit(p1.x, 0, xMax);
+		Limit(p1.y, 0, yMax);
+		Limit(p2.x, 0, xMax);
+		Limit(p2.y, 0, yMax);
+
+		for (float x = p1.x; x <= p2.x; x += scale)
+			SDL_RenderDrawLineF(renderer, x, p1.y, x, p2.y);
+
+		for (float y = p1.y; y <= p2.y; y += scale)
+			SDL_RenderDrawLineF(renderer, p1.x, y, p2.x, y);
+	}
 }
 
 void Application::ApplyFactor()

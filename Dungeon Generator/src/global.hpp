@@ -45,5 +45,7 @@ inline const int gOverlayTitleYOffset = 50;
 inline const int gOverlayInternalOffset = 21;
 inline const int gOverlayExternalOffset = 36;
 
+inline const float gGridMinimumScale = 5.0f;
+
 inline const std::string gTitle = "Dungeon Generator";
 inline const std::pair<std::string, int> gFonts[] = { std::pair<std::string, int>("res/Quicksand-Regular.ttf", 16) };
