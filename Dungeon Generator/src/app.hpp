@@ -1,7 +1,10 @@
 #pragma once
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include "global.hpp"
 #include "vport.hpp"
 #include "dgen.hpp"
+#include "appmgr.hpp"
 #include "overlay.hpp"
 
 struct Application : public AppManager

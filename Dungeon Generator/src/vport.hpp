@@ -1,4 +1,5 @@
 #pragma once
+#include <SDL2/SDL.h>
 
 template <typename Type>
 class ViewportBase

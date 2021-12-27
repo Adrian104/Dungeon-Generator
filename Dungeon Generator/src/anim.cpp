@@ -1,4 +1,3 @@
-#include "pch.hpp"
 #include "anim.hpp"
 
 void Animator::ToggleState()

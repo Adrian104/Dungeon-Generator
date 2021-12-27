@@ -1,4 +1,5 @@
-#include "pch.hpp"
+#include <cmath>
+#include <stdexcept>
 #include "dgen.hpp"
 
 Room Room::flag = Room();
@@ -510,7 +511,7 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 			{
 				const Vec diff = stop -> pos - nNode -> pos;
 
-				nNode -> hCost = int(sqrtf(float(diff.x * diff.x + diff.y * diff.y)) * gInput -> heuristicFactor);
+				nNode -> hCost = int(std::sqrtf(float(diff.x * diff.x + diff.y * diff.y)) * gInput -> heuristicFactor);
 				nNode -> status = statusCounter;
 
 				goto add_to_heap;

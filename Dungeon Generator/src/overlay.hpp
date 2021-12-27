@@ -1,4 +1,10 @@
 #pragma once
+#include <cmath>
+#include <string>
+#include <vector>
+#include <limits>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include "global.hpp"
 #include "appmgr.hpp"
 #include "anim.hpp"

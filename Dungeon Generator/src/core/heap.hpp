@@ -1,5 +1,6 @@
 #pragma once
-#include "pch.hpp"
+#include <utility>
+#include <stddef.h>
 
 template <typename KeyType, typename ObjType, bool maxHeap>
 class Heap

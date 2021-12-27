@@ -1,4 +1,7 @@
-#include "pch.hpp"
+#include <iostream>
+#include <cmath>
+#include <random>
+#include <stdexcept>
 #include "app.hpp"
 
 void RenderDebugHelper(Application *app) { app -> RenderDebug(); }

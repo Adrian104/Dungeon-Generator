@@ -1,4 +1,6 @@
-#include "pch.hpp"
+#include <iostream>
+#include <cstdlib>
+#include <stdexcept>
 #include "app.hpp"
 
 int main(int argc, char **argv)

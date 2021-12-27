@@ -1,4 +1,8 @@
 #pragma once
+#include <map>
+#include <vector>
+#include <random>
+#include <limits>
 #include "utils.hpp"
 #include "btree.hpp"
 #include "heap.hpp"

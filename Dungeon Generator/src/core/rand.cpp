@@ -1,4 +1,3 @@
-#include "pch.hpp"
 #include "rand.hpp"
 
 template <typename Type>

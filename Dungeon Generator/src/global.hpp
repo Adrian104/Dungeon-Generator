@@ -1,4 +1,6 @@
 #pragma once
+#include <string>
+#include <utility>
 
 #if defined _DEBUG || defined CPU_DEMANDING_MODE
 	#define DEBUG_ENABLED
