@@ -1,95 +1,132 @@
 #pragma once
-#include "utils.hpp"
+#include <iterator>
 
 namespace bt
 {
-	enum class Trav : byte { PREORDER, POSTORDER };
-
 	template <typename Type>
-	struct Info;
-
-	template <typename Type>
-	class Node
+	struct Node : public Type
 	{
-		struct ExeIter
+		class Iterator
 		{
-			Caller<void, Node<Type>&> *const caller;
-			bool (*chkFunc)(const Info<Type> &info);
+			public:
+			using iterator_category = std::forward_iterator_tag;
+			using difference_type = std::ptrdiff_t;
+			using value_type = Node<Type>;
+			using pointer = value_type*;
+			using reference = value_type&;
 
-			ExeIter(Caller<void, Node<Type>&> *pCaller, bool (*pChkFunc)(const Info<Type> &info)) : caller(pCaller), chkFunc(pChkFunc) {}
+			private:
+			pointer m_crr;
+			unsigned int m_breakAt;
+			unsigned int m_index = 0;
 
-			void Preorder(Node<Type> *node, const int counter);
-			void Postorder(Node<Type> *node, const int counter);
+			void GoUp();
+			void GoLeft();
+			void GoRight();
+			void Advance();
+
+			public:
+			int m_counter = 0;
+
+			Iterator(pointer tree, int breakAt);
+
+			pointer operator->() { return m_crr; }
+			reference operator*() const { return *m_crr; }
+
+			auto operator++() -> Iterator&;
+			Iterator operator++(int) { Iterator iter = *this; ++(*this); return iter; }
+
+			bool operator==(const Iterator& iter) const { return m_crr == iter.m_crr; };
+			bool operator!=(const Iterator& iter) const { return m_crr != iter.m_crr; };
 		};
 
+		static int defaultBreakAt;
+
 		public:
-		Type data;
+		Node* m_parent;
+		Node* m_left = nullptr;
+		Node* m_right = nullptr;
 
-		Node<Type> *left;
-		Node<Type> *right;
-		Node<Type> *parent;
+		Node(Node* parent, Type&& ref) : Type(ref), m_parent(parent) {}
+		Node(Node* parent, const Type& ref) : Type(ref), m_parent(parent) {}
+		~Node() { delete m_right; delete m_left; }
 
-		Node(Node<Type> *const pParent) : data(Type()), left(nullptr), right(nullptr), parent(pParent) {}
-		Node(Node<Type> *const pParent, const Type &ref) : data(ref), left(nullptr), right(nullptr), parent(pParent) {}
-		~Node() { delete right; delete left; }
+		Node(const Node& ref) = delete;
+		Node& operator=(const Node& ref) = delete;
 
-		template <typename FType>
-		void Execute(Trav type, FType func, bool (*chkFunc)(const Info<Type> &info), int counter = 0);
+		Node(Node&& ref) noexcept = delete;
+		Node& operator=(Node&& ref) noexcept = delete;
 
-		template <typename FType, typename Class>
-		void Execute(Trav type, FType func, Class *obj, bool (*chkFunc)(const Info<Type> &info), int counter = 0);
+		Iterator begin() { return Iterator(this, defaultBreakAt); }
+		Iterator end() { return Iterator(nullptr, defaultBreakAt); }
+
+		static void SetDefaultPreorder() { defaultBreakAt = 0; }
+		static void SetDefaultInorder() { defaultBreakAt = 1; }
+		static void SetDefaultPostorder() { defaultBreakAt = 2; }
 	};
 
 	template <typename Type>
-	struct Info
+	void Node<Type>::Iterator::GoUp()
 	{
-		const int counter;
-		Node<Type> *const node;
-
-		Info(const int pCounter, Node<Type> *const pNode) : counter(pCounter), node(pNode) {}
-
-		inline bool IsRoot() const { return node -> parent == nullptr; }
-		inline bool IsLeaf() const { return node -> left == nullptr && node -> right == nullptr; }
-		inline bool IsInternal() const { return node -> left != nullptr || node -> right != nullptr; }
-	};
-
-	template <typename Type>
-	void Node<Type>::ExeIter::Preorder(Node<Type> *node, const int counter)
-	{
-		if ((*chkFunc)(Info<Type>(counter, node))) caller -> Call(*node);
-
-		const int nextVal = counter - 1;
-		if (node -> left != nullptr) Preorder(node -> left, nextVal);
-		if (node -> right != nullptr) Preorder(node -> right, nextVal);
+		pointer const parent = m_crr -> m_parent;
+		if (parent != nullptr)
+		{
+			m_index = (parent -> m_right == m_crr) + 1;
+			m_crr = parent;
+			m_counter--;
+		}
+		else m_crr = nullptr;
 	}
 
 	template <typename Type>
-	void Node<Type>::ExeIter::Postorder(Node<Type> *node, const int counter)
+	void Node<Type>::Iterator::GoLeft()
 	{
-		const int nextVal = counter - 1;
-		if (node -> left != nullptr) Postorder(node -> left, nextVal);
-		if (node -> right != nullptr) Postorder(node -> right, nextVal);
-
-		if ((*chkFunc)(Info<Type>(counter, node))) caller -> Call(*node);
+		pointer const left = m_crr -> m_left;
+		if (left != nullptr)
+		{
+			m_crr = left;
+			m_index = 0;
+			m_counter++;
+		}
+		else m_index = 1;
 	}
 
-	template <typename Type> template <typename FType>
-	void Node<Type>::Execute(Trav type, FType func, bool (*chkFunc)(const Info<Type> &info), int counter)
+	template <typename Type>
+	void Node<Type>::Iterator::GoRight()
 	{
-		FCaller<void, Node<Type>&> caller(func);
-		ExeIter exeIter(&caller, chkFunc);
-
-		if (type == Trav::PREORDER) exeIter.Preorder(this, counter);
-		else exeIter.Postorder(this, counter);
+		pointer const right = m_crr -> m_right;
+		if (right != nullptr)
+		{
+			m_crr = right;
+			m_index = 0;
+			m_counter++;
+		}
+		else m_index = 2;
 	}
 
-	template <typename Type> template <typename FType, typename Class>
-	void Node<Type>::Execute(Trav type, FType func, Class *obj, bool (*chkFunc)(const Info<Type> &info), int counter)
+	template <typename Type>
+	void Node<Type>::Iterator::Advance()
 	{
-		MCaller<void, Class, Node<Type>&> caller(func, obj);
-		ExeIter exeIter(&caller, chkFunc);
+		using scope = Node<Type>::Iterator;
+		using action = void (scope::*)();
 
-		if (type == Trav::PREORDER) exeIter.Preorder(this, counter);
-		else exeIter.Postorder(this, counter);
+		static constexpr action actions[3] = { &scope::GoLeft, &scope::GoRight, &scope::GoUp };
+		(this ->* actions[m_index])();
 	}
+
+	template <typename Type>
+	Node<Type>::Iterator::Iterator(pointer tree, int breakAt) : m_crr(tree), m_breakAt(breakAt)
+	{
+		while (m_breakAt != m_index && m_crr != nullptr) Advance();
+	}
+
+	template <typename Type>
+	auto Node<Type>::Iterator::operator++() -> Iterator&
+	{
+		do { Advance(); } while (m_breakAt != m_index && m_crr != nullptr);
+		return *this;
+	}
+
+	template <typename Type>
+	int Node<Type>::defaultBreakAt = 0;
 }

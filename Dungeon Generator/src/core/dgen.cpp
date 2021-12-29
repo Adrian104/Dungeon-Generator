@@ -98,7 +98,9 @@ void Generator::LinkNodes()
 
 void Generator::FindPaths()
 {
-	root -> Execute(bt::Trav::POSTORDER, &Generator::FindPath, this, [](const bt::Info<Cell> &info) -> bool { return info.IsInternal(); });
+	bt::Node<Cell>::SetDefaultPostorder();
+
+	for (auto& btNode : *root) FindPath(btNode);
 	for (int i = gInput -> additionalConnections; i > 0; i--) FindPath(*root);
 }
 
@@ -173,10 +175,104 @@ void Generator::OptimizeNodes()
 
 void Generator::GenerateRooms()
 {
+	bt::Node<Cell>::SetDefaultPostorder();
+
 	rooms.reserve(roomCount);
 	roomCount = 0;
 
-	root -> Execute(bt::Trav::POSTORDER, &Generator::MakeRoom, this, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
+	for (auto& btNode : *root)
+	{
+		if (btNode.m_left != nullptr || btNode.m_right != nullptr)
+			continue;
+
+		if (btNode.room == &Room::flag)
+		{
+			btNode.room = nullptr;
+			continue;
+		}
+
+		Rect r1Rect = btNode.space;
+
+		int dX = int(r1Rect.w * uniRoom(random.GetEngine()));
+		int dY = int(r1Rect.h * uniRoom(random.GetEngine()));
+
+		r1Rect.w -= dX;
+		r1Rect.h -= dY;
+
+		static const int hardLimit = 4;
+
+		if (r1Rect.w < hardLimit)
+		{
+			r1Rect.w = hardLimit;
+			dX = btNode.space.w - hardLimit;
+		}
+
+		if (r1Rect.h < hardLimit)
+		{
+			r1Rect.h = hardLimit;
+			dY = btNode.space.h - hardLimit;
+		}
+
+		Rect r2Rect;
+		bool doubleRoom = random.GetFloat() < gInput -> doubleRoomProb;
+
+		if (doubleRoom)
+		{
+			r2Rect = r1Rect;
+
+			if (dX > dY)
+			{
+				const int extra = int(dX * random.GetFloat());
+
+				r2Rect.h >>= 1;
+				r2Rect.w += extra;
+				dX -= extra;
+
+				if (random.GetBool()) r2Rect.y = r1Rect.y + r1Rect.h - r2Rect.h;
+			}
+			else
+			{
+				const int extra = int(dY * random.GetFloat());
+
+				r2Rect.w >>= 1;
+				r2Rect.h += extra;
+				dY -= extra;
+
+				if (random.GetBool()) r2Rect.x = r1Rect.x + r1Rect.w - r2Rect.w;
+			}
+
+			doubleRoom = r2Rect.w >= hardLimit && r2Rect.h >= hardLimit;
+		}
+
+		const int xOffset = int(dX * random.GetFloat());
+		const int yOffset = int(dY * random.GetFloat());
+
+		r1Rect.x += xOffset;
+		r1Rect.y += yOffset;
+
+		Room &room = rooms.emplace_back();
+		std::vector<Rect> &rects = room.rects;
+
+		rects.emplace_back(r1Rect);
+		roomCount++;
+
+		if (doubleRoom)
+		{
+			r2Rect.x += xOffset;
+			r2Rect.y += yOffset;
+
+			rects.emplace_back(r2Rect);
+			roomCount++;
+		}
+
+		Rect *const selRoom = rects.data() + random() % rects.size();
+
+		room.pos.y = selRoom -> y + (random() % (selRoom -> h - 2)) + 1;
+		room.pos.x = selRoom -> x + (random() % (selRoom -> w - 2)) + 1;
+
+		btNode.room = &room;
+		CreateRoomNodes(btNode.space, room);
+	}
 }
 
 void Generator::GenerateOutput()
@@ -233,7 +329,7 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 {
 	if (left <= gInput -> randAreaDepth)
 	{
-		if (random.GetFloat() < gInput -> randAreaProb) btNode.data.room = &Room::flag;
+		if (random.GetFloat() < gInput -> randAreaProb) btNode.room = &Room::flag;
 	}
 
 	if (left == deltaDepth)
@@ -245,15 +341,15 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 	if (left <= targetDepth)
 	{
 		no_more:
-		Rect &space = btNode.data.space;
+		Rect &space = btNode.space;
 
 		space.x += 4; space.y += 4;
 		space.w -= 5; space.h -= 5;
 
 		CreateSpaceNodes(space);
-		if (btNode.data.room == &Room::flag)
+		if (btNode.room == &Room::flag)
 		{
-			if (random.GetFloat() < gInput -> randAreaDens) btNode.data.room = nullptr;
+			if (random.GetFloat() < gInput -> randAreaDens) btNode.room = nullptr;
 			else return;
 		}
 
@@ -262,7 +358,7 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 	}
 
 	int Rect::*xy; int Rect::*wh;
-	Rect &crrSpace = btNode.data.space;
+	Rect &crrSpace = btNode.space;
 
 	if (crrSpace.w < crrSpace.h) { xy = &Rect::y; wh = &Rect::h; }
 	else { xy = &Rect::x; wh = &Rect::w; }
@@ -272,19 +368,19 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 
 	if (randSize < minSpaceSize || totalSize - randSize < minSpaceSize) goto no_more;
 
-	btNode.left = new bt::Node<Cell>(&btNode, btNode.data);
-	btNode.right = new bt::Node<Cell>(&btNode, btNode.data);
+	btNode.m_left = new bt::Node<Cell>(&btNode, btNode); 
+	btNode.m_right = new bt::Node<Cell>(&btNode, btNode);
 
-	btNode.left -> data.space.*wh = randSize;
-	btNode.right -> data.space.*xy += randSize;
-	btNode.right -> data.space.*wh -= randSize;
+	btNode.m_left -> space.*wh = randSize;
+	btNode.m_right -> space.*xy += randSize;
+	btNode.m_right -> space.*wh -= randSize;
 
 	left--;
 
-	GenerateTree(*btNode.left, left);
-	GenerateTree(*btNode.right, left);
+	GenerateTree(*btNode.m_left, left);
+	GenerateTree(*btNode.m_right, left);
 
-	btNode.data.room = nullptr;
+	btNode.room = nullptr;
 }
 
 Node &Generator::AddRegNode(int x, int y)
@@ -316,160 +412,14 @@ void Generator::CreateSpaceNodes(Rect &space)
 	AddRegNode(xMax, yMax);
 }
 
-void Generator::CreateRoomNodes(Rect &space, Room &room)
-{
-	int *const edges = room.edges;
-	const Point iPoint = room.pos;
-
-	for (Rect &rect : room.rects)
-	{
-		const int xPlusW = rect.x + rect.w;
-		const int yPlusH = rect.y + rect.h;
-
-		if (iPoint.x >= rect.x && iPoint.x < xPlusW)
-		{
-			if (edges[Dir::NORTH] > rect.y) edges[Dir::NORTH] = rect.y;
-			if (edges[Dir::SOUTH] < yPlusH) edges[Dir::SOUTH] = yPlusH;
-		}
-
-		if (iPoint.y >= rect.y && iPoint.y < yPlusH)
-		{
-			if (edges[Dir::WEST] > rect.x) edges[Dir::WEST] = rect.x;
-			if (edges[Dir::EAST] < xPlusW) edges[Dir::EAST] = xPlusW;
-		}
-	}
-
-	edges[Dir::EAST]--;
-	edges[Dir::SOUTH]--;
-
-	Node *const bNodes[4] =
-	{
-		&AddRegNode(iPoint.x, space.y - 3),
-		&AddRegNode(space.x + space.w + 2, iPoint.y),
-		&AddRegNode(iPoint.x, space.y + space.h + 2),
-		&AddRegNode(space.x - 3, iPoint.y)
-	};
-
-	for (int i = 0; i < 4; i++)
-	{
-		Node *const bNode = bNodes[i];
-		room.links[i] = bNode;
-
-		bNode -> links[(i + 2) & 0b11] = &room;
-		bNode -> links[(i & 0b1) + 1] = &Room::flag;
-	}
-}
-
-Room *Generator::GetRandomRoom(bt::Node<Cell> *const btNode)
-{
-	if (btNode == nullptr) return nullptr;
-	const bool firstLeft = random.GetBool();
-
-	Room *room = GetRandomRoom(firstLeft ? btNode -> left : btNode -> right);
-	if (room != nullptr) return room;
-
-	room = GetRandomRoom(firstLeft ? btNode -> right : btNode -> left);
-	return room != nullptr ? room : btNode -> data.room;
-}
-
-void Generator::MakeRoom(bt::Node<Cell> &btNode)
-{
-	Cell &cell = btNode.data;
-	if (cell.room == &Room::flag)
-	{
-		cell.room = nullptr;
-		return;
-	}
-
-	Rect r1Rect = cell.space;
-
-	int dX = int(r1Rect.w * uniRoom(random.GetEngine()));
-	int dY = int(r1Rect.h * uniRoom(random.GetEngine()));
-
-	r1Rect.w -= dX;
-	r1Rect.h -= dY;
-
-	static const int hardLimit = 4;
-
-	if (r1Rect.w < hardLimit)
-	{
-		r1Rect.w = hardLimit;
-		dX = cell.space.w - hardLimit;
-	}
-
-	if (r1Rect.h < hardLimit)
-	{
-		r1Rect.h = hardLimit;
-		dY = cell.space.h - hardLimit;
-	}
-
-	Rect r2Rect;
-	bool doubleRoom = random.GetFloat() < gInput -> doubleRoomProb;
-
-	if (doubleRoom)
-	{
-		r2Rect = r1Rect;
-
-		if (dX > dY)
-		{
-			const int extra = int(dX * random.GetFloat());
-
-			r2Rect.h >>= 1;
-			r2Rect.w += extra;
-			dX -= extra;
-
-			if (random.GetBool()) r2Rect.y = r1Rect.y + r1Rect.h - r2Rect.h;
-		}
-		else
-		{
-			const int extra = int(dY * random.GetFloat());
-
-			r2Rect.w >>= 1;
-			r2Rect.h += extra;
-			dY -= extra;
-
-			if (random.GetBool()) r2Rect.x = r1Rect.x + r1Rect.w - r2Rect.w;
-		}
-
-		doubleRoom = r2Rect.w >= hardLimit && r2Rect.h >= hardLimit;
-	}
-
-	const int xOffset = int(dX * random.GetFloat());
-	const int yOffset = int(dY * random.GetFloat());
-
-	r1Rect.x += xOffset;
-	r1Rect.y += yOffset;
-
-	Room &room = rooms.emplace_back();
-	std::vector<Rect> &rects = room.rects;
-
-	rects.emplace_back(r1Rect);
-	roomCount++;
-
-	if (doubleRoom)
-	{
-		r2Rect.x += xOffset;
-		r2Rect.y += yOffset;
-
-		rects.emplace_back(r2Rect);
-		roomCount++;
-	}
-
-	Rect *const selRoom = rects.data() + random() % rects.size();
-
-	room.pos.y = selRoom -> y + (random() % (selRoom -> h - 2)) + 1;
-	room.pos.x = selRoom -> x + (random() % (selRoom -> w - 2)) + 1;
-
-	cell.room = &room;
-	CreateRoomNodes(cell.space, room);
-}
-
 void Generator::FindPath(bt::Node<Cell> &btNode)
 {
-	Room *const start = GetRandomRoom(btNode.left);
+	if (btNode.m_left == nullptr || btNode.m_right == nullptr) return;
+
+	Room *const start = GetRandomRoom(btNode.m_left);
 	if (start == nullptr) return;
 
-	Room *const stop = GetRandomRoom(btNode.right);
+	Room *const stop = GetRandomRoom(btNode.m_right);
 	if (stop == nullptr || start == stop) return;
 
 	Node *crrNode = start;
@@ -568,6 +518,62 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 		crrNode = prevNode;
 
 	} while (crrNode != start);
+}
+
+void Generator::CreateRoomNodes(Rect &space, Room &room)
+{
+	int *const edges = room.edges;
+	const Point iPoint = room.pos;
+
+	for (Rect &rect : room.rects)
+	{
+		const int xPlusW = rect.x + rect.w;
+		const int yPlusH = rect.y + rect.h;
+
+		if (iPoint.x >= rect.x && iPoint.x < xPlusW)
+		{
+			if (edges[Dir::NORTH] > rect.y) edges[Dir::NORTH] = rect.y;
+			if (edges[Dir::SOUTH] < yPlusH) edges[Dir::SOUTH] = yPlusH;
+		}
+
+		if (iPoint.y >= rect.y && iPoint.y < yPlusH)
+		{
+			if (edges[Dir::WEST] > rect.x) edges[Dir::WEST] = rect.x;
+			if (edges[Dir::EAST] < xPlusW) edges[Dir::EAST] = xPlusW;
+		}
+	}
+
+	edges[Dir::EAST]--;
+	edges[Dir::SOUTH]--;
+
+	Node *const bNodes[4] =
+	{
+		&AddRegNode(iPoint.x, space.y - 3),
+		&AddRegNode(space.x + space.w + 2, iPoint.y),
+		&AddRegNode(iPoint.x, space.y + space.h + 2),
+		&AddRegNode(space.x - 3, iPoint.y)
+	};
+
+	for (int i = 0; i < 4; i++)
+	{
+		Node *const bNode = bNodes[i];
+		room.links[i] = bNode;
+
+		bNode -> links[(i + 2) & 0b11] = &room;
+		bNode -> links[(i & 0b1) + 1] = &Room::flag;
+	}
+}
+
+Room *Generator::GetRandomRoom(bt::Node<Cell> *const btNode)
+{
+	if (btNode == nullptr) return nullptr;
+	const bool firstLeft = random.GetBool();
+
+	Room *room = GetRandomRoom(firstLeft ? btNode -> m_left : btNode -> m_right);
+	if (room != nullptr) return room;
+
+	room = GetRandomRoom(firstLeft ? btNode -> m_right : btNode -> m_left);
+	return room != nullptr ? room : btNode -> room;
 }
 
 void Generator::Generate(const GenInput *genInput, GenOutput *genOutput, const Random::seed_type seed)

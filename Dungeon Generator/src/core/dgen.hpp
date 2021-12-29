@@ -113,11 +113,9 @@ struct Generator
 
 	Node &AddRegNode(int x, int y);
 	void CreateSpaceNodes(Rect &space);
+	void FindPath(bt::Node<Cell> &btNode);
 	void CreateRoomNodes(Rect &space, Room &room);
 	Room *GetRandomRoom(bt::Node<Cell> *const btNode);
-
-	void MakeRoom(bt::Node<Cell> &btNode);
-	void FindPath(bt::Node<Cell> &btNode);
 
 	Generator();
 	~Generator();

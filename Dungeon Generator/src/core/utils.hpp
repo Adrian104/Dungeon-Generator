@@ -1,5 +1,4 @@
 #pragma once
-#include <functional>
 
 struct Point
 {
@@ -15,31 +14,6 @@ struct Rect
 
 	Rect() = default;
 	Rect(int pX, int pY, int pW, int pH) : x(pX), y(pY), w(pW), h(pH) {}
-};
-
-template <typename RType, typename ...CArgs>
-struct Caller
-{
-	virtual RType Call(CArgs ...args) const = 0;
-};
-
-template <typename RType, typename ...CArgs>
-struct FCaller : public Caller<RType, CArgs...>
-{
-	std::function<RType(CArgs...)> m_func;
-
-	FCaller(std::function<RType(CArgs...)> func) : m_func(func) {}
-	RType Call(CArgs ...args) const override { return m_func(args...); }
-};
-
-template <typename RType, typename Class, typename ...CArgs>
-struct MCaller : public Caller<RType, CArgs...>
-{
-	std::function<RType(Class&, CArgs...)> m_func;
-	Class *m_obj;
-
-	MCaller(std::function<RType(Class&, CArgs...)> func, Class *obj) : m_func(func), m_obj(obj) {}
-	RType Call(CArgs ...args) const override { return m_func(*m_obj, args...); }
 };
 
 using Vec = Point;

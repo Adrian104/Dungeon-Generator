@@ -226,14 +226,6 @@ void Application::RenderDebug()
 {
 	RenderCommon();
 
-	auto DrawSpace = [this](bt::Node<Cell> &btNode) -> void
-	{
-		SDL_FRect rect = ToFRect(btNode.data.space);
-
-		vPort.RectToScreen(rect, rect);
-		SDL_RenderDrawRectF(GetRenderer(), &rect);
-	};
-
 	const int offset = rand() & 0b10;
 	auto DrawLinks = [this, offset](Node &node) -> void
 	{
@@ -261,7 +253,16 @@ void Application::RenderDebug()
 	};
 
 	SDL_SetRenderDrawColor(GetRenderer(), 0xFF, 0, 0, 0xFF);
-	gen.root -> Execute(bt::Trav::PREORDER, DrawSpace, [](const bt::Info<Cell> &info) -> bool { return info.IsLeaf(); });
+	bt::Node<Cell>::SetDefaultPreorder();
+
+	for (auto& btNode : *gen.root)
+	{
+		if (btNode.m_left != nullptr || btNode.m_right != nullptr) continue;
+		SDL_FRect rect = ToFRect(btNode.space);
+
+		vPort.RectToScreen(rect, rect);
+		SDL_RenderDrawRectF(GetRenderer(), &rect);
+	}
 
 	for (Room &room : gen.rooms)
 	{
