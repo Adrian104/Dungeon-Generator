@@ -10,9 +10,9 @@ class ViewportBase
 	Type m_yOffset = 0;
 
 	public:
-	Type GetScale() const;
-	Type GetXOffset() const;
-	Type GetYOffset() const;
+	Type GetScale() const { return m_scale; }
+	Type GetXOffset() const { return m_xOffset; }
+	Type GetYOffset() const { return m_yOffset; }
 
 	template <typename RType>
 	void RectToScreen(const RType& from, RType& to) const;
@@ -42,24 +42,6 @@ class Viewport : public ViewportBase<float>
 	void SetScaleStep(float scaleStep);
 	void SetDefaultScale(float defScale);
 };
-
-template <typename Type>
-inline Type ViewportBase<Type>::GetScale() const
-{
-	return m_scale;
-}
-
-template <typename Type>
-inline Type ViewportBase<Type>::GetXOffset() const
-{
-	return m_xOffset;
-}
-
-template <typename Type>
-inline Type ViewportBase<Type>::GetYOffset() const
-{
-	return m_yOffset;
-}
 
 template <typename Type> template <typename RType>
 void ViewportBase<Type>::RectToScreen(const RType& from, RType& to) const

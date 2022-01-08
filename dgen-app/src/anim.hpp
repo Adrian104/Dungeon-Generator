@@ -31,13 +31,13 @@ class Animator
 	void Pause();
 	void Update();
 
+	float GetPhase() const;
 	void Play(DirMode dirMode);
 
-	float GetPhase() const;
-	bool IsPlaying() const;
-	bool IsBackward() const;
-	bool IsElapsedMin() const;
-	bool IsElapsedMax() const;
+	bool IsPlaying() const { return m_playing; }
+	bool IsBackward() const { return m_backward; }
+	bool IsElapsedMin() const { return m_elapsed <= zero; }
+	bool IsElapsedMax() const { return m_elapsed >= m_totalTime; }
 };
 
 inline void Animator::Stop()
@@ -55,24 +55,4 @@ inline void Animator::Pause()
 inline float Animator::GetPhase() const
 {
 	return m_elapsed.count() / static_cast<float>(m_totalTime.count());
-}
-
-inline bool Animator::IsPlaying() const
-{
-	return m_playing;
-}
-
-inline bool Animator::IsBackward() const
-{
-	return m_backward;
-}
-
-inline bool Animator::IsElapsedMin() const
-{
-	return m_elapsed <= zero;
-}
-
-inline bool Animator::IsElapsedMax() const
-{
-	return m_elapsed >= m_totalTime;
 }

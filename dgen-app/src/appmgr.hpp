@@ -3,7 +3,6 @@
 #include <string>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
-#include "utils.hpp"
 
 class Text
 {
@@ -23,8 +22,9 @@ class Text
 	Text& operator=(Text&& ref) noexcept;
 
 	void Clear();
-	Vec GetSize() const;
-	SDL_Texture* GetTexture() const;
+	int GetWidth() const { return m_width; }
+	int GetHeight() const { return m_height; }
+	SDL_Texture* GetTexture() const { return m_texture; }
 
 	friend class AppManager;
 };
@@ -48,9 +48,10 @@ class AppManager
 	AppManager(AppManager&& ref) noexcept = delete;
 	AppManager& operator=(AppManager&& ref) noexcept = delete;
 
-	Vec GetSize() const;
-	SDL_Window* GetWindow() const;
-	SDL_Renderer* GetRenderer() const;
+	int GetWidth() const { return m_width; }
+	int GetHeight() const { return m_height; }
+	SDL_Window* GetWindow() const { return m_window; }
+	SDL_Renderer* GetRenderer() const { return m_renderer; }
 
 	void UnloadAllFonts();
 	void UnloadFont(int id);
@@ -62,28 +63,3 @@ class AppManager
 
 	Text RenderText(const std::string& str, int id, int style = TTF_STYLE_NORMAL, const SDL_Color& color = { 0xFF, 0xFF, 0xFF, 0xFF }) const;
 };
-
-inline Vec Text::GetSize() const
-{
-	return Vec(m_width, m_height);
-}
-
-inline SDL_Texture* Text::GetTexture() const
-{
-	return m_texture;
-}
-
-inline Vec AppManager::GetSize() const
-{
-	return Vec(m_width, m_height);
-}
-
-inline SDL_Window* AppManager::GetWindow() const
-{
-	return m_window;
-}
-
-inline SDL_Renderer* AppManager::GetRenderer() const
-{
-	return m_renderer;
-}

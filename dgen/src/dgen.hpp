@@ -59,7 +59,7 @@ struct GenInput
 {
 	bool generateFewerPaths;
 
-	int xSize, ySize;
+	int width, height;
 	int randAreaDepth;
 	int maxDepth, minDepth;
 	int additionalConnections;

@@ -20,7 +20,7 @@ using Vec = Point;
 using uint = unsigned int;
 using byte = unsigned char;
 
-inline Vec operator+(const Point &p1, const Point &p2) { return Vec(p1.x + p2.x, p1.y + p2.y); }
-inline Vec operator-(const Point &p1, const Point &p2) { return Vec(p1.x - p2.x, p1.y - p2.y); }
+inline Vec operator+(const Point& p1, const Point& p2) { return Vec(p1.x + p2.x, p1.y + p2.y); }
+inline Vec operator-(const Point& p1, const Point& p2) { return Vec(p1.x - p2.x, p1.y - p2.y); }
 
-enum Dir : byte { NORTH, EAST, SOUTH, WEST, INVALID };
+enum Dir { NORTH, EAST, SOUTH, WEST };

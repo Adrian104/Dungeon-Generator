@@ -29,10 +29,10 @@ class Heap
 	void Clear(bool reset = false);
 	void Push(KeyType key, const ObjType& object);
 
-	auto Top() const -> ObjType&;
-	auto GetSize() const -> size_t;
-	auto GetData() const -> pair_type*;
-	auto GetCapacity() const -> size_t;
+	ObjType& Top() const { return m_data -> second; }
+	size_t GetSize() const { return m_size; }
+	pair_type* GetData() const { return m_data; }
+	size_t GetCapacity() const { return m_capacity; }
 };
 
 template <typename KeyType, typename ObjType>
@@ -225,28 +225,4 @@ void Heap<KeyType, ObjType, maxHeap>::Push(KeyType key, const ObjType& object)
 		crrIndex = parIndex;
 		std::swap(crrPair, parPair);
 	}
-}
-
-template <typename KeyType, typename ObjType, bool maxHeap>
-inline auto Heap<KeyType, ObjType, maxHeap>::Top() const -> ObjType&
-{
-	return m_data -> second;
-}
-
-template <typename KeyType, typename ObjType, bool maxHeap>
-inline auto Heap<KeyType, ObjType, maxHeap>::GetSize() const -> size_t
-{
-	return m_size;
-}
-
-template <typename KeyType, typename ObjType, bool maxHeap>
-inline auto Heap<KeyType, ObjType, maxHeap>::GetData() const -> pair_type*
-{
-	return m_data;
-}
-
-template <typename KeyType, typename ObjType, bool maxHeap>
-inline auto Heap<KeyType, ObjType, maxHeap>::GetCapacity() const -> size_t
-{
-	return m_capacity;
 }

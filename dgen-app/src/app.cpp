@@ -27,7 +27,7 @@ Application::Application() : plus(false), factor(1), lastFactor(1)
 	#endif
 
 	LoadDefaults();
-	texture = SDL_CreateTexture(GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GetSize().x, GetSize().y);
+	texture = SDL_CreateTexture(GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GetWidth(), GetHeight());
 
 	overlay = new Overlay(*this);
 
@@ -302,17 +302,17 @@ void Application::RenderCommon()
 
 		auto Limit = [scale](float& var, float min, float max) -> void
 		{
-			if (var < min) var += std::floorf((min - var) / scale) * scale;
-			else if (var > max) var -= std::floorf((var - max) / scale) * scale;
+			if (var < min) var += std::floor((min - var) / scale) * scale;
+			else if (var > max) var -= std::floor((var - max) / scale) * scale;
 		};
 
 		SDL_FPoint p1, p2;
 
 		vPort.ToScreen(0.0f, 0.0f, p1.x, p1.y);
-		vPort.ToScreen(static_cast<float>(gInput.xSize), static_cast<float>(gInput.ySize), p2.x, p2.y);
+		vPort.ToScreen(static_cast<float>(gInput.width), static_cast<float>(gInput.height), p2.x, p2.y);
 
-		const float xMax = static_cast<float>(GetSize().x);
-		const float yMax = static_cast<float>(GetSize().y);
+		const float xMax = static_cast<float>(GetWidth());
+		const float yMax = static_cast<float>(GetHeight());
 
 		Limit(p1.x, 0, xMax);
 		Limit(p1.y, 0, yMax);
@@ -331,8 +331,8 @@ void Application::ApplyFactor()
 {
 	const float invFactor = 1 / factor;
 
-	gInput.xSize = int(GetSize().x * invFactor);
-	gInput.ySize = int(GetSize().y * invFactor);
+	gInput.width = int(GetWidth() * invFactor);
+	gInput.height = int(GetHeight() * invFactor);
 
 	vPort.SetDefaultScale(factor);
 	vPort.Reset();
@@ -348,8 +348,8 @@ void Application::LoadDefaults()
 	gInput.randAreaProb = gDefRandAreaProb;
 	gInput.randAreaDepth = gDefRandAreaDepth;
 
-	gInput.xSize = GetSize().x;
-	gInput.ySize = GetSize().y;
+	gInput.width = GetWidth();
+	gInput.height = GetHeight();
 	gInput.minDepth = gDefMinDepth;
 	gInput.maxDepth = gDefMaxDepth;
 	gInput.maxRoomSize = gDefMaxRoomSize;

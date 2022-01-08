@@ -31,7 +31,7 @@ struct Overlay : public Animator
 	SDL_Texture *texture;
 	std::vector<Modifier*> mods;
 
-	inline int XCenter(Text& text) const { return (gOverlayWidth - text.GetSize().x) >> 1; }
+	inline int XCenter(Text& text) const { return (gOverlayWidth - text.GetWidth()) >> 1; }
 
 	Overlay(AppManager &appManager);
 	~Overlay();
@@ -70,7 +70,7 @@ struct PercentMod : public Modifier
 	void Increment() override { ref += step; if (ref > 1.0f) ref = 1.0f; }
 	void Decrement() override { ref -= step; if (ref < 0.0f) ref = 0.0f; }
 
-	std::string GetValue() const override { return std::to_string(int(std::roundf(ref * 100.0f))) + " %"; }
+	std::string GetValue() const override { return std::to_string(int(std::round(ref * 100.0f))) + " %"; }
 };
 
 struct BoolMod : public Modifier

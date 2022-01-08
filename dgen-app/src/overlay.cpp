@@ -6,7 +6,7 @@ const int gOverlayYMargin2 = gOverlayYMargin << 1;
 
 Overlay::Overlay(AppManager &appManager) : Animator(std::chrono::milliseconds(gOverlayAnimTime)), selected(0), refresh(true), mgr(appManager)
 {
-	texture = SDL_CreateTexture(mgr.GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, gOverlayWidth, mgr.GetSize().y);
+	texture = SDL_CreateTexture(mgr.GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, gOverlayWidth, mgr.GetHeight());
 	SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
 }
 
@@ -18,13 +18,13 @@ Overlay::~Overlay()
 
 void Overlay::Draw()
 {
-	const SDL_Rect dest = { int(-gOverlayWidth * GetPhase()), 0, gOverlayWidth, mgr.GetSize().y };
+	const SDL_Rect dest = { int(-gOverlayWidth * GetPhase()), 0, gOverlayWidth, mgr.GetHeight() };
 	SDL_RenderCopy(mgr.GetRenderer(), texture, nullptr, &dest);
 }
 
 void Overlay::Render()
 {
-	SDL_Rect rect = { gOverlayWidth - gOverlayOutlineWidth, 0, gOverlayOutlineWidth, mgr.GetSize().y };
+	SDL_Rect rect = { gOverlayWidth - gOverlayOutlineWidth, 0, gOverlayOutlineWidth, mgr.GetHeight() };
 
 	SDL_SetRenderTarget(mgr.GetRenderer(), texture);
 	SDL_SetRenderDrawColor(mgr.GetRenderer(), 0, 0, 0, 0xCC);
@@ -36,10 +36,10 @@ void Overlay::Render()
 	Text text = mgr.RenderText(gTitle, 0, TTF_STYLE_BOLD);
 	int xCenter = XCenter(text);
 
-	rect = { xCenter, gOverlayTitleYPos, text.GetSize().x, text.GetSize().y };
+	rect = { xCenter, gOverlayTitleYPos, text.GetWidth(), text.GetHeight() };
 	SDL_RenderCopy(mgr.GetRenderer(), text.GetTexture(), nullptr, &rect);
 
-	rect = { xCenter - gOverlayXMargin, gOverlayTitleYPos - gOverlayYMargin, text.GetSize().x + gOverlayXMargin2, text.GetSize().y + gOverlayYMargin2 };
+	rect = { xCenter - gOverlayXMargin, gOverlayTitleYPos - gOverlayYMargin, text.GetWidth() + gOverlayXMargin2, text.GetHeight() + gOverlayYMargin2 };
 	SDL_RenderDrawRect(mgr.GetRenderer(), &rect);
 
 	int crrIndex = 0;
@@ -52,14 +52,14 @@ void Overlay::Render()
 		text = mgr.RenderText(mod -> name, 0, TTF_STYLE_BOLD, { colorVal, 0xFF, colorVal, 0xFF });
 		xCenter = XCenter(text);
 
-		rect = { xCenter, crrPos, text.GetSize().x, text.GetSize().y };
+		rect = { xCenter, crrPos, text.GetWidth(), text.GetHeight() };
 		SDL_RenderCopy(mgr.GetRenderer(), text.GetTexture(), nullptr, &rect);
 		crrPos += gOverlayInternalOffset;
 
 		text = mgr.RenderText(mod -> GetValue(), 0);
 		xCenter = XCenter(text);
 
-		rect = { xCenter, crrPos, text.GetSize().x, text.GetSize().y };
+		rect = { xCenter, crrPos, text.GetWidth(), text.GetHeight() };
 		SDL_RenderCopy(mgr.GetRenderer(), text.GetTexture(), nullptr, &rect);
 		crrPos += gOverlayExternalOffset;
 

@@ -22,18 +22,8 @@ class Random
 	float GetFloat();
 	double GetDouble();
 
-	auto operator()() -> result_type;
-	auto GetEngine() -> engine_type&;
+	engine_type& GetEngine() { return m_engine; }
+	result_type operator()() { return m_engine(); }
 
 	void Init(const seed_type seed = engine_type::default_seed);
 };
-
-inline auto Random::operator()() -> result_type
-{
-	return m_engine();
-}
-
-inline auto Random::GetEngine() -> engine_type&
-{
-	return m_engine;
-}

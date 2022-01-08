@@ -28,11 +28,11 @@ void Generator::Prepare()
 	if (gInput -> maxRoomSize <= 0) throw std::runtime_error("Variable 'maxRoomSize' is not a positive number");
 	minSpaceSize = int(4.0f / gInput -> maxRoomSize) + 5;
 
-	const int width = gInput -> xSize - 3;
-	const int height = gInput -> ySize - 3;
+	const int realWidth = gInput -> width - 3;
+	const int realHeight = gInput -> height - 3;
 
-	if (width < minSpaceSize || height < minSpaceSize) throw std::runtime_error("Root node is too small");
-	root = new bt::Node<Cell>(nullptr, Cell(width, height));
+	if (realWidth < minSpaceSize || realHeight < minSpaceSize) throw std::runtime_error("Root node is too small");
+	root = new bt::Node<Cell>(nullptr, Cell(realWidth, realHeight));
 
 	roomCount = 0;
 	targetDepth = 0;
@@ -461,7 +461,7 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 			{
 				const Vec diff = stop -> pos - nNode -> pos;
 
-				nNode -> hCost = int(std::sqrtf(float(diff.x * diff.x + diff.y * diff.y)) * gInput -> heuristicFactor);
+				nNode -> hCost = int(std::sqrt(float(diff.x * diff.x + diff.y * diff.y)) * gInput -> heuristicFactor);
 				nNode -> status = statusCounter;
 
 				goto add_to_heap;
