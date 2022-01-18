@@ -4,16 +4,12 @@
 const int gOverlayXMargin2 = gOverlayXMargin << 1;
 const int gOverlayYMargin2 = gOverlayYMargin << 1;
 
-Overlay::Overlay(AppManager &appManager) : Animator(std::chrono::milliseconds(gOverlayAnimTime)), selected(0), refresh(true), mgr(appManager)
-{
-	texture = SDL_CreateTexture(mgr.GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, gOverlayWidth, mgr.GetHeight());
-	SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
-}
+Overlay::Overlay(AppManager& appManager) : Animator(std::chrono::milliseconds(gOverlayAnimTime)), selected(0), refresh(true), mgr(appManager), texture(nullptr) {}
 
 Overlay::~Overlay()
 {
 	for (Modifier *&mod : mods) delete mod;
-	SDL_DestroyTexture(texture);
+	DestroyResources();
 }
 
 void Overlay::Draw()
@@ -86,6 +82,23 @@ bool Overlay::Update()
 	}
 
 	return false;
+}
+
+void Overlay::InitResources()
+{
+	DestroyResources();
+
+	texture = SDL_CreateTexture(mgr.GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, gOverlayWidth, mgr.GetHeight());
+	SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+}
+
+void Overlay::DestroyResources()
+{
+	if (texture != nullptr)
+	{
+		SDL_DestroyTexture(texture);
+		texture = nullptr;
+	}
 }
 
 void Overlay::MoveSelected(const bool up)

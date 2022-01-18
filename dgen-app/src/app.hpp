@@ -16,9 +16,10 @@ struct Application : public AppManager
 		bool entrancesVisibility;
 	};
 
-	enum class GenMode : byte { OLD_SEED, NEW_SEED, DEBUG_MODE };
+	enum class GenMode { NEXT_SEED, RAND_SEED, REFRESH, DEBUG };
 
 	bool plus;
+	bool fullscreen;
 	float factor, lastFactor;
 
 	Generator gen;
@@ -29,6 +30,9 @@ struct Application : public AppManager
 	Viewport vPort;
 	Overlay *overlay;
 	SDL_Texture *texture;
+
+	std::random_device rd;
+	Random::seed_type seed;
 
 	Application();
 	~Application();
@@ -41,6 +45,7 @@ struct Application : public AppManager
 	void RenderDebug();
 	void RenderCommon();
 
+	void InitWindow();
 	void ApplyFactor();
 	void LoadDefaults();
 	void Generate(GenMode mode);

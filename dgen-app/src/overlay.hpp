@@ -40,6 +40,9 @@ struct Overlay : public Animator
 	void Render();
 	bool Update();
 
+	void InitResources();
+	void DestroyResources();
+
 	void MoveSelected(const bool up);
 	bool ChangeSelected(const bool minus);
 

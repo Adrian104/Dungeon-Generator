@@ -2,29 +2,12 @@
 #include <string>
 #include <utility>
 
-#if defined _DEBUG || defined CPU_DEMANDING_MODE
-	#define DEBUG_ENABLED
-#endif
-
-#ifdef DEBUG_ENABLED
-	#define INCREMENTAL_SEED
-#else
-	#define FULL_SCREEN
-#endif
-
-#ifdef CPU_DEMANDING_MODE
-	inline const float gDefFactor = 0.05f;
-	inline const int gDefMinDepth = 17;
-	inline const int gDefMaxDepth = 17;
-#else
-	inline const float gDefFactor = 1.0f;
-	inline const int gDefMinDepth = 9;
-	inline const int gDefMaxDepth = 10;
-#endif
-
+inline const int gDefMinDepth = 9;
+inline const int gDefMaxDepth = 10;
 inline const int gDefRandAreaDepth = 2;
 inline const int gDefAdditionalConnections = 2;
 
+inline const float gDefFactor = 1.0f;
 inline const float gDefMaxRoomSize = 0.75f;
 inline const float gDefMinRoomSize = 0.25f;
 inline const float gDefRandAreaDens = 0.5f;

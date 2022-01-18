@@ -9,25 +9,13 @@ void RenderDebugHelper(Application *app) { app -> RenderDebug(); }
 inline SDL_FPoint ToFPoint(const Point &point) { return { float(point.x), float(point.y) }; }
 inline SDL_FRect ToFRect(const Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
 
-Application::Application() : plus(false), factor(1), lastFactor(1)
+Application::Application() : plus(false), fullscreen(false), factor(1), lastFactor(1), texture(nullptr), seed(0)
 {
 	for (int i = 0; i < sizeof(gFonts) / sizeof(*gFonts); i++)
 	{
 		const auto& font = gFonts[i];
 		LoadFont(i, font.second, font.first);
 	}
-
-	SDL_DisplayMode dm;
-	SDL_GetCurrentDisplayMode(0, &dm);
-
-	#ifdef FULL_SCREEN
-		CreateWindow(gTitle, dm.w, dm.h, SDL_WINDOW_HIDDEN | SDL_WINDOW_FULLSCREEN);
-	#else
-		CreateWindow(gTitle, dm.w - 30, dm.h - 100, SDL_WINDOW_HIDDEN);
-	#endif
-
-	LoadDefaults();
-	texture = SDL_CreateTexture(GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GetWidth(), GetHeight());
 
 	overlay = new Overlay(*this);
 
@@ -49,7 +37,8 @@ Application::Application() : plus(false), factor(1), lastFactor(1)
 	overlay -> AddMod(BoolMod("Paths visibility", dInfo.pathsVisibility));
 	overlay -> AddMod(BoolMod("Entrances visibility", dInfo.entrancesVisibility));
 
-	SDL_ShowWindow(GetWindow());
+	InitWindow();
+	LoadDefaults();
 }
 
 Application::~Application()
@@ -60,7 +49,7 @@ Application::~Application()
 
 void Application::Run()
 {
-	Generate(GenMode::NEW_SEED);
+	Generate(GenMode::REFRESH);
 	overlay -> Render();
 
 	Render();
@@ -80,8 +69,7 @@ void Application::Draw()
 
 bool Application::Update()
 {
-	SDL_Event sdlEvent;
-	sdlEvent.type = 0;
+	SDL_Event sdlEvent = {};
 
 	bool render = false;
 	static bool poll = false;
@@ -97,6 +85,16 @@ bool Application::Update()
 		case SDLK_ESCAPE:
 			return false;
 
+		case SDLK_F11:
+			render = true;
+			overlay -> refresh = true;
+			fullscreen = !fullscreen;
+
+			InitWindow();
+			ApplyFactor();
+			Generate(GenMode::REFRESH);
+			break;
+
 		case SDLK_TAB:
 			render = true;
 			vPort.Reset();
@@ -104,7 +102,12 @@ bool Application::Update()
 
 		case SDLK_g:
 			render = true;
-			Generate(GenMode::NEW_SEED);
+			Generate(GenMode::RAND_SEED);
+			break;
+
+		case SDLK_n:
+			render = true;
+			Generate(GenMode::NEXT_SEED);
 			break;
 
 		case SDLK_r:
@@ -112,11 +115,11 @@ bool Application::Update()
 			overlay -> refresh = true;
 
 			LoadDefaults();
-			Generate(GenMode::OLD_SEED);
+			Generate(GenMode::REFRESH);
 			break;
 
 		case SDLK_d:
-			Generate(GenMode::DEBUG_MODE);
+			Generate(GenMode::DEBUG);
 			Draw();
 			break;
 
@@ -139,7 +142,7 @@ bool Application::Update()
 			{
 				plus = true;
 				render = true;
-				Generate(GenMode::OLD_SEED);
+				Generate(GenMode::REFRESH);
 			}
 			break;
 
@@ -149,7 +152,7 @@ bool Application::Update()
 			{
 				plus = false;
 				render = true;
-				Generate(GenMode::OLD_SEED);
+				Generate(GenMode::REFRESH);
 			}
 			break;
 
@@ -327,6 +330,23 @@ void Application::RenderCommon()
 	}
 }
 
+void Application::InitWindow()
+{
+	overlay -> DestroyResources();
+	if (texture != nullptr) SDL_DestroyTexture(texture);
+
+	SDL_DisplayMode dm;
+	SDL_GetCurrentDisplayMode(0, &dm);
+
+	if (fullscreen) CreateWindow(gTitle, dm.w, dm.h, SDL_WINDOW_HIDDEN | SDL_WINDOW_FULLSCREEN);
+	else CreateWindow(gTitle, dm.w - 30, dm.h - 100, SDL_WINDOW_HIDDEN);
+
+	texture = SDL_CreateTexture(GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GetWidth(), GetHeight());
+	overlay -> InitResources();
+
+	SDL_ShowWindow(GetWindow());
+}
+
 void Application::ApplyFactor()
 {
 	const float invFactor = 1 / factor;
@@ -348,8 +368,6 @@ void Application::LoadDefaults()
 	gInput.randAreaProb = gDefRandAreaProb;
 	gInput.randAreaDepth = gDefRandAreaDepth;
 
-	gInput.width = GetWidth();
-	gInput.height = GetHeight();
 	gInput.minDepth = gDefMinDepth;
 	gInput.maxDepth = gDefMaxDepth;
 	gInput.maxRoomSize = gDefMaxRoomSize;
@@ -384,22 +402,16 @@ void Application::Generate(GenMode mode)
 		else gInput.minRoomSize = gInput.maxRoomSize;
 	}
 
-	static uint seed = 0;
-
 	try
 	{
-		if (mode != GenMode::DEBUG_MODE)
+		if (mode != GenMode::DEBUG)
 		{
-			#ifdef INCREMENTAL_SEED
-			seed += mode == GenMode::NEW_SEED;
-			#else
-			static std::random_device rd;
-			if (mode == GenMode::NEW_SEED) seed = rd();
-			#endif
+			if (mode == GenMode::NEXT_SEED) seed++;
+			else if (mode == GenMode::RAND_SEED) seed = rd();
 
 			gen.Generate(&gInput, &gOutput, seed);
 		}
 		else gen.GenerateDebug(&gInput, &gOutput, seed, &RenderDebugHelper, this);
 	}
-	catch (const std::exception &error) { std::cerr << error.what() << "\n"; }
+	catch (const std::exception& error) { std::cerr << error.what() << "\n"; }
 }
