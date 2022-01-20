@@ -3,6 +3,7 @@
 #include <random>
 #include <stdexcept>
 #include "app.hpp"
+#include "global.hpp"
 
 void RenderDebugHelper(Application *app) { app -> RenderDebug(); }
 
@@ -11,9 +12,9 @@ inline SDL_FRect ToFRect(const Rect &rect) { return { float(rect.x), float(rect.
 
 Application::Application() : plus(false), fullscreen(false), factor(1), lastFactor(1), texture(nullptr), seed(0)
 {
-	for (int i = 0; i < sizeof(gFonts) / sizeof(*gFonts); i++)
+	for (int i = 0; i < sizeof(g_fonts) / sizeof(*g_fonts); i++)
 	{
-		const auto& font = gFonts[i];
+		const auto& font = g_fonts[i];
 		LoadFont(i, font.second, font.first);
 	}
 
@@ -299,7 +300,7 @@ void Application::RenderCommon()
 	SDL_RenderClear(renderer);
 
 	const float scale = vPort.GetScale();
-	if (scale >= gGridMinimumScale)
+	if (scale >= g_gridMinimumScale)
 	{
 		SDL_SetRenderDrawColor(renderer, 0x16, 0x16, 0x16, 0xFF);
 
@@ -338,8 +339,8 @@ void Application::InitWindow()
 	SDL_DisplayMode dm;
 	SDL_GetCurrentDisplayMode(0, &dm);
 
-	if (fullscreen) CreateWindow(gTitle, dm.w, dm.h, SDL_WINDOW_HIDDEN | SDL_WINDOW_FULLSCREEN);
-	else CreateWindow(gTitle, dm.w - 30, dm.h - 100, SDL_WINDOW_HIDDEN);
+	if (fullscreen) CreateWindow(g_title, dm.w, dm.h, SDL_WINDOW_HIDDEN | SDL_WINDOW_FULLSCREEN);
+	else CreateWindow(g_title, dm.w - 30, dm.h - 100, SDL_WINDOW_HIDDEN);
 
 	texture = SDL_CreateTexture(GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GetWidth(), GetHeight());
 	overlay -> InitResources();
@@ -364,24 +365,24 @@ void Application::LoadDefaults()
 {
 	gInput.generateFewerPaths = true;
 
-	gInput.randAreaDens = gDefRandAreaDens;
-	gInput.randAreaProb = gDefRandAreaProb;
-	gInput.randAreaDepth = gDefRandAreaDepth;
+	gInput.randAreaDens = g_randAreaDens;
+	gInput.randAreaProb = g_randAreaProb;
+	gInput.randAreaDepth = g_randAreaDepth;
 
-	gInput.minDepth = gDefMinDepth;
-	gInput.maxDepth = gDefMaxDepth;
-	gInput.maxRoomSize = gDefMaxRoomSize;
-	gInput.minRoomSize = gDefMinRoomSize;
-	gInput.doubleRoomProb = gDefDoubleRoomProb;
-	gInput.heuristicFactor = gDefHeuristicFactor;
-	gInput.spaceSizeRandomness = gDefSpaceSizeRandomness;
-	gInput.additionalConnections = gDefAdditionalConnections;
+	gInput.minDepth = g_minDepth;
+	gInput.maxDepth = g_maxDepth;
+	gInput.maxRoomSize = g_maxRoomSize;
+	gInput.minRoomSize = g_minRoomSize;
+	gInput.doubleRoomProb = g_doubleRoomProb;
+	gInput.heuristicFactor = g_heuristicFactor;
+	gInput.spaceSizeRandomness = g_spaceSizeRandomness;
+	gInput.additionalConnections = g_additionalConnections;
 
-	dInfo.roomsVisibility = gDefRoomsVisibility;
-	dInfo.pathsVisibility = gDefPathsVisibility;
-	dInfo.entrancesVisibility = gDefEntrancesVisibility;
+	dInfo.roomsVisibility = g_roomsVisibility;
+	dInfo.pathsVisibility = g_pathsVisibility;
+	dInfo.entrancesVisibility = g_entrancesVisibility;
 
-	factor = gDefFactor;
+	factor = g_factor;
 	ApplyFactor();
 }
 

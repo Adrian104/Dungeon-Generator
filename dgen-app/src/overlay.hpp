@@ -5,7 +5,6 @@
 #include <limits>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
-#include "global.hpp"
 #include "appmgr.hpp"
 #include "anim.hpp"
 
@@ -31,7 +30,7 @@ struct Overlay : public Animator
 	SDL_Texture *texture;
 	std::vector<Modifier*> mods;
 
-	inline int XCenter(Text& text) const { return (gOverlayWidth - text.GetWidth()) >> 1; }
+	int XCenter(Text& text) const;
 
 	Overlay(AppManager &appManager);
 	~Overlay();

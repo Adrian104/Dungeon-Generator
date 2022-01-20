@@ -2,35 +2,33 @@
 #include <string>
 #include <utility>
 
-inline const int gDefMinDepth = 9;
-inline const int gDefMaxDepth = 10;
-inline const int gDefRandAreaDepth = 2;
-inline const int gDefAdditionalConnections = 2;
+inline const int g_minDepth = 9;
+inline const int g_maxDepth = 10;
+inline const int g_randAreaDepth = 2;
+inline const int g_additionalConnections = 2;
 
-inline const float gDefFactor = 1.0f;
-inline const float gDefMaxRoomSize = 0.75f;
-inline const float gDefMinRoomSize = 0.25f;
-inline const float gDefRandAreaDens = 0.5f;
-inline const float gDefRandAreaProb = 0.25f;
-inline const float gDefDoubleRoomProb = 0.25f;
-inline const float gDefHeuristicFactor = 0.75f;
-inline const float gDefSpaceSizeRandomness = 0.35f;
+inline const float g_factor = 1.0f;
+inline const float g_maxRoomSize = 0.75f;
+inline const float g_minRoomSize = 0.25f;
+inline const float g_randAreaDens = 0.5f;
+inline const float g_randAreaProb = 0.25f;
+inline const float g_doubleRoomProb = 0.25f;
+inline const float g_heuristicFactor = 0.75f;
+inline const float g_spaceSizeRandomness = 0.35f;
 
-inline const bool gDefRoomsVisibility = true;
-inline const bool gDefPathsVisibility = true;
-inline const bool gDefEntrancesVisibility = false;
+inline const bool g_roomsVisibility = true;
+inline const bool g_pathsVisibility = true;
+inline const bool g_entrancesVisibility = false;
 
-inline const int gOverlayXMargin = 6;
-inline const int gOverlayYMargin = 4;
-inline const int gOverlayWidth = 300;
-inline const int gOverlayAnimTime = 350;
-inline const int gOverlayTitleYPos = 40;
-inline const int gOverlayOutlineWidth = 3;
-inline const int gOverlayTitleYOffset = 50;
-inline const int gOverlayInternalOffset = 21;
-inline const int gOverlayExternalOffset = 36;
+inline const int g_ovMargin = 5;
+inline const int g_ovWidth = 300;
+inline const int g_ovAnimTime = 350;
+inline const int g_ovTitleMargin = 45;
+inline const int g_ovOutlineWidth = 3;
+inline const int g_ovInternalOffset = 21;
+inline const int g_ovExternalOffset = 36;
 
-inline const float gGridMinimumScale = 5.0f;
+inline const float g_gridMinimumScale = 5.0f;
 
-inline const std::string gTitle = "Dungeon Generator";
-inline const std::pair<std::string, int> gFonts[] = { std::pair<std::string, int>("res/Quicksand-Regular.ttf", 16) };
+inline const std::string g_title = "Dungeon Generator";
+inline const std::pair<std::string, int> g_fonts[] = { std::pair<std::string, int>("res/Quicksand-Regular.ttf", 16) };
