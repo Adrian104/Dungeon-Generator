@@ -8,24 +8,21 @@
 
 struct Application : public AppManager
 {
-	struct DrawInfo
-	{
-		bool roomsVisibility;
-		bool pathsVisibility;
-		bool entrancesVisibility;
-	};
-
-	enum class GenMode { NEXT_SEED, RAND_SEED, REFRESH, DEBUG };
+	enum class GenMode { NEXT_SEED, RAND_SEED, REFRESH };
 
 	bool plus;
+	bool debug;
+	float factor;
 	bool fullscreen;
-	float factor, lastFactor;
+
+	bool roomsVisibility;
+	bool pathsVisibility;
+	bool entrancesVisibility;
 
 	Generator gen;
 	GenInput gInput;
 	GenOutput gOutput;
 
-	DrawInfo dInfo;
 	Viewport vPort;
 	Overlay *overlay;
 	SDL_Texture *texture;
@@ -38,14 +35,10 @@ struct Application : public AppManager
 
 	void Run();
 	void Draw();
+	void Render();
 	bool Update();
 
-	void Render();
-	void RenderDebug();
-	void RenderCommon();
-
 	void InitWindow();
-	void ApplyFactor();
 	void LoadDefaults();
 	void Generate(GenMode mode);
 };

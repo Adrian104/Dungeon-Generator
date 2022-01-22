@@ -16,6 +16,7 @@ inline const float g_doubleRoomProb = 0.25f;
 inline const float g_heuristicFactor = 0.75f;
 inline const float g_spaceSizeRandomness = 0.35f;
 
+inline const bool g_generateFewerPaths = true;
 inline const bool g_roomsVisibility = true;
 inline const bool g_pathsVisibility = true;
 inline const bool g_entrancesVisibility = false;

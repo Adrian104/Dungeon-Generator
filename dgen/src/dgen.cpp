@@ -21,9 +21,7 @@ void Generator::Clear()
 
 void Generator::Prepare()
 {
-	gOutput -> rooms.clear();
-	gOutput -> entrances.clear();
-	gOutput -> paths.clear();
+	*gOutput = {};
 
 	if (gInput -> maxRoomSize <= 0) throw std::runtime_error("Variable 'maxRoomSize' is not a positive number");
 	minSpaceSize = int(4.0f / gInput -> maxRoomSize) + 5;
@@ -582,6 +580,7 @@ void Generator::Generate(const GenInput *genInput, GenOutput *genOutput, const R
 	gOutput = genOutput;
 	random.Init(seed);
 
+	Clear();
 	Prepare();
 	GenerateTree(*root, gInput -> maxDepth);
 	GenerateRooms();
@@ -589,5 +588,4 @@ void Generator::Generate(const GenInput *genInput, GenOutput *genOutput, const R
 	FindPaths();
 	OptimizeNodes();
 	GenerateOutput();
-	Clear();
 }
