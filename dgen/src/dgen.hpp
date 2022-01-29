@@ -17,11 +17,12 @@ struct Generator;
 
 struct Cell
 {
+	bool flag;
 	Rect space;
 	Room *room;
 
-	Cell() : space{}, room(nullptr) {}
-	Cell(int w, int h) : space{ 0, 0, w, h }, room(nullptr) {}
+	Cell() : flag(false), space(), room(nullptr) {}
+	Cell(int w, int h) : flag(false), space(0, 0, w, h), room(nullptr) {}
 };
 
 struct Node
@@ -44,8 +45,6 @@ struct Node
 
 struct Room : public Node
 {
-	static Room flag;
-
 	int edges[4];
 	std::vector<Rect> rects;
 

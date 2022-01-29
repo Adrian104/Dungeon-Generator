@@ -2,8 +2,6 @@
 #include <stdexcept>
 #include "dgen.hpp"
 
-Room Room::flag = Room();
-
 Generator::Generator() : roomCount(0), deltaDepth(0), targetDepth(0), minSpaceSize(0), statusCounter(1), gOutput(nullptr), gInput(nullptr), root(nullptr) {}
 Generator::~Generator() { Clear(); }
 
@@ -43,52 +41,53 @@ void Generator::Prepare()
 
 void Generator::LinkNodes()
 {
-	std::map<std::pair<int, int>, Node>::iterator crrXIter;
-	std::map<std::pair<int, int>, Node>::iterator nextXIter;
-
-	crrXIter = posXNodes.begin();
-	nextXIter = crrXIter;
-	nextXIter++;
-
-	const auto endXIter = posXNodes.end();
-	while (nextXIter != endXIter)
 	{
-		Node *const node = &crrXIter -> second;
-		Node **links = node -> links;
+		using iter_type = decltype(posXNodes)::iterator;
+		const iter_type end = posXNodes.end();
 
-		if (links[Dir::SOUTH] == &Room::flag)
+		iter_type prev = posXNodes.begin();
+		iter_type crr = prev;
+
+		crr++;
+		while (crr != end)
 		{
-			Node *const nextNode = &nextXIter -> second;
-			links[Dir::SOUTH] = nextNode;
-			nextNode -> links[Dir::NORTH] = node;
-		}
+			Node *const crrNode = &crr -> second;
+			if (crrNode -> path & (1 << Dir::NORTH))
+			{
+				Node *const prevNode = &prev -> second;
+				crrNode -> links[Dir::NORTH] = prevNode;
+				prevNode -> links[Dir::SOUTH] = crrNode;
+			}
 
-		crrXIter = nextXIter;
-		nextXIter++;
+			prev = crr;
+			crr++;
+		}
 	}
 
-	std::map<std::pair<int, int>, Node*>::iterator crrYIter;
-	std::map<std::pair<int, int>, Node*>::iterator nextYIter;
-
-	crrYIter = posYNodes.begin();
-	nextYIter = crrYIter;
-	nextYIter++;
-
-	const auto endYIter = posYNodes.end();
-	while (nextYIter != endYIter)
 	{
-		Node *const node = crrYIter -> second;
-		Node **links = node -> links;
+		using iter_type = decltype(posYNodes)::iterator;
+		const iter_type end = posYNodes.end();
 
-		if (links[Dir::EAST] == &Room::flag)
+		iter_type crr = posYNodes.begin();
+		iter_type next = crr;
+
+		next++;
+		while (next != end)
 		{
-			Node *const nextNode = nextYIter -> second;
-			links[Dir::EAST] = nextNode;
-			nextNode -> links[Dir::WEST] = node;
+			Node *const crrNode = crr -> second;
+			if (crrNode -> path & (1 << Dir::EAST))
+			{
+				Node *const nextNode = next -> second;
+				crrNode -> links[Dir::EAST] = nextNode;
+				nextNode -> links[Dir::WEST] = crrNode;
+			}
+
+			crrNode -> path = 0;
+			crr = next;
+			next++;
 		}
 
-		crrYIter = nextYIter;
-		nextYIter++;
+		crr -> second -> path = 0;
 	}
 
 	posYNodes.clear();
@@ -180,14 +179,8 @@ void Generator::GenerateRooms()
 
 	for (auto& btNode : *root)
 	{
-		if (btNode.m_left != nullptr || btNode.m_right != nullptr)
+		if (btNode.m_left != nullptr || btNode.m_right != nullptr || btNode.flag)
 			continue;
-
-		if (btNode.room == &Room::flag)
-		{
-			btNode.room = nullptr;
-			continue;
-		}
 
 		Rect r1Rect = btNode.space;
 
@@ -326,9 +319,7 @@ void Generator::GenerateOutput()
 void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 {
 	if (left <= gInput -> randAreaDepth)
-	{
-		if (random.GetFloat() < gInput -> randAreaProb) btNode.room = &Room::flag;
-	}
+		btNode.flag |= random.GetFloat() < gInput -> randAreaProb;
 
 	if (left == deltaDepth)
 	{
@@ -345,10 +336,10 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 		space.w -= 5; space.h -= 5;
 
 		CreateSpaceNodes(space);
-		if (btNode.room == &Room::flag)
+		if (btNode.flag)
 		{
-			if (random.GetFloat() < gInput -> randAreaDens) btNode.room = nullptr;
-			else return;
+			btNode.flag = random.GetFloat() >= gInput -> randAreaDens;
+			if (btNode.flag) return;
 		}
 
 		roomCount++;
@@ -397,17 +388,16 @@ void Generator::CreateSpaceNodes(Rect &space)
 	const int yMin = space.y - 3;
 	const int yMax = space.y + space.h + 2;
 
-	Node &NW = AddRegNode(xMin, yMin);
-	NW.links[Dir::EAST] = &Room::flag;
-	NW.links[Dir::SOUTH] = &Room::flag;
-
-	Node &NE = AddRegNode(xMax, yMin);
-	NE.links[Dir::SOUTH] = &Room::flag;
-
 	Node &SW = AddRegNode(xMin, yMax);
-	SW.links[Dir::EAST] = &Room::flag;
+	SW.path |= (1 << Dir::NORTH) | (1 << Dir::EAST);
 
-	AddRegNode(xMax, yMax);
+	Node &SE = AddRegNode(xMax, yMax);
+	SE.path |= 1 << Dir::NORTH;
+
+	Node &NW = AddRegNode(xMin, yMin);
+	NW.path |= 1 << Dir::EAST;
+
+	AddRegNode(xMax, yMin);
 }
 
 void Generator::FindPath(bt::Node<Cell> &btNode)
@@ -492,17 +482,17 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 		Node **links = crrNode -> links;
 		Node *const prevNode = crrNode -> prevNode;
 
-		if (prevNode == links[0])
+		if (prevNode == links[Dir::NORTH])
 		{
 			crrNode -> path |= 1 << Dir::NORTH;
 			prevNode -> path |= 1 << Dir::SOUTH;
 		}
-		else if (prevNode == links[1])
+		else if (prevNode == links[Dir::EAST])
 		{
 			crrNode -> path |= 1 << Dir::EAST;
 			prevNode -> path |= 1 << Dir::WEST;
 		}
-		else if (prevNode == links[2])
+		else if (prevNode == links[Dir::SOUTH])
 		{
 			crrNode -> path |= 1 << Dir::SOUTH;
 			prevNode -> path |= 1 << Dir::NORTH;
@@ -557,8 +547,8 @@ void Generator::CreateRoomNodes(Rect &space, Room &room)
 		Node *const bNode = bNodes[i];
 		room.links[i] = bNode;
 
+		bNode -> path |= 0b10 >> (i & 0b1);
 		bNode -> links[(i + 2) & 0b11] = &room;
-		bNode -> links[(i & 0b1) + 1] = &Room::flag;
 	}
 }
 
