@@ -49,7 +49,7 @@ void Heap<KeyType, ObjType, maxHeap>::Expand()
 		m_capacity <<= 1;
 
 		pair_type* prevArr = m_data + m_size;
-		pair_type* newArr = static_cast<pair_type*>(operator new(sizeof(pair_type) * m_capacity)) + m_size;
+		pair_type* newArr = static_cast<pair_type*>(operator new[](sizeof(pair_type)* m_capacity)) + m_size;
 
 		while (prevArr != m_data)
 		{
@@ -65,7 +65,7 @@ void Heap<KeyType, ObjType, maxHeap>::Expand()
 	else
 	{
 		m_capacity = 1;
-		m_data = static_cast<pair_type*>(operator new(sizeof(pair_type)));
+		m_data = static_cast<pair_type*>(operator new[](sizeof(pair_type)));
 	}
 }
 
@@ -73,7 +73,7 @@ template <typename KeyType, typename ObjType, bool maxHeap>
 Heap<KeyType, ObjType, maxHeap>::Heap(const Heap& ref) : m_size(ref.m_size), m_capacity(ref.m_capacity)
 {
 	pair_type* refArr = ref.m_data + ref.m_size;
-	m_data = static_cast<pair_type*>(operator new(sizeof(pair_type) * m_capacity)) + m_size;
+	m_data = static_cast<pair_type*>(operator new[](sizeof(pair_type)* m_capacity)) + m_size;
 
 	while (refArr != ref.m_data)
 	{
@@ -94,7 +94,7 @@ auto Heap<KeyType, ObjType, maxHeap>::operator=(const Heap& ref) -> Heap&
 	m_capacity = ref.m_capacity;
 
 	pair_type* refArr = ref.m_data + ref.m_size;
-	m_data = static_cast<pair_type*>(operator new(sizeof(pair_type) * m_capacity)) + m_size;
+	m_data = static_cast<pair_type*>(operator new[](sizeof(pair_type)* m_capacity)) + m_size;
 
 	while (refArr != ref.m_data)
 	{

@@ -5,6 +5,7 @@
 #include "dgen.hpp"
 #include "appmgr.hpp"
 #include "overlay.hpp"
+#include "global.hpp"
 
 struct Application : public AppManager
 {

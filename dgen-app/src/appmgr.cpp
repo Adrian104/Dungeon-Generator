@@ -30,17 +30,22 @@ void Text::Clear()
 
 AppManager::AppManager()
 {
-	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Init(SDL_INIT_EVERYTHING);
 	TTF_Init();
 }
 
 AppManager::~AppManager()
 {
-	DestroyWindow();
-	UnloadAllFonts();
+	ResetAppManager();
 
 	TTF_Quit();
 	SDL_Quit();
+}
+
+void AppManager::ResetAppManager()
+{
+	DestroyWindow();
+	UnloadAllFonts();
 }
 
 void AppManager::UnloadAllFonts()

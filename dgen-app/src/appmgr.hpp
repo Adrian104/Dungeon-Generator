@@ -53,6 +53,8 @@ class AppManager
 	SDL_Window* GetWindow() const { return m_window; }
 	SDL_Renderer* GetRenderer() const { return m_renderer; }
 
+	void ResetAppManager();
+
 	void UnloadAllFonts();
 	void UnloadFont(int id);
 	void LoadFont(int id, int size, const std::string& path);

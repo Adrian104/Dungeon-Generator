@@ -3,7 +3,6 @@
 #include <random>
 #include <stdexcept>
 #include "app.hpp"
-#include "global.hpp"
 
 inline SDL_FPoint ToFPoint(const Point &point) { return { float(point.x), float(point.y) }; }
 inline SDL_FRect ToFRect(const Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
@@ -13,7 +12,7 @@ Application::Application() : plus(false), debug(false), fullscreen(false), facto
 	for (int i = 0; i < sizeof(g_fonts) / sizeof(*g_fonts); i++)
 	{
 		const auto& font = g_fonts[i];
-		LoadFont(i, font.second, font.first);
+		LoadFont(i, font.first, font.second);
 	}
 
 	overlay = new Overlay(*this);
@@ -75,7 +74,7 @@ void Application::Render()
 	SDL_RenderClear(renderer);
 
 	const float scale = vPort.GetScale();
-	if (scale >= g_gridMinimumScale)
+	if (scale >= g_gridThresholdScale)
 	{
 		SDL_SetRenderDrawColor(renderer, 0x16, 0x16, 0x16, 0xFF);
 

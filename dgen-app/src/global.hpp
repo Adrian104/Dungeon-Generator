@@ -29,7 +29,7 @@ inline const int g_ovOutlineWidth = 3;
 inline const int g_ovInternalOffset = 21;
 inline const int g_ovExternalOffset = 36;
 
-inline const float g_gridMinimumScale = 5.0f;
+inline const float g_gridThresholdScale = 5.0f;
 
 inline const std::string g_title = "Dungeon Generator";
-inline const std::pair<std::string, int> g_fonts[] = { std::pair<std::string, int>("res/Quicksand-Regular.ttf", 16) };
+inline const std::pair<int, std::string> g_fonts[] = { std::pair<int, std::string>(16, "res/Quicksand-Regular.ttf") };
