@@ -3,6 +3,7 @@
 #include <random>
 #include <stdexcept>
 #include "app.hpp"
+#include "global.hpp"
 
 inline SDL_FPoint ToFPoint(const Point &point) { return { float(point.x), float(point.y) }; }
 inline SDL_FRect ToFRect(const Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
@@ -31,9 +32,9 @@ Application::Application() : plus(false), debug(false), fullscreen(false), facto
 	overlay -> AddMod(PercentMod("Random area density", gInput.randAreaDens));
 	overlay -> AddMod(PercentMod("Random area probability", gInput.randAreaProb));
 
-	overlay -> AddMod(BoolMod("Rooms visibility", roomsVisibility));
-	overlay -> AddMod(BoolMod("Paths visibility", pathsVisibility));
-	overlay -> AddMod(BoolMod("Entrances visibility", entrancesVisibility));
+	overlay -> AddMod(BoolMod("Rooms visibility", visRooms));
+	overlay -> AddMod(BoolMod("Paths visibility", visPaths));
+	overlay -> AddMod(BoolMod("Entrances visibility", visEntrances));
 }
 
 Application::~Application()
@@ -168,7 +169,7 @@ void Application::Render()
 	}
 	else
 	{
-		if (roomsVisibility)
+		if (visRooms)
 		{
 			SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
 			for (Rect &room : gOutput.rooms)
@@ -179,13 +180,13 @@ void Application::Render()
 			}
 		}
 
-		if (pathsVisibility)
+		if (visPaths)
 		{
 			SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 			for (std::pair<Point, Vec> &path : gOutput.paths)
 			{
 				SDL_FPoint p1 = ToFPoint(path.first);
-				SDL_FPoint p2 = ToFPoint(path.first + path.second);
+				SDL_FPoint p2 = ToFPoint(Vec(path.first.x + path.second.x, path.first.y + path.second.y));
 
 				p1.x += 0.5f; p1.y += 0.5f;
 				p2.x += 0.5f; p2.y += 0.5f;
@@ -197,7 +198,7 @@ void Application::Render()
 			}
 		}
 
-		if (entrancesVisibility)
+		if (visEntrances)
 		{
 			SDL_SetRenderDrawColor(renderer, 0xFF, 0x60, 0, 0xFF);
 			for (Point &entrance : gOutput.entrances)
@@ -356,9 +357,9 @@ void Application::LoadDefaults()
 	gInput.spaceSizeRandomness = g_spaceSizeRandomness;
 	gInput.additionalConnections = g_additionalConnections;
 
-	roomsVisibility = g_roomsVisibility;
-	pathsVisibility = g_pathsVisibility;
-	entrancesVisibility = g_entrancesVisibility;
+	visRooms = g_visRooms;
+	visPaths = g_visPaths;
+	visEntrances = g_visEntrances;
 }
 
 void Application::Generate(GenMode mode)

@@ -2,6 +2,8 @@
 #include <stdexcept>
 #include "dgen.hpp"
 
+enum Dir { NORTH, EAST, SOUTH, WEST };
+
 Generator::Generator() : roomCount(0), deltaDepth(0), targetDepth(0), minSpaceSize(0), statusCounter(1), gOutput(nullptr), gInput(nullptr), root(nullptr) {}
 Generator::~Generator() { Clear(); }
 
@@ -296,7 +298,7 @@ void Generator::GenerateOutput()
 			const Point ePos = bool(c & 1) ? Point(room.edges[c], bPos.y) : Point(bPos.x, room.edges[c]);
 
 			gOutput -> entrances.push_back(ePos);
-			gOutput -> paths.push_back(std::make_pair(ePos, bPos - ePos));
+			gOutput -> paths.push_back(std::make_pair(ePos, Vec(bPos.x - ePos.x, bPos.y - ePos.y)));
 		}
 	}
 
@@ -305,13 +307,13 @@ void Generator::GenerateOutput()
 		if ((node.path & (1 << Dir::NORTH)) != 0)
 		{
 			Node *const nNode = node.links[Dir::NORTH];
-			if (nNode -> ToRoom() == nullptr) gOutput -> paths.push_back(std::make_pair(node.pos, nNode -> pos - node.pos));
+			if (nNode -> ToRoom() == nullptr) gOutput -> paths.push_back(std::make_pair(node.pos, Vec(nNode -> pos.x - node.pos.x, nNode -> pos.y - node.pos.y)));
 		}
 
 		if ((node.path & (1 << Dir::EAST)) != 0)
 		{
 			Node *const nNode = node.links[Dir::EAST];
-			if (nNode -> ToRoom() == nullptr) gOutput -> paths.push_back(std::make_pair(node.pos, nNode -> pos - node.pos));
+			if (nNode -> ToRoom() == nullptr) gOutput -> paths.push_back(std::make_pair(node.pos, Vec(nNode -> pos.x - node.pos.x, nNode -> pos.y - node.pos.y)));
 		}
 	}
 }
@@ -447,7 +449,7 @@ void Generator::FindPath(bt::Node<Cell> &btNode)
 
 			if (nNode -> status < statusCounter)
 			{
-				const Vec diff = stop -> pos - nNode -> pos;
+				const Vec diff(stop -> pos.x - nNode -> pos.x, stop -> pos.y - nNode -> pos.y);
 
 				nNode -> hCost = int(std::sqrt(float(diff.x * diff.x + diff.y * diff.y)) * gInput -> heuristicFactor);
 				nNode -> status = statusCounter;

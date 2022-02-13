@@ -7,7 +7,6 @@
 #include <SDL2/SDL_ttf.h>
 #include "appmgr.hpp"
 #include "anim.hpp"
-#include "global.hpp"
 
 struct Modifier
 {

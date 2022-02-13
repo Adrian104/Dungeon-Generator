@@ -3,17 +3,31 @@
 #include <vector>
 #include <random>
 #include <limits>
-#include "utils.hpp"
 #include "btree.hpp"
 #include "heap.hpp"
 #include "rand.hpp"
 
-struct Cell;
-struct Node;
+struct Point
+{
+	int x, y;
+
+	Point() = default;
+	Point(int pX, int pY) : x(pX), y(pY) {}
+};
+
+struct Rect
+{
+	int x, y, w, h;
+
+	Rect() = default;
+	Rect(int pX, int pY, int pW, int pH) : x(pX), y(pY), w(pW), h(pH) {}
+};
+
+using Vec = Point;
+using uint = unsigned int;
+using byte = unsigned char;
+
 struct Room;
-struct GenInput;
-struct GenOutput;
-struct Generator;
 
 struct Cell
 {

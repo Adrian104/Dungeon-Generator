@@ -1,5 +1,6 @@
 #include <chrono>
 #include "overlay.hpp"
+#include "global.hpp"
 
 int Overlay::XCenter(Text& text) const { return (g_ovWidth - text.GetWidth()) >> 1; }
 Overlay::Overlay(AppManager& appManager) : Animator(std::chrono::milliseconds(g_ovAnimTime)), selected(0), refresh(true), mgr(appManager), texture(nullptr) {}

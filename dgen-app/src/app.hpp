@@ -5,7 +5,6 @@
 #include "dgen.hpp"
 #include "appmgr.hpp"
 #include "overlay.hpp"
-#include "global.hpp"
 
 struct Application : public AppManager
 {
@@ -16,9 +15,9 @@ struct Application : public AppManager
 	float factor;
 	bool fullscreen;
 
-	bool roomsVisibility;
-	bool pathsVisibility;
-	bool entrancesVisibility;
+	bool visRooms;
+	bool visPaths;
+	bool visEntrances;
 
 	Generator gen;
 	GenInput gInput;

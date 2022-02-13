@@ -159,7 +159,6 @@
     <ClInclude Include="src\dgen.hpp" />
     <ClInclude Include="src\heap.hpp" />
     <ClInclude Include="src\rand.hpp" />
-    <ClInclude Include="src\utils.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dgen.cpp" />
