@@ -170,16 +170,18 @@
     <ClCompile Include="src\app.cpp" />
     <ClCompile Include="src\appmgr.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\overlay.cpp" />
     <ClCompile Include="src\vport.cpp" />
+    <ClCompile Include="src\widgets\menu.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\anim.hpp" />
     <ClInclude Include="src\app.hpp" />
     <ClInclude Include="src\appmgr.hpp" />
     <ClInclude Include="src\global.hpp" />
-    <ClInclude Include="src\overlay.hpp" />
     <ClInclude Include="src\vport.hpp" />
+    <ClInclude Include="src\widgets\menu.hpp" />
+    <ClInclude Include="src\widgets\mod.hpp" />
+    <ClInclude Include="src\widgets\widget.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\dgen\dgen.vcxproj">

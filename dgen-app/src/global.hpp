@@ -21,13 +21,13 @@ inline const bool g_visPaths = true;
 inline const bool g_visEntrances = false;
 inline const bool g_generateFewerPaths = true;
 
-inline const int g_ovMargin = 5;
-inline const int g_ovWidth = 300;
-inline const int g_ovAnimTime = 350;
-inline const int g_ovTitleMargin = 45;
-inline const int g_ovOutlineWidth = 3;
-inline const int g_ovInternalOffset = 21;
-inline const int g_ovExternalOffset = 36;
+inline const int g_menuMargin = 5;
+inline const int g_menuWidth = 300;
+inline const int g_menuAnimTime = 350;
+inline const int g_menuTitleMargin = 45;
+inline const int g_menuOutlineWidth = 3;
+inline const int g_menuInternalOffset = 21;
+inline const int g_menuExternalOffset = 36;
 
 inline const float g_gridThresholdScale = 5.0f;
 

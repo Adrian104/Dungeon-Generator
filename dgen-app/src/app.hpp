@@ -1,44 +1,90 @@
 #pragma once
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
-#include "vport.hpp"
 #include "dgen.hpp"
+#include "anim.hpp"
+#include "vport.hpp"
 #include "appmgr.hpp"
-#include "overlay.hpp"
+#include "widgets/widget.hpp"
 
-struct Application : public AppManager
+class Application : protected AppManager
 {
-	enum class GenMode { NEXT_SEED, RAND_SEED, REFRESH };
+	enum class SeedMode { KEEP, INCREMENT, RANDOMIZE };
+	enum class Task { NOTHING, DRAW, RENDER, GENERATE };
 
-	bool plus;
-	bool debug;
-	float factor;
-	bool fullscreen;
+	bool m_visRooms;
+	bool m_visPaths;
+	bool m_visEntrances;
 
-	bool visRooms;
-	bool visPaths;
-	bool visEntrances;
+	float m_factor;
+	bool m_debugView = false;
+	bool m_fullscreen = false;
 
-	Generator gen;
-	GenInput gInput;
-	GenOutput gOutput;
+	GenInput m_input;
+	GenOutput m_output;
+	Generator m_generator;
 
-	Viewport vPort;
-	Overlay *overlay;
-	SDL_Texture *texture;
+	Viewport m_viewport;
+	Widget* m_widgetList = nullptr;
+	SDL_Texture* m_renderOutput = nullptr;
 
-	std::random_device rd;
-	Random::seed_type seed;
+	Task m_task = Task::GENERATE;
+	SeedMode m_seedMode = SeedMode::KEEP;
 
-	Application();
-	~Application();
+	Random::seed_type m_seed = 0;
+	std::random_device m_randomDevice;
 
-	void Run();
 	void Draw();
 	void Render();
 	bool Update();
-
-	void InitWindow();
+	void Generate();
 	void LoadDefaults();
-	void Generate(GenMode mode);
+	void SetupWidgets();
+
+	void Init(bool full);
+	void Quit(bool full);
+
+	template <typename Type>
+	Type* GetWidget();
+
+	template <typename Type>
+	Type& AccessWidget();
+
+	void Schedule(Task task) { if (task > m_task) m_task = task; }
+
+	public:
+	void Run();
+
+	Application() { LoadDefaults(); }
+	~Application() { Quit(true); }
+
+	friend class Menu;
 };
+
+template <typename Type>
+Type* Application::GetWidget()
+{
+	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
+	{
+		Type* const ptr = dynamic_cast<Type*>(crr);
+		if (ptr != nullptr) return ptr;
+	}
+
+	return nullptr;
+}
+
+template <typename Type>
+Type& Application::AccessWidget()
+{
+	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
+	{
+		Type* const ptr = dynamic_cast<Type*>(crr);
+		if (ptr != nullptr) return *ptr;
+	}
+
+	Type* const ptr = new Type(*this);
+
+	ptr -> m_animator = dynamic_cast<Animator*>(ptr);
+	ptr -> m_next = m_widgetList;
+
+	m_widgetList = ptr;
+	return *ptr;
+}

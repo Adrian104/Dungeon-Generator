@@ -1,94 +1,57 @@
 #include <iostream>
 #include <cmath>
-#include <random>
 #include <stdexcept>
 #include "app.hpp"
 #include "global.hpp"
+#include "widgets/menu.hpp"
 
-inline SDL_FPoint ToFPoint(const Point &point) { return { float(point.x), float(point.y) }; }
-inline SDL_FRect ToFRect(const Rect &rect) { return { float(rect.x), float(rect.y), float(rect.w), float(rect.h) }; }
-
-Application::Application() : plus(false), debug(false), fullscreen(false), factor(1), texture(nullptr), seed(0)
-{
-	for (int i = 0; i < sizeof(g_fonts) / sizeof(*g_fonts); i++)
-	{
-		const auto& font = g_fonts[i];
-		LoadFont(i, font.first, font.second);
-	}
-
-	overlay = new Overlay(*this);
-
-	overlay -> AddMod(FactorMod("Size factor", factor));
-	overlay -> AddMod(IntMod("Minimum depth", gInput.minDepth));
-	overlay -> AddMod(IntMod("Maximum depth", gInput.maxDepth));
-	overlay -> AddMod(PercentMod("Heuristic", gInput.heuristicFactor));
-	overlay -> AddMod(PercentMod("Minimum room size", gInput.minRoomSize));
-	overlay -> AddMod(PercentMod("Maximum room size", gInput.maxRoomSize));
-	overlay -> AddMod(PercentMod("Space randomness", gInput.spaceSizeRandomness));
-	overlay -> AddMod(PercentMod("Double room probability", gInput.doubleRoomProb));
-	overlay -> AddMod(IntMod("Additional connections", gInput.additionalConnections));
-
-	overlay -> AddMod(IntMod("Random area depth", gInput.randAreaDepth));
-	overlay -> AddMod(PercentMod("Random area density", gInput.randAreaDens));
-	overlay -> AddMod(PercentMod("Random area probability", gInput.randAreaProb));
-
-	overlay -> AddMod(BoolMod("Rooms visibility", visRooms));
-	overlay -> AddMod(BoolMod("Paths visibility", visPaths));
-	overlay -> AddMod(BoolMod("Entrances visibility", visEntrances));
-}
-
-Application::~Application()
-{
-	delete overlay;
-	if (texture != nullptr) SDL_DestroyTexture(texture);
-}
-
-void Application::Run()
-{
-	InitWindow();
-	LoadDefaults();
-
-	Generate(GenMode::REFRESH);
-	overlay -> Render();
-
-	Render();
-	Draw();
-
-	while (Update()) {}
-}
+SDL_FPoint ToFPoint(const Point& point) { return { static_cast<float>(point.x), static_cast<float>(point.y) }; }
+SDL_FRect ToFRect(const Rect& rect) { return { static_cast<float>(rect.x), static_cast<float>(rect.y), static_cast<float>(rect.w), static_cast<float>(rect.h) }; }
 
 void Application::Draw()
 {
-	SDL_SetRenderTarget(GetRenderer(), nullptr);
-	SDL_RenderCopy(GetRenderer(), texture, nullptr, nullptr);
+	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
+	{
+		if (crr -> m_render)
+		{
+			crr -> Render();
+			crr -> m_render = false;
+		}
+	}
 
-	overlay -> Draw();
-	SDL_RenderPresent(GetRenderer());
+	SDL_Renderer* const renderer = GetRenderer();
+
+	SDL_SetRenderTarget(renderer, nullptr);
+	SDL_RenderCopy(renderer, m_renderOutput, nullptr, nullptr);
+
+	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
+		crr -> Draw();
+
+	SDL_RenderPresent(renderer);
 }
 
 void Application::Render()
 {
-	SDL_Renderer *const renderer = GetRenderer();
+	SDL_Renderer* const renderer = GetRenderer();
 
-	SDL_SetRenderTarget(renderer, texture);
+	SDL_SetRenderTarget(renderer, m_renderOutput);
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
 	SDL_RenderClear(renderer);
 
-	const float scale = vPort.GetScale();
+	const float scale = m_viewport.GetScale();
 	if (scale >= g_gridThresholdScale)
 	{
-		SDL_SetRenderDrawColor(renderer, 0x16, 0x16, 0x16, 0xFF);
-
 		auto Limit = [scale](float& var, float min, float max) -> void
 		{
 			if (var < min) var += std::floor((min - var) / scale) * scale;
 			else if (var > max) var -= std::floor((var - max) / scale) * scale;
 		};
 
-		SDL_FPoint p1, p2;
+		SDL_FPoint p1 = {};
+		m_viewport.ToScreen(0.0f, 0.0f, p1.x, p1.y);
 
-		vPort.ToScreen(0.0f, 0.0f, p1.x, p1.y);
-		vPort.ToScreen(static_cast<float>(gInput.width), static_cast<float>(gInput.height), p2.x, p2.y);
+		SDL_FPoint p2 = {};
+		m_viewport.ToScreen(static_cast<float>(m_input.width), static_cast<float>(m_input.height), p2.x, p2.y);
 
 		const float xMax = static_cast<float>(GetWidth());
 		const float yMax = static_cast<float>(GetHeight());
@@ -98,6 +61,8 @@ void Application::Render()
 		Limit(p2.x, 0, xMax);
 		Limit(p2.y, 0, yMax);
 
+		SDL_SetRenderDrawColor(renderer, 0x16, 0x16, 0x16, 0xFF);
+
 		for (float x = p1.x; x <= p2.x; x += scale)
 			SDL_RenderDrawLineF(renderer, x, p1.y, x, p2.y);
 
@@ -105,53 +70,52 @@ void Application::Render()
 			SDL_RenderDrawLineF(renderer, p1.x, y, p2.x, y);
 	}
 
-	if (debug)
+	if (m_debugView)
 	{
-		const int offset = rand() & 0b10;
-		auto DrawLinks = [this, offset](Node &node) -> void
+		auto DrawLinks = [this, renderer](Node& node) -> void
 		{
-			SDL_FPoint p1 = { float(node.pos.x + 0.5f), float(node.pos.y + 0.5f) };
-			vPort.ToScreen(p1.x, p1.y, p1.x, p1.y);
+			SDL_FPoint p1 = { static_cast<float>(node.pos.x + 0.5f), static_cast<float>(node.pos.y + 0.5f) };
+			m_viewport.ToScreen(p1.x, p1.y, p1.x, p1.y);
 
-			for (int i = offset; i < offset + 2; i++)
+			const int end = (m_seed & 0b10) + 2;
+			for (int i = m_seed & 0b10; i < end; i++)
 			{
-				Node *const node2 = node.links[i];
+				Node* const node2 = node.links[i];
 				if (node2 == nullptr) continue;
 
-				SDL_FPoint p2 = { float(node2 -> pos.x + 0.5f), float(node2 -> pos.y + 0.5f) };
-
-				vPort.ToScreen(p2.x, p2.y, p2.x, p2.y);
-				SDL_RenderDrawLineF(GetRenderer(), p1.x, p1.y, p2.x, p2.y);
+				SDL_FPoint p2 = { static_cast<float>(node2 -> pos.x + 0.5f), static_cast<float>(node2 -> pos.y + 0.5f) };
+				m_viewport.ToScreen(p2.x, p2.y, p2.x, p2.y);
+				SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
 			}
 		};
 
-		auto DrawNode = [this](Node &node) -> void
+		auto DrawNode = [this, renderer](Node& node) -> void
 		{
-			SDL_FRect rect = { float(node.pos.x), float(node.pos.y), 1, 1 };
-
-			vPort.RectToScreen(rect, rect);
-			SDL_RenderFillRectF(GetRenderer(), &rect);
+			SDL_FRect rect = { static_cast<float>(node.pos.x), static_cast<float>(node.pos.y), 1, 1 };
+			m_viewport.RectToScreen(rect, rect);
+			SDL_RenderFillRectF(renderer, &rect);
 		};
 
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
 		bt::Node<Cell>::SetDefaultPreorder();
 
-		for (auto& btNode : *gen.root)
+		for (auto& btNode : *m_generator.root)
 		{
-			if (btNode.m_left != nullptr || btNode.m_right != nullptr) continue;
-			SDL_FRect rect = ToFRect(btNode.space);
+			if (btNode.m_left != nullptr || btNode.m_right != nullptr)
+				continue;
 
-			vPort.RectToScreen(rect, rect);
+			SDL_FRect rect = ToFRect(btNode.space);
+			m_viewport.RectToScreen(rect, rect);
 			SDL_RenderDrawRectF(renderer, &rect);
 		}
 
-		for (Room &room : gen.rooms)
+		for (Room& room : m_generator.rooms)
 		{
 			SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
-			for (Rect &rect : room.rects)
+			for (Rect& rect : room.rects)
 			{
 				SDL_FRect sdlRect = ToFRect(rect);
-				vPort.RectToScreen(sdlRect, sdlRect);
+				m_viewport.RectToScreen(sdlRect, sdlRect);
 				SDL_RenderDrawRectF(renderer, &sdlRect);
 			}
 
@@ -160,53 +124,47 @@ void Application::Render()
 		}
 
 		SDL_SetRenderDrawColor(renderer, 0x50, 0x50, 0x50, 0xFF);
-		for (auto &[pair, node] : gen.posXNodes) DrawLinks(node);
+		for (auto& [pair, node] : m_generator.posXNodes) DrawLinks(node);
 
 		SDL_SetRenderDrawColor(renderer, 0, 0xC0, 0, 0xFF);
-		for (Room &room : gen.rooms) DrawNode(room);
-
-		for (auto &[pair, node] : gen.posXNodes) DrawNode(node);
+		for (Room& room : m_generator.rooms) DrawNode(room);
+		for (auto& [pair, node] : m_generator.posXNodes) DrawNode(node);
 	}
 	else
 	{
-		if (visRooms)
+		if (m_visRooms)
 		{
 			SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
-			for (Rect &room : gOutput.rooms)
+			for (Rect& room : m_output.rooms)
 			{
 				SDL_FRect rect = ToFRect(room);
-				vPort.RectToScreen(rect, rect);
+				m_viewport.RectToScreen(rect, rect);
 				SDL_RenderDrawRectF(renderer, &rect);
 			}
 		}
 
-		if (visPaths)
+		if (m_visPaths)
 		{
 			SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-			for (std::pair<Point, Vec> &path : gOutput.paths)
+			for (std::pair<Point, Vec>& path : m_output.paths)
 			{
-				SDL_FPoint p1 = ToFPoint(path.first);
-				SDL_FPoint p2 = ToFPoint(Vec(path.first.x + path.second.x, path.first.y + path.second.y));
+				SDL_FPoint p1 = { path.first.x + 0.5f, path.first.y + 0.5f };
+				SDL_FPoint p2 = { path.second.x + p1.x, path.second.y + p1.y };
 
-				p1.x += 0.5f; p1.y += 0.5f;
-				p2.x += 0.5f; p2.y += 0.5f;
-
-				vPort.ToScreen(p1.x, p1.y, p1.x, p1.y);
-				vPort.ToScreen(p2.x, p2.y, p2.x, p2.y);
+				m_viewport.ToScreen(p1.x, p1.y, p1.x, p1.y);
+				m_viewport.ToScreen(p2.x, p2.y, p2.x, p2.y);
 
 				SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
 			}
 		}
 
-		if (visEntrances)
+		if (m_visEntrances)
 		{
 			SDL_SetRenderDrawColor(renderer, 0xFF, 0x60, 0, 0xFF);
-			for (Point &entrance : gOutput.entrances)
+			for (Point& entrance : m_output.entrances)
 			{
-				SDL_FPoint point = ToFPoint(entrance);
-				SDL_FRect rect = { point.x, point.y, 1, 1 };
-
-				vPort.RectToScreen(rect, rect);
+				SDL_FRect rect = { static_cast<float>(entrance.x), static_cast<float>(entrance.y), 1, 1 };
+				m_viewport.RectToScreen(rect, rect);
 				SDL_RenderFillRectF(renderer, &rect);
 			}
 		}
@@ -215,181 +173,212 @@ void Application::Render()
 
 bool Application::Update()
 {
+	bool redraw = false;
 	SDL_Event sdlEvent = {};
 
-	bool render = false;
-	static bool poll = false;
-
-	if (poll) SDL_PollEvent(&sdlEvent);
-	else SDL_WaitEvent(&sdlEvent);
-
-	if (sdlEvent.type == SDL_QUIT) return false;
-	if (sdlEvent.type == SDL_KEYDOWN)
+	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
 	{
-		switch (sdlEvent.key.keysym.sym)
-		{
-		case SDLK_ESCAPE:
+		Animator* const animator = crr -> m_animator;
+		if (animator == nullptr) continue;
+
+		redraw |= animator -> IsPlaying();
+		animator -> Update();
+	}
+
+	bool pending = redraw ? SDL_PollEvent(&sdlEvent) : SDL_WaitEvent(&sdlEvent);
+
+	while (pending)
+	{
+		if (sdlEvent.type == SDL_QUIT)
 			return false;
 
-		case SDLK_F11:
-			render = true;
-			overlay -> refresh = true;
-			fullscreen = !fullscreen;
-
-			InitWindow();
-			Generate(GenMode::REFRESH);
-			break;
-
-		case SDLK_TAB:
-			render = true;
-			vPort.Reset();
-			break;
-
-		case SDLK_g:
-			render = true;
-			Generate(GenMode::RAND_SEED);
-			break;
-
-		case SDLK_n:
-			render = true;
-			Generate(GenMode::NEXT_SEED);
-			break;
-
-		case SDLK_r:
-			render = true;
-			overlay -> refresh = true;
-
-			LoadDefaults();
-			Generate(GenMode::REFRESH);
-			break;
-
-		case SDLK_d:
-			render = true;
-			debug = !debug;
-			break;
-
-		case SDLK_m:
-			overlay -> Play(Animator::DirMode::AUTO);
-			break;
-
-		case SDLK_UP:
-			overlay -> MoveSelected(true);
-			break;
-
-		case SDLK_DOWN:
-			overlay -> MoveSelected(false);
-			break;
-
-		case SDLK_RIGHT:
-		case SDLK_RETURN:
-		case SDLK_EQUALS:
-			if (overlay -> ChangeSelected(false))
+		if (sdlEvent.type == SDL_KEYDOWN)
+		{
+			switch (sdlEvent.key.keysym.sym)
 			{
-				plus = true;
-				render = true;
-				Generate(GenMode::REFRESH);
-			}
-			break;
+			case SDLK_g:
+				Schedule(Task::GENERATE);
+				m_seedMode = SeedMode::RANDOMIZE;
+				break;
 
-		case SDLK_LEFT:
-		case SDLK_MINUS:
-			if (overlay -> ChangeSelected(true))
-			{
-				plus = false;
-				render = true;
-				Generate(GenMode::REFRESH);
-			}
-			break;
+			case SDLK_n:
+				Schedule(Task::GENERATE);
+				m_seedMode = SeedMode::INCREMENT;
+				break;
 
-		default:
-			render |= vPort.Update(sdlEvent);
+			case SDLK_d:
+				Schedule(Task::RENDER);
+				m_debugView = !m_debugView;
+				break;
+
+			case SDLK_TAB:
+				Schedule(Task::RENDER);
+				m_viewport.Reset();
+				break;
+
+			case SDLK_r:
+				Schedule(Task::GENERATE);
+				m_seedMode = SeedMode::KEEP;
+				LoadDefaults();
+				break;
+
+			case SDLK_F11:
+				Schedule(Task::GENERATE);
+				m_seedMode = SeedMode::KEEP;
+				m_fullscreen = !m_fullscreen;
+				Init(false);
+				break;
+
+			case SDLK_ESCAPE:
+				return false;
+			}
+		}
+
+		if (m_viewport.Update(sdlEvent))
+			Schedule(Task::RENDER);
+
+		for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
+			crr -> HandleEvent(sdlEvent);
+
+		pending = SDL_PollEvent(&sdlEvent);
+	}
+
+	if (m_task == Task::NOTHING)
+	{
+		if (redraw)
+			goto draw;
+
+		for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
+		{
+			if (crr -> m_render)
+				goto draw;
 		}
 	}
-	else render |= vPort.Update(sdlEvent);
 
-	poll = overlay -> Update();
-	if (render)
+	switch (m_task)
 	{
+	case Task::GENERATE:
+		Generate();
+		[[fallthrough]];
+
+	case Task::RENDER:
 		Render();
-		goto draw;
-	}
+		[[fallthrough]];
 
-	if (poll)
-	{
-		draw:
+	case Task::DRAW: draw:
 		Draw();
+		m_task = Task::NOTHING;
 	}
 
 	return true;
 }
 
-void Application::InitWindow()
+void Application::Generate()
 {
-	overlay -> DestroyResources();
-	if (texture != nullptr) SDL_DestroyTexture(texture);
+	m_viewport.SetDefaultScale(m_factor);
 
-	SDL_DisplayMode dm;
-	SDL_GetCurrentDisplayMode(0, &dm);
+	m_input.width = static_cast<int>(GetWidth() / m_factor);
+	m_input.height = static_cast<int>(GetHeight() / m_factor);
 
-	if (fullscreen) CreateWindow(g_title, dm.w, dm.h, SDL_WINDOW_HIDDEN | SDL_WINDOW_FULLSCREEN);
-	else CreateWindow(g_title, dm.w - 30, dm.h - 100, SDL_WINDOW_HIDDEN);
+	try
+	{
+		if (m_seedMode == SeedMode::INCREMENT) m_seed++;
+		else if (m_seedMode == SeedMode::RANDOMIZE) m_seed = m_randomDevice();
 
-	texture = SDL_CreateTexture(GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GetWidth(), GetHeight());
-	overlay -> InitResources();
-
-	SDL_ShowWindow(GetWindow());
+		m_generator.Generate(&m_input, &m_output, m_seed);
+	}
+	catch (const std::exception& error) { std::cerr << error.what() << '\n'; }
 }
 
 void Application::LoadDefaults()
 {
-	factor = g_factor;
+	m_factor = g_factor;
+	m_visRooms = g_visRooms;
+	m_visPaths = g_visPaths;
+	m_visEntrances = g_visEntrances;
 
-	gInput.minDepth = g_minDepth;
-	gInput.maxDepth = g_maxDepth;
-	gInput.maxRoomSize = g_maxRoomSize;
-	gInput.minRoomSize = g_minRoomSize;
-	gInput.randAreaDens = g_randAreaDens;
-	gInput.randAreaProb = g_randAreaProb;
-	gInput.randAreaDepth = g_randAreaDepth;
-	gInput.doubleRoomProb = g_doubleRoomProb;
-	gInput.heuristicFactor = g_heuristicFactor;
-	gInput.generateFewerPaths = g_generateFewerPaths;
-	gInput.spaceSizeRandomness = g_spaceSizeRandomness;
-	gInput.additionalConnections = g_additionalConnections;
+	m_input.minDepth = g_minDepth;
+	m_input.maxDepth = g_maxDepth;
+	m_input.maxRoomSize = g_maxRoomSize;
+	m_input.minRoomSize = g_minRoomSize;
+	m_input.randAreaDens = g_randAreaDens;
+	m_input.randAreaProb = g_randAreaProb;
+	m_input.randAreaDepth = g_randAreaDepth;
+	m_input.doubleRoomProb = g_doubleRoomProb;
+	m_input.heuristicFactor = g_heuristicFactor;
+	m_input.generateFewerPaths = g_generateFewerPaths;
+	m_input.spaceSizeRandomness = g_spaceSizeRandomness;
+	m_input.additionalConnections = g_additionalConnections;
 
-	visRooms = g_visRooms;
-	visPaths = g_visPaths;
-	visEntrances = g_visEntrances;
+	if (Menu* menu = GetWidget<Menu>(); menu != nullptr)
+		menu -> ScheduleRendering();
 }
 
-void Application::Generate(GenMode mode)
+void Application::SetupWidgets()
 {
-	vPort.SetDefaultScale(factor);
+	Menu& menu = AccessWidget<Menu>();
 
-	gInput.width = int(GetWidth() / factor);
-	gInput.height = int(GetHeight() / factor);
+	menu.Add(FactorMod("Size factor", m_factor));
+	menu.Add(IntMod("Minimum depth", m_input.minDepth));
+	menu.Add(IntMod("Maximum depth", m_input.maxDepth));
+	menu.Add(PercentMod("Heuristic", m_input.heuristicFactor));
+	menu.Add(PercentMod("Minimum room size", m_input.minRoomSize));
+	menu.Add(PercentMod("Maximum room size", m_input.maxRoomSize));
+	menu.Add(PercentMod("Space randomness", m_input.spaceSizeRandomness));
+	menu.Add(PercentMod("Double room probability", m_input.doubleRoomProb));
+	menu.Add(IntMod("Additional connections", m_input.additionalConnections));
+	menu.Add(IntMod("Random area depth", m_input.randAreaDepth));
+	menu.Add(PercentMod("Random area density", m_input.randAreaDens));
+	menu.Add(PercentMod("Random area probability", m_input.randAreaProb));
+	menu.Add(BoolMod("Rooms visibility", m_visRooms));
+	menu.Add(BoolMod("Paths visibility", m_visPaths));
+	menu.Add(BoolMod("Entrances visibility", m_visEntrances));
+}
 
-	if (gInput.randAreaDepth > gInput.maxDepth)
-		gInput.randAreaDepth = gInput.maxDepth;
+void Application::Init(bool full)
+{
+	Quit(full);
 
-	if (gInput.maxDepth < gInput.minDepth)
+	if (full)
 	{
-		if (plus) gInput.maxDepth = gInput.minDepth;
-		else gInput.minDepth = gInput.maxDepth;
+		for (int i = 0; i < sizeof(g_fonts) / sizeof(*g_fonts); i++)
+		{
+			const auto& font = g_fonts[i];
+			LoadFont(i, font.first, font.second);
+		}
 	}
 
-	if (gInput.maxRoomSize < gInput.minRoomSize)
+	SDL_DisplayMode dm;
+	SDL_GetCurrentDisplayMode(0, &dm);
+
+	if (m_fullscreen) CreateWindow(g_title, dm.w, dm.h, SDL_WINDOW_HIDDEN | SDL_WINDOW_FULLSCREEN);
+	else CreateWindow(g_title, dm.w - 30, dm.h - 100, SDL_WINDOW_HIDDEN);
+
+	m_renderOutput = SDL_CreateTexture(GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GetWidth(), GetHeight());
+
+	SetupWidgets();
+	SDL_ShowWindow(GetWindow());
+}
+
+void Application::Quit(bool full)
+{
+	if (m_widgetList != nullptr)
 	{
-		if (plus) gInput.maxRoomSize = gInput.minRoomSize;
-		else gInput.minRoomSize = gInput.maxRoomSize;
+		delete m_widgetList;
+		m_widgetList = nullptr;
 	}
 
-	try
+	if (m_renderOutput != nullptr)
 	{
-		if (mode == GenMode::NEXT_SEED) seed++;
-		else if (mode == GenMode::RAND_SEED) seed = rd();
-
-		gen.Generate(&gInput, &gOutput, seed);
+		SDL_DestroyTexture(m_renderOutput);
+		m_renderOutput = nullptr;
 	}
-	catch (const std::exception& error) { std::cerr << error.what() << "\n"; }
+
+	if (full) ResetAppManager();
+}
+
+void Application::Run()
+{
+	Init(true);
+	while (Update()) {}
 }
