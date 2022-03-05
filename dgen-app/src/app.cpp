@@ -197,13 +197,16 @@ bool Application::Update()
 			switch (sdlEvent.key.keysym.sym)
 			{
 			case SDLK_g:
-				Schedule(Task::GENERATE);
-				m_seedMode = SeedMode::RANDOMIZE;
+				ScheduleGeneration(SeedMode::RANDOMIZE);
 				break;
 
 			case SDLK_n:
-				Schedule(Task::GENERATE);
-				m_seedMode = SeedMode::INCREMENT;
+				ScheduleGeneration(SeedMode::INCREMENT);
+				break;
+
+			case SDLK_r:
+				ScheduleGeneration(SeedMode::KEEP);
+				LoadDefaults();
 				break;
 
 			case SDLK_d:
@@ -216,15 +219,8 @@ bool Application::Update()
 				m_viewport.Reset();
 				break;
 
-			case SDLK_r:
-				Schedule(Task::GENERATE);
-				m_seedMode = SeedMode::KEEP;
-				LoadDefaults();
-				break;
-
 			case SDLK_F11:
-				Schedule(Task::GENERATE);
-				m_seedMode = SeedMode::KEEP;
+				ScheduleGeneration(SeedMode::KEEP);
 				m_fullscreen = !m_fullscreen;
 				Init(false);
 				break;
@@ -354,7 +350,7 @@ void Application::Init(bool full)
 	if (m_fullscreen) CreateWindow(g_title, dm.w, dm.h, SDL_WINDOW_HIDDEN | SDL_WINDOW_FULLSCREEN);
 	else CreateWindow(g_title, dm.w - 30, dm.h - 100, SDL_WINDOW_HIDDEN);
 
-	m_renderOutput = SDL_CreateTexture(GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GetWidth(), GetHeight());
+	m_renderOutput = CreateTexture(GetWidth(), GetHeight(), false);
 
 	SetupWidgets();
 	SDL_ShowWindow(GetWindow());

@@ -14,8 +14,8 @@ class ViewportBase
 	Type GetXOffset() const { return m_xOffset; }
 	Type GetYOffset() const { return m_yOffset; }
 
-	template <typename RType>
-	void RectToScreen(const RType& from, RType& to) const;
+	template <typename WRectType, typename SRectType>
+	void RectToScreen(const WRectType& from, SRectType& to) const;
 
 	template <typename SType, typename WType>
 	void ToWorld(SType xScreen, SType yScreen, WType& xWorld, WType& yWorld) const;
@@ -36,17 +36,18 @@ class Viewport : public ViewportBase<float>
 	void Scale(int xMouse, int yMouse, float factor);
 
 	public:
+	void Reset();
 	bool Update(SDL_Event& sdlEvent);
 
-	void Reset();
-	void SetScaleStep(float scaleStep);
-	void SetDefaultScale(float defScale);
+	void SetScaleStep(float scaleStep) { m_scaleStep = scaleStep; }
+	void SetDefaultScale(float defScale) { if (defScale != 0) m_defScale = defScale; }
 };
 
-template <typename Type> template <typename RType>
-void ViewportBase<Type>::RectToScreen(const RType& from, RType& to) const
+template <typename Type> template <typename WRectType, typename SRectType>
+void ViewportBase<Type>::RectToScreen(const WRectType& from, SRectType& to) const
 {
-	ToScreen(from.x, from.y, to.x, to.y);
+	to.x = static_cast<decltype(to.x)>((from.x - m_xOffset) * m_scale);
+	to.y = static_cast<decltype(to.y)>((from.y - m_yOffset) * m_scale);
 
 	to.w = static_cast<decltype(to.w)>(from.w * m_scale);
 	to.h = static_cast<decltype(to.h)>(from.h * m_scale);
@@ -71,14 +72,4 @@ inline void Viewport::Reset()
 	m_scale = m_defScale;
 	m_xOffset = 0;
 	m_yOffset = 0;
-}
-
-inline void Viewport::SetScaleStep(float scaleStep)
-{
-	m_scaleStep = scaleStep;
-}
-
-inline void Viewport::SetDefaultScale(float defScale)
-{
-	if (defScale != 0) m_defScale = defScale;
 }

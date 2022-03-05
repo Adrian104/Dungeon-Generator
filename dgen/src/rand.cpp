@@ -15,9 +15,7 @@ static constexpr unsigned int CountBits(Type var)
 
 bool Random::GetBool()
 {
-	const bool output = static_cast<bool>(m_bits & 0b1);
-
-	if (m_bitCount > 1)
+	if (m_bitCount > 0)
 	{
 		m_bits >>= 1;
 		m_bitCount--;
@@ -25,10 +23,10 @@ bool Random::GetBool()
 	else
 	{
 		m_bits = m_engine();
-		m_bitCount = CountBits(engine_type::max());
+		m_bitCount = CountBits(engine_type::max()) - 1;
 	}
 
-	return output;
+	return static_cast<bool>(m_bits & 0b1);
 }
 
 float Random::GetFloat()
@@ -43,7 +41,6 @@ double Random::GetDouble()
 
 void Random::Init(const seed_type seed)
 {
+	m_bitCount = 0;
 	m_engine.seed(seed);
-	m_bits = m_engine();
-	m_bitCount = CountBits(engine_type::max());
 }

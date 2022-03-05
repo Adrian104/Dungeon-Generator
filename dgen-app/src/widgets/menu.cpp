@@ -2,10 +2,9 @@
 #include "../app.hpp"
 #include "../global.hpp"
 
-Menu::Menu(Application& app) : Widget(app), Animator(std::chrono::milliseconds(g_menuAnimTime))
+Menu::Menu(Application& app) : Widget(app), Animator(g_menuAnimTime)
 {
-	m_renderOutput = SDL_CreateTexture(m_app.GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, g_menuWidth, m_app.GetHeight());
-	SDL_SetTextureBlendMode(m_renderOutput, SDL_BLENDMODE_BLEND);
+	m_renderOutput = m_app.CreateTexture(g_menuWidth, m_app.GetHeight());
 }
 
 Menu::~Menu()
@@ -96,15 +95,13 @@ void Menu::HandleEvent(SDL_Event& sdlEvent)
 		case SDLK_RETURN:
 		case SDLK_EQUALS:
 			m_mods.at(m_selection) -> Increment();
-			m_app.Schedule(Application::Task::GENERATE);
-			m_app.m_seedMode = Application::SeedMode::KEEP;
+			m_app.ScheduleGeneration(Application::SeedMode::KEEP);
 			break;
 
 		case SDLK_LEFT:
 		case SDLK_MINUS:
 			m_mods.at(m_selection) -> Decrement();
-			m_app.Schedule(Application::Task::GENERATE);
-			m_app.m_seedMode = Application::SeedMode::KEEP;
+			m_app.ScheduleGeneration(Application::SeedMode::KEEP);
 			break;
 
 		default:

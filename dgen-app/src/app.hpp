@@ -43,12 +43,13 @@ class Application : protected AppManager
 	void Quit(bool full);
 
 	template <typename Type>
-	Type* GetWidget();
+	Type* GetWidget() const;
 
 	template <typename Type>
 	Type& AccessWidget();
 
-	void Schedule(Task task) { if (task > m_task) m_task = task; }
+	void Schedule(Task task);
+	void ScheduleGeneration(SeedMode seedMode);
 
 	public:
 	void Run();
@@ -60,7 +61,7 @@ class Application : protected AppManager
 };
 
 template <typename Type>
-Type* Application::GetWidget()
+Type* Application::GetWidget() const
 {
 	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
 	{
@@ -87,4 +88,19 @@ Type& Application::AccessWidget()
 
 	m_widgetList = ptr;
 	return *ptr;
+}
+
+inline void Application::Schedule(Task task)
+{
+	if (m_task < task)
+		m_task = task;
+}
+
+inline void Application::ScheduleGeneration(SeedMode seedMode)
+{
+	if (m_task < Task::GENERATE)
+	{
+		m_task = Task::GENERATE;
+		m_seedMode = seedMode;
+	}
 }

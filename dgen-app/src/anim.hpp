@@ -9,7 +9,7 @@ class Animator
 	using time_type = clock_type::time_point;
 
 	enum class LoopMode { ONLY_FORWARD, NO_LOOP, LOOP, BOUNCE_BACK };
-	enum class DirMode { FORWARD, BACKWARD, TOGGLE, SWITCH, TOGGLE_OR_SWITCH, AUTO, NO_CHANGE };
+	enum class DirMode { FORWARD, BACKWARD, TOGGLE, SWITCH, TOGGLE_OR_SWITCH, AUTO, KEEP };
 
 	private:
 	static constexpr auto zero = duration_type::zero();

@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <chrono>
 #include <utility>
 
 inline const int g_minDepth = 9;
@@ -23,13 +24,13 @@ inline const bool g_generateFewerPaths = true;
 
 inline const int g_menuMargin = 5;
 inline const int g_menuWidth = 300;
-inline const int g_menuAnimTime = 350;
 inline const int g_menuTitleMargin = 45;
 inline const int g_menuOutlineWidth = 3;
 inline const int g_menuInternalOffset = 21;
 inline const int g_menuExternalOffset = 36;
 
 inline const float g_gridThresholdScale = 5.0f;
+inline const auto g_menuAnimTime = std::chrono::milliseconds(350);
 
 inline const std::string g_title = "Dungeon Generator";
 inline const std::pair<int, std::string> g_fonts[] = { std::pair<int, std::string>(16, "res/Quicksand-Regular.ttf") };

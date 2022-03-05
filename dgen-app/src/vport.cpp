@@ -14,8 +14,7 @@ void Viewport::Scale(int xMouse, int yMouse, float factor)
 	const float before = 1 / m_scale;
 	m_scale *= (m_scaleStep * factor) + 1;
 
-	const float after = 1 / m_scale;
-	const float diff = before - after;
+	const float diff = before - (1 / m_scale);
 
 	m_xOffset += xMouse * diff;
 	m_yOffset += yMouse * diff;

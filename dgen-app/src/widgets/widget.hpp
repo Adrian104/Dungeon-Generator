@@ -20,9 +20,9 @@ class Widget
 	public:
 	virtual ~Widget() { delete m_next; }
 
-	virtual void Draw() = 0;
-	virtual void Render() = 0;
-	virtual void HandleEvent(SDL_Event& sdlEvent) = 0;
+	virtual void Draw() {}
+	virtual void Render() {}
+	virtual void HandleEvent(SDL_Event& sdlEvent) {}
 
 	Widget(const Widget& ref) = delete;
 	Widget& operator=(const Widget& ref) = delete;
