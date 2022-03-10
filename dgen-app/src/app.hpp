@@ -58,6 +58,7 @@ class Application : protected AppManager
 	~Application() { Quit(true); }
 
 	friend class Menu;
+	friend class Warning;
 };
 
 template <typename Type>

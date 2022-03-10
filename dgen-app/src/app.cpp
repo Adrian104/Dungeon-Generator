@@ -1,9 +1,9 @@
-#include <iostream>
 #include <cmath>
 #include <stdexcept>
 #include "app.hpp"
 #include "global.hpp"
 #include "widgets/menu.hpp"
+#include "widgets/warning.hpp"
 
 SDL_FPoint ToFPoint(const Point& point) { return { static_cast<float>(point.x), static_cast<float>(point.y) }; }
 SDL_FRect ToFRect(const Rect& rect) { return { static_cast<float>(rect.x), static_cast<float>(rect.y), static_cast<float>(rect.w), static_cast<float>(rect.h) }; }
@@ -282,8 +282,11 @@ void Application::Generate()
 		else if (m_seedMode == SeedMode::RANDOMIZE) m_seed = m_randomDevice();
 
 		m_generator.Generate(&m_input, &m_output, m_seed);
+
+		if (Warning* warning = GetWidget<Warning>(); warning != nullptr)
+			warning -> Set("");
 	}
-	catch (const std::exception& error) { std::cerr << error.what() << '\n'; }
+	catch (const std::exception& error) { AccessWidget<Warning>().Set(error.what()); }
 }
 
 void Application::LoadDefaults()

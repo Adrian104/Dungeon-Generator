@@ -172,6 +172,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\vport.cpp" />
     <ClCompile Include="src\widgets\menu.cpp" />
+    <ClCompile Include="src\widgets\warning.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\anim.hpp" />
@@ -181,6 +182,7 @@
     <ClInclude Include="src\vport.hpp" />
     <ClInclude Include="src\widgets\menu.hpp" />
     <ClInclude Include="src\widgets\mod.hpp" />
+    <ClInclude Include="src\widgets\warning.hpp" />
     <ClInclude Include="src\widgets\widget.hpp" />
   </ItemGroup>
   <ItemGroup>

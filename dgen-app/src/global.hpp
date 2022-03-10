@@ -29,8 +29,11 @@ inline const int g_menuOutlineWidth = 3;
 inline const int g_menuInternalOffset = 21;
 inline const int g_menuExternalOffset = 36;
 
+inline const int g_warningMargin = 20;
 inline const float g_gridThresholdScale = 5.0f;
+
 inline const auto g_menuAnimTime = std::chrono::milliseconds(350);
+inline const auto g_warningAnimTime = std::chrono::milliseconds(500);
 
 inline const std::string g_title = "Dungeon Generator";
 inline const std::pair<int, std::string> g_fonts[] = { std::pair<int, std::string>(16, "res/Quicksand-Regular.ttf") };
