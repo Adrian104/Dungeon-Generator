@@ -23,11 +23,19 @@ struct Rect
 	Rect(int pX, int pY, int pW, int pH) : x(pX), y(pY), w(pW), h(pH) {}
 };
 
+struct Room;
+
 using Vec = Point;
 using uint = unsigned int;
 using byte = unsigned char;
 
-struct Room;
+inline float Distance(const Point a, const Point b)
+{
+	const int dx = b.x - a.x;
+	const int dy = b.y - a.y;
+
+	return std::sqrt(static_cast<float>(dx * dx + dy * dy));
+}
 
 struct Cell
 {
@@ -75,7 +83,7 @@ struct GenInput
 	int width, height;
 	int randAreaDepth;
 	int maxDepth, minDepth;
-	int additionalConnections;
+	int spaceInterdistance;
 
 	float doubleRoomProb;
 	float heuristicFactor;
@@ -93,6 +101,9 @@ struct GenOutput
 
 struct Generator
 {
+	int extDist;
+	int intDist;
+
 	int roomCount;
 	int deltaDepth;
 	int targetDepth;
@@ -115,6 +126,8 @@ struct Generator
 	std::uniform_real_distribution<float> uniRoom;
 	std::uniform_real_distribution<float> uniSpace;
 	
+	static constexpr int roomSizeLimit = 4;
+
 	void Clear();
 	void Prepare();
 	void LinkNodes();
@@ -126,7 +139,6 @@ struct Generator
 
 	Node &AddRegNode(int x, int y);
 	void CreateSpaceNodes(Rect &space);
-	void FindPath(bt::Node<Cell> &btNode);
 	void CreateRoomNodes(Rect &space, Room &room);
 	Room *GetRandomRoom(bt::Node<Cell> *const btNode);
 

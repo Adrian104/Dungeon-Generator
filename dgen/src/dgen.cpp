@@ -4,7 +4,7 @@
 
 enum Dir { NORTH, EAST, SOUTH, WEST };
 
-Generator::Generator() : roomCount(0), deltaDepth(0), targetDepth(0), minSpaceSize(0), statusCounter(1), gOutput(nullptr), gInput(nullptr), root(nullptr) {}
+Generator::Generator() : extDist(0), intDist(0), roomCount(0), deltaDepth(0), targetDepth(0), minSpaceSize(0), statusCounter(1), gOutput(nullptr), gInput(nullptr), root(nullptr) {}
 Generator::~Generator() { Clear(); }
 
 void Generator::Clear()
@@ -21,16 +21,20 @@ void Generator::Clear()
 
 void Generator::Prepare()
 {
+	if (gInput -> maxRoomSize <= 0)
+		throw std::runtime_error("Variable 'maxRoomSize' is not a positive number");
+
 	*gOutput = {};
 
-	if (gInput -> maxRoomSize <= 0) throw std::runtime_error("Variable 'maxRoomSize' is not a positive number");
-	minSpaceSize = int(4.0f / gInput -> maxRoomSize) + 5;
+	extDist = gInput -> spaceInterdistance + 1;
+	intDist = (extDist << 1) - 1;
 
-	const int realWidth = gInput -> width - 3;
-	const int realHeight = gInput -> height - 3;
+	minSpaceSize = static_cast<int>(roomSizeLimit / gInput -> maxRoomSize) + intDist;
 
-	if (realWidth < minSpaceSize || realHeight < minSpaceSize) throw std::runtime_error("Root node is too small");
-	root = new bt::Node<Cell>(nullptr, Cell(realWidth, realHeight));
+	if (gInput -> width <= minSpaceSize || gInput -> height <= minSpaceSize)
+		throw std::runtime_error("Root node is too small");
+
+	root = new bt::Node<Cell>(nullptr, Cell(gInput -> width - 1, gInput -> height - 1));
 
 	roomCount = 0;
 	targetDepth = 0;
@@ -38,7 +42,7 @@ void Generator::Prepare()
 	deltaDepth = gInput -> maxDepth - gInput -> minDepth;
 
 	uniRoom = std::uniform_real_distribution<float>(1.0f - gInput -> maxRoomSize, 1.0f - gInput -> minRoomSize);
-	uniSpace = std::uniform_real_distribution<float>(gInput -> spaceSizeRandomness / -2.0f, gInput -> spaceSizeRandomness / 2.0f);
+	uniSpace = std::uniform_real_distribution<float>(0.5f - gInput -> spaceSizeRandomness / 2.0f, 0.5f + gInput -> spaceSizeRandomness / 2.0f);
 }
 
 void Generator::LinkNodes()
@@ -98,9 +102,112 @@ void Generator::LinkNodes()
 void Generator::FindPaths()
 {
 	bt::Node<Cell>::SetDefaultPostorder();
+	for (auto& btNode : *root)
+	{
+		if (btNode.m_left == nullptr || btNode.m_right == nullptr)
+			continue;
 
-	for (auto& btNode : *root) FindPath(btNode);
-	for (int i = gInput -> additionalConnections; i > 0; i--) FindPath(*root);
+		Room *const start = GetRandomRoom(btNode.m_left);
+		if (start == nullptr) continue;
+
+		Room *const stop = GetRandomRoom(btNode.m_right);
+		if (stop == nullptr || start == stop) continue;
+
+		Node *crrNode = start;
+		start -> gCost = 0;
+
+		do
+		{
+			crrNode -> status = statusCounter + 1;
+
+			byte crrPaths = crrNode -> path;
+			Room *const crrRoom = crrNode -> ToRoom();
+
+			for (int i = 0; i < 4; i++, crrPaths >>= 1)
+			{
+				Node *const nNode = crrNode -> links[i];
+
+				if (nNode == nullptr) continue;
+				if (nNode -> status > statusCounter) continue;
+
+				int newGCost = crrNode -> gCost;
+				if ((crrPaths & 1) == 0)
+				{
+					int diff;
+					int Point::*const axis = bool(i & 1) ? &Point::x : &Point::y;
+
+					if (crrRoom == nullptr)
+					{
+						Room *const nRoom = nNode -> ToRoom();
+
+						diff = crrNode -> pos.*axis;
+						diff -= (nRoom != nullptr) ? (nRoom -> edges[(i + 2) & 0b11]) : (nNode -> pos.*axis);
+					}
+					else diff = nNode -> pos.*axis - crrRoom -> edges[i];
+
+					newGCost += diff < 0 ? -diff : diff;
+				}
+
+				if (nNode -> status < statusCounter)
+				{
+					nNode -> hCost = static_cast<int>(Distance(nNode -> pos, stop -> pos) * gInput -> heuristicFactor);
+					nNode -> status = statusCounter;
+
+					goto add_to_heap;
+				}
+
+				if (newGCost < nNode -> gCost)
+				{
+					add_to_heap:
+					nNode -> gCost = newGCost;
+					nNode -> prevNode = crrNode;
+
+					heap.Push(newGCost + nNode -> hCost, nNode);
+				}
+			}
+
+			do
+			{
+				crrNode = heap.Top();
+				heap.Pop();
+
+			} while (crrNode -> status > statusCounter);
+
+		} while (crrNode != stop);
+
+		statusCounter += 2;
+		heap.Clear();
+
+		do
+		{
+			Node **links = crrNode -> links;
+			Node *const prevNode = crrNode -> prevNode;
+
+			if (prevNode == links[Dir::NORTH])
+			{
+				crrNode -> path |= 1 << Dir::NORTH;
+				prevNode -> path |= 1 << Dir::SOUTH;
+			}
+			else if (prevNode == links[Dir::EAST])
+			{
+				crrNode -> path |= 1 << Dir::EAST;
+				prevNode -> path |= 1 << Dir::WEST;
+			}
+			else if (prevNode == links[Dir::SOUTH])
+			{
+				crrNode -> path |= 1 << Dir::SOUTH;
+				prevNode -> path |= 1 << Dir::NORTH;
+			}
+			else
+			{
+				crrNode -> path |= 1 << Dir::WEST;
+				prevNode -> path |= 1 << Dir::EAST;
+			}
+
+			crrNode = prevNode;
+
+		} while (crrNode != start);
+	}
 }
 
 void Generator::OptimizeNodes()
@@ -192,18 +299,16 @@ void Generator::GenerateRooms()
 		r1Rect.w -= dX;
 		r1Rect.h -= dY;
 
-		static const int hardLimit = 4;
-
-		if (r1Rect.w < hardLimit)
+		if (r1Rect.w < roomSizeLimit)
 		{
-			r1Rect.w = hardLimit;
-			dX = btNode.space.w - hardLimit;
+			r1Rect.w = roomSizeLimit;
+			dX = btNode.space.w - roomSizeLimit;
 		}
 
-		if (r1Rect.h < hardLimit)
+		if (r1Rect.h < roomSizeLimit)
 		{
-			r1Rect.h = hardLimit;
-			dY = btNode.space.h - hardLimit;
+			r1Rect.h = roomSizeLimit;
+			dY = btNode.space.h - roomSizeLimit;
 		}
 
 		Rect r2Rect;
@@ -234,7 +339,7 @@ void Generator::GenerateRooms()
 				if (random.GetBool()) r2Rect.x = r1Rect.x + r1Rect.w - r2Rect.w;
 			}
 
-			doubleRoom = r2Rect.w >= hardLimit && r2Rect.h >= hardLimit;
+			doubleRoom = r2Rect.w >= roomSizeLimit && r2Rect.h >= roomSizeLimit;
 		}
 
 		const int xOffset = int(dX * random.GetFloat());
@@ -258,10 +363,10 @@ void Generator::GenerateRooms()
 			roomCount++;
 		}
 
-		Rect *const selRoom = rects.data() + random() % rects.size();
+		Rect& selRoom = rects.at(random() % rects.size());
 
-		room.pos.y = selRoom -> y + (random() % (selRoom -> h - 2)) + 1;
-		room.pos.x = selRoom -> x + (random() % (selRoom -> w - 2)) + 1;
+		room.pos.x = selRoom.x + (random() % (selRoom.w - 2)) + 1;
+		room.pos.y = selRoom.y + (random() % (selRoom.h - 2)) + 1;
 
 		btNode.room = &room;
 		CreateRoomNodes(btNode.space, room);
@@ -334,8 +439,8 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 		no_more:
 		Rect &space = btNode.space;
 
-		space.x += 4; space.y += 4;
-		space.w -= 5; space.h -= 5;
+		space.x += extDist; space.y += extDist;
+		space.w -= intDist; space.h -= intDist;
 
 		CreateSpaceNodes(space);
 		if (btNode.flag)
@@ -355,7 +460,7 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 	else { xy = &Rect::x; wh = &Rect::w; }
 
 	const int totalSize = crrSpace.*wh;
-	const int randSize = (totalSize >> 1) + int(totalSize * uniSpace(random.GetEngine()));
+	const int randSize = static_cast<int>(totalSize * uniSpace(random.GetEngine()));
 
 	if (randSize < minSpaceSize || totalSize - randSize < minSpaceSize) goto no_more;
 
@@ -384,11 +489,13 @@ Node &Generator::AddRegNode(int x, int y)
 
 void Generator::CreateSpaceNodes(Rect &space)
 {
-	const int xMin = space.x - 3;
-	const int xMax = space.x + space.w + 2;
+	const int xMin = space.x - extDist;
+	const int yMin = space.y - extDist;
 
-	const int yMin = space.y - 3;
-	const int yMax = space.y + space.h + 2;
+	const int dist = extDist - 1;
+
+	const int xMax = space.x + space.w + dist;
+	const int yMax = space.y + space.h + dist;
 
 	Node &SW = AddRegNode(xMin, yMax);
 	SW.path |= (1 << Dir::NORTH) | (1 << Dir::EAST);
@@ -400,114 +507,6 @@ void Generator::CreateSpaceNodes(Rect &space)
 	NW.path |= 1 << Dir::EAST;
 
 	AddRegNode(xMax, yMin);
-}
-
-void Generator::FindPath(bt::Node<Cell> &btNode)
-{
-	if (btNode.m_left == nullptr || btNode.m_right == nullptr) return;
-
-	Room *const start = GetRandomRoom(btNode.m_left);
-	if (start == nullptr) return;
-
-	Room *const stop = GetRandomRoom(btNode.m_right);
-	if (stop == nullptr || start == stop) return;
-
-	Node *crrNode = start;
-	start -> gCost = 0;
-
-	do
-	{
-		crrNode -> status = statusCounter + 1;
-
-		byte crrPaths = crrNode -> path;
-		Room *const crrRoom = crrNode -> ToRoom();
-
-		for (int i = 0; i < 4; i++, crrPaths >>= 1)
-		{
-			Node *const nNode = crrNode -> links[i];
-
-			if (nNode == nullptr) continue;
-			if (nNode -> status > statusCounter) continue;
-
-			int newGCost = crrNode -> gCost;
-			if ((crrPaths & 1) == 0)
-			{
-				int diff;
-				int Point::*const axis = bool(i & 1) ? &Point::x : &Point::y;
-
-				if (crrRoom == nullptr)
-				{
-					Room *const nRoom = nNode -> ToRoom();
-
-					diff = crrNode -> pos.*axis;
-					diff -= (nRoom != nullptr) ? (nRoom -> edges[(i + 2) & 0b11]) : (nNode -> pos.*axis);
-				}
-				else diff = nNode -> pos.*axis - crrRoom -> edges[i];
-
-				newGCost += diff < 0 ? -diff : diff;
-			}
-
-			if (nNode -> status < statusCounter)
-			{
-				const Vec diff(stop -> pos.x - nNode -> pos.x, stop -> pos.y - nNode -> pos.y);
-
-				nNode -> hCost = int(std::sqrt(float(diff.x * diff.x + diff.y * diff.y)) * gInput -> heuristicFactor);
-				nNode -> status = statusCounter;
-
-				goto add_to_heap;
-			}
-
-			if (newGCost < nNode -> gCost)
-			{
-				add_to_heap:
-				nNode -> gCost = newGCost;
-				nNode -> prevNode = crrNode;
-
-				heap.Push(newGCost + nNode -> hCost, nNode);
-			}
-		}
-
-		do
-		{
-			crrNode = heap.Top();
-			heap.Pop();
-
-		} while (crrNode -> status > statusCounter);
-
-	} while (crrNode != stop);
-
-	statusCounter += 2;
-	heap.Clear();
-
-	do
-	{
-		Node **links = crrNode -> links;
-		Node *const prevNode = crrNode -> prevNode;
-
-		if (prevNode == links[Dir::NORTH])
-		{
-			crrNode -> path |= 1 << Dir::NORTH;
-			prevNode -> path |= 1 << Dir::SOUTH;
-		}
-		else if (prevNode == links[Dir::EAST])
-		{
-			crrNode -> path |= 1 << Dir::EAST;
-			prevNode -> path |= 1 << Dir::WEST;
-		}
-		else if (prevNode == links[Dir::SOUTH])
-		{
-			crrNode -> path |= 1 << Dir::SOUTH;
-			prevNode -> path |= 1 << Dir::NORTH;
-		}
-		else
-		{
-			crrNode -> path |= 1 << Dir::WEST;
-			prevNode -> path |= 1 << Dir::EAST;
-		}
-
-		crrNode = prevNode;
-
-	} while (crrNode != start);
 }
 
 void Generator::CreateRoomNodes(Rect &space, Room &room)
@@ -536,12 +535,14 @@ void Generator::CreateRoomNodes(Rect &space, Room &room)
 	edges[Dir::EAST]--;
 	edges[Dir::SOUTH]--;
 
+	const int dist = extDist - 1;
+
 	Node *const bNodes[4] =
 	{
-		&AddRegNode(iPoint.x, space.y - 3),
-		&AddRegNode(space.x + space.w + 2, iPoint.y),
-		&AddRegNode(iPoint.x, space.y + space.h + 2),
-		&AddRegNode(space.x - 3, iPoint.y)
+		&AddRegNode(iPoint.x, space.y - extDist),
+		&AddRegNode(space.x + space.w + dist, iPoint.y),
+		&AddRegNode(iPoint.x, space.y + space.h + dist),
+		&AddRegNode(space.x - extDist, iPoint.y)
 	};
 
 	for (int i = 0; i < 4; i++)

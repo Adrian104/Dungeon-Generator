@@ -6,7 +6,7 @@
 inline const int g_minDepth = 9;
 inline const int g_maxDepth = 10;
 inline const int g_randAreaDepth = 2;
-inline const int g_additionalConnections = 2;
+inline const int g_spaceInterdistance = 2;
 
 inline const float g_factor = 1.0f;
 inline const float g_maxRoomSize = 0.75f;
@@ -26,8 +26,8 @@ inline const int g_menuMargin = 5;
 inline const int g_menuWidth = 300;
 inline const int g_menuTitleMargin = 45;
 inline const int g_menuOutlineWidth = 3;
-inline const int g_menuInternalOffset = 21;
-inline const int g_menuExternalOffset = 36;
+inline const int g_menuInternalOffset = 20;
+inline const int g_menuExternalOffset = 35;
 
 inline const int g_warningMargin = 20;
 inline const float g_gridThresholdScale = 5.0f;

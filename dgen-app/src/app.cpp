@@ -306,8 +306,8 @@ void Application::LoadDefaults()
 	m_input.doubleRoomProb = g_doubleRoomProb;
 	m_input.heuristicFactor = g_heuristicFactor;
 	m_input.generateFewerPaths = g_generateFewerPaths;
+	m_input.spaceInterdistance = g_spaceInterdistance;
 	m_input.spaceSizeRandomness = g_spaceSizeRandomness;
-	m_input.additionalConnections = g_additionalConnections;
 
 	if (Menu* menu = GetWidget<Menu>(); menu != nullptr)
 		menu -> ScheduleRendering();
@@ -325,7 +325,7 @@ void Application::SetupWidgets()
 	menu.Add(PercentMod("Maximum room size", m_input.maxRoomSize));
 	menu.Add(PercentMod("Space randomness", m_input.spaceSizeRandomness));
 	menu.Add(PercentMod("Double room probability", m_input.doubleRoomProb));
-	menu.Add(IntMod("Additional connections", m_input.additionalConnections));
+	menu.Add(IntMod("Space interdistance", m_input.spaceInterdistance));
 	menu.Add(IntMod("Random area depth", m_input.randAreaDepth));
 	menu.Add(PercentMod("Random area density", m_input.randAreaDens));
 	menu.Add(PercentMod("Random area probability", m_input.randAreaProb));
