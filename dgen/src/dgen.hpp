@@ -53,14 +53,14 @@ struct Node
 	int hCost;
 
 	byte path;
+	byte origin;
+
 	Point pos;
 	uint status;
-
 	Node *links[4];
-	Node *prevNode;
 
-	Node() : gCost(0), hCost(0), path(0), pos{ 0, 0 }, status(0), links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
-	Node(int x, int y) : gCost(0), hCost(0), path(0), pos{ x, y }, status(0), links{ nullptr, nullptr, nullptr, nullptr }, prevNode(nullptr) {}
+	Node() : gCost(0), hCost(0), path(0), origin(0), pos{ 0, 0 }, status(0), links{ nullptr, nullptr, nullptr, nullptr } {}
+	Node(int x, int y) : gCost(0), hCost(0), path(0), origin(0), pos{ x, y }, status(0), links{ nullptr, nullptr, nullptr, nullptr } {}
 
 	virtual Room *ToRoom() { return nullptr; }
 };

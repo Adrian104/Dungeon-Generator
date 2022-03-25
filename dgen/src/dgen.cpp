@@ -141,7 +141,7 @@ void Generator::FindPaths()
 						Room *const nRoom = nNode -> ToRoom();
 
 						diff = crrNode -> pos.*axis;
-						diff -= (nRoom != nullptr) ? (nRoom -> edges[(i + 2) & 0b11]) : (nNode -> pos.*axis);
+						diff -= (nRoom != nullptr) ? (nRoom -> edges[i ^ 0b10]) : (nNode -> pos.*axis);
 					}
 					else diff = nNode -> pos.*axis - crrRoom -> edges[i];
 
@@ -159,8 +159,8 @@ void Generator::FindPaths()
 				if (newGCost < nNode -> gCost)
 				{
 					add_to_heap:
+					nNode -> origin = i;
 					nNode -> gCost = newGCost;
-					nNode -> prevNode = crrNode;
 
 					heap.Push(newGCost + nNode -> hCost, nNode);
 				}
@@ -180,31 +180,12 @@ void Generator::FindPaths()
 
 		do
 		{
-			Node **links = crrNode -> links;
-			Node *const prevNode = crrNode -> prevNode;
+			const byte origin = crrNode -> origin;
+			const byte realOrigin = origin ^ 0b10;
 
-			if (prevNode == links[Dir::NORTH])
-			{
-				crrNode -> path |= 1 << Dir::NORTH;
-				prevNode -> path |= 1 << Dir::SOUTH;
-			}
-			else if (prevNode == links[Dir::EAST])
-			{
-				crrNode -> path |= 1 << Dir::EAST;
-				prevNode -> path |= 1 << Dir::WEST;
-			}
-			else if (prevNode == links[Dir::SOUTH])
-			{
-				crrNode -> path |= 1 << Dir::SOUTH;
-				prevNode -> path |= 1 << Dir::NORTH;
-			}
-			else
-			{
-				crrNode -> path |= 1 << Dir::WEST;
-				prevNode -> path |= 1 << Dir::EAST;
-			}
-
-			crrNode = prevNode;
+			crrNode -> path |= 1 << realOrigin;
+			crrNode = crrNode -> links[realOrigin];
+			crrNode -> path |= 1 << origin;
 
 		} while (crrNode != start);
 	}
@@ -271,7 +252,7 @@ void Generator::OptimizeNodes()
 			for (int i = 0; i < 4; i++)
 			{
 				if (Node *const link = links[i]; link != nullptr)
-					link -> links[(i + 2) & 0b11] = nullptr;
+					link -> links[i ^ 0b10] = nullptr;
 			}
 
 			iter = posXNodes.erase(iter);
@@ -281,10 +262,8 @@ void Generator::OptimizeNodes()
 
 void Generator::GenerateRooms()
 {
-	bt::Node<Cell>::SetDefaultPostorder();
-
 	rooms.reserve(roomCount);
-	roomCount = 0;
+	bt::Node<Cell>::SetDefaultPostorder();
 
 	for (auto& btNode : *root)
 	{
@@ -349,21 +328,18 @@ void Generator::GenerateRooms()
 		r1Rect.y += yOffset;
 
 		Room &room = rooms.emplace_back();
-		std::vector<Rect> &rects = room.rects;
-
-		rects.emplace_back(r1Rect);
-		roomCount++;
+		room.rects.emplace_back(r1Rect);
 
 		if (doubleRoom)
 		{
 			r2Rect.x += xOffset;
 			r2Rect.y += yOffset;
 
-			rects.emplace_back(r2Rect);
+			room.rects.emplace_back(r2Rect);
 			roomCount++;
 		}
 
-		Rect& selRoom = rects.at(random() % rects.size());
+		Rect& selRoom = room.rects.at(random() % room.rects.size());
 
 		room.pos.x = selRoom.x + (random() % (selRoom.w - 2)) + 1;
 		room.pos.y = selRoom.y + (random() % (selRoom.h - 2)) + 1;
@@ -551,7 +527,7 @@ void Generator::CreateRoomNodes(Rect &space, Room &room)
 		room.links[i] = bNode;
 
 		bNode -> path |= 0b10 >> (i & 0b1);
-		bNode -> links[(i + 2) & 0b11] = &room;
+		bNode -> links[i ^ 0b10] = &room;
 	}
 }
 
