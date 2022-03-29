@@ -41,7 +41,7 @@ void Generator::Prepare()
 	statusCounter = 1;
 	deltaDepth = gInput -> maxDepth - gInput -> minDepth;
 
-	uniRoom = std::uniform_real_distribution<float>(1.0f - gInput -> maxRoomSize, 1.0f - gInput -> minRoomSize);
+	uniRoom = std::uniform_real_distribution<float>(gInput -> minRoomSize, gInput -> maxRoomSize);
 	uniSpace = std::uniform_real_distribution<float>(0.5f - gInput -> spaceSizeRandomness / 2.0f, 0.5f + gInput -> spaceSizeRandomness / 2.0f);
 }
 
@@ -270,79 +270,62 @@ void Generator::GenerateRooms()
 		if (btNode.m_left != nullptr || btNode.m_right != nullptr || btNode.flag)
 			continue;
 
-		Rect r1Rect = btNode.space;
+		const Rect& space = btNode.space;
+		auto& engine = random.GetEngine();
 
-		int dX = int(r1Rect.w * uniRoom(random.GetEngine()));
-		int dY = int(r1Rect.h * uniRoom(random.GetEngine()));
+		Vec priSize(static_cast<int>(space.w * uniRoom(engine)), static_cast<int>(space.h * uniRoom(engine)));
 
-		r1Rect.w -= dX;
-		r1Rect.h -= dY;
+		if (priSize.x < roomSizeLimit)
+			priSize.x = roomSizeLimit;
 
-		if (r1Rect.w < roomSizeLimit)
+		if (priSize.y < roomSizeLimit)
+			priSize.y = roomSizeLimit;
+
+		Vec priPos(space.x, space.y);
+		Vec remSize(space.w - priSize.x, space.h - priSize.y);
+
+		Vec secPos(-1, 0);
+		Vec secSize(0, 0);
+
+		if (random.GetFloat() < gInput -> doubleRoomProb)
 		{
-			r1Rect.w = roomSizeLimit;
-			dX = btNode.space.w - roomSizeLimit;
+			int Vec::*incAxis; int Vec::*decAxis;
+
+			if (remSize.x > remSize.y) { incAxis = &Vec::x; decAxis = &Vec::y; }
+			else { incAxis = &Vec::y; decAxis = &Vec::x; }
+
+			secSize.*decAxis = priSize.*decAxis >> 1;
+			if (secSize.*decAxis < roomSizeLimit) goto skip_double_room;
+
+			const int extra = static_cast<int>(remSize.*incAxis * uniRoom(engine));
+
+			secSize.*incAxis = priSize.*incAxis + extra;
+			remSize.*incAxis -= extra;
+			secPos = priPos;
+
+			if (random.GetBool())
+				secPos.*decAxis += priSize.*decAxis - secSize.*decAxis;
+
+			if (random.GetBool())
+				priPos.*incAxis += secSize.*incAxis - priSize.*incAxis;
 		}
 
-		if (r1Rect.h < roomSizeLimit)
+		skip_double_room:
+		const Vec offset(random() % (remSize.x + 1), random() % (remSize.y + 1));
+
+		Room& room = rooms.emplace_back();
+		room.rects.emplace_back(priPos.x + offset.x, priPos.y + offset.y, priSize.x, priSize.y);
+
+		if (secPos.x != -1)
 		{
-			r1Rect.h = roomSizeLimit;
-			dY = btNode.space.h - roomSizeLimit;
-		}
-
-		Rect r2Rect;
-		bool doubleRoom = random.GetFloat() < gInput -> doubleRoomProb;
-
-		if (doubleRoom)
-		{
-			r2Rect = r1Rect;
-
-			if (dX > dY)
-			{
-				const int extra = int(dX * random.GetFloat());
-
-				r2Rect.h >>= 1;
-				r2Rect.w += extra;
-				dX -= extra;
-
-				if (random.GetBool()) r2Rect.y = r1Rect.y + r1Rect.h - r2Rect.h;
-			}
-			else
-			{
-				const int extra = int(dY * random.GetFloat());
-
-				r2Rect.w >>= 1;
-				r2Rect.h += extra;
-				dY -= extra;
-
-				if (random.GetBool()) r2Rect.x = r1Rect.x + r1Rect.w - r2Rect.w;
-			}
-
-			doubleRoom = r2Rect.w >= roomSizeLimit && r2Rect.h >= roomSizeLimit;
-		}
-
-		const int xOffset = int(dX * random.GetFloat());
-		const int yOffset = int(dY * random.GetFloat());
-
-		r1Rect.x += xOffset;
-		r1Rect.y += yOffset;
-
-		Room &room = rooms.emplace_back();
-		room.rects.emplace_back(r1Rect);
-
-		if (doubleRoom)
-		{
-			r2Rect.x += xOffset;
-			r2Rect.y += yOffset;
-
-			room.rects.emplace_back(r2Rect);
+			room.rects.emplace_back(secPos.x + offset.x, secPos.y + offset.y, secSize.x, secSize.y);
 			roomCount++;
 		}
 
-		Rect& selRoom = room.rects.at(random() % room.rects.size());
+		Rect& selRect = room.rects.at(random() % room.rects.size());
 
-		room.pos.x = selRoom.x + (random() % (selRoom.w - 2)) + 1;
-		room.pos.y = selRoom.y + (random() % (selRoom.h - 2)) + 1;
+		room.pos.x = selRect.x + (random() % (selRect.w - 2)) + 1;
+		room.pos.y = selRect.y + (random() % (selRect.h - 2)) + 1;
 
 		btNode.room = &room;
 		CreateRoomNodes(btNode.space, room);
