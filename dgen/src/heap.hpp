@@ -9,15 +9,15 @@ class Heap
 	using pair_type = std::pair<KeyType, ObjType>;
 
 	private:
+	pair_type* m_data = nullptr;
 	size_t m_size = 0;
 	size_t m_capacity = 0;
-	pair_type* m_data = nullptr;
 
-	void Expand();
+	void Reallocate();
 
 	public:
 	Heap() = default;
-	~Heap() { Clear(true); }
+	~Heap() { Reset(); }
 
 	Heap(const Heap& ref);
 	auto operator=(const Heap& ref) -> Heap&;
@@ -25,14 +25,19 @@ class Heap
 	Heap(Heap&& ref) noexcept;
 	auto operator=(Heap&& ref) noexcept -> Heap&;
 
+	void Clear();
+	void Reset();
+	void Expand();
+	void Reserve(size_t newCapacity);
+
 	void Pop();
-	void Clear(bool reset = false);
 	void Push(KeyType key, const ObjType& object);
 
-	ObjType& Top() const { return m_data -> second; }
-	size_t GetSize() const { return m_size; }
-	pair_type* GetData() const { return m_data; }
-	size_t GetCapacity() const { return m_capacity; }
+	size_t Size() const { return m_size; }
+	size_t Capacity() const { return m_capacity; }
+	pair_type* Data() const { return m_data; }
+	KeyType TopKey() const { return m_data -> first; }
+	ObjType& TopObject() const { return m_data -> second; }
 };
 
 template <typename KeyType, typename ObjType>
@@ -42,145 +47,91 @@ template <typename KeyType, typename ObjType>
 using MaxHeap = Heap<KeyType, ObjType, true>;
 
 template <typename KeyType, typename ObjType, bool maxHeap>
-void Heap<KeyType, ObjType, maxHeap>::Expand()
+void Heap<KeyType, ObjType, maxHeap>::Reallocate()
 {
-	if (m_data != nullptr)
+	pair_type* prevArr = m_data + m_size;
+	pair_type* newArr = static_cast<pair_type*>(operator new[](sizeof(pair_type) * m_capacity)) + m_size;
+
+	while (prevArr != m_data)
 	{
-		m_capacity <<= 1;
+		--prevArr;
+		--newArr;
 
-		pair_type* prevArr = m_data + m_size;
-		pair_type* newArr = static_cast<pair_type*>(operator new[](sizeof(pair_type) * m_capacity)) + m_size;
-
-		while (prevArr != m_data)
-		{
-			--prevArr;
-			--newArr;
-
-			*newArr = std::move(*prevArr);
-		}
-
-		operator delete[](m_data);
-		m_data = newArr;
+		new(newArr) pair_type(std::move(*prevArr));
+		prevArr -> ~pair_type();
 	}
-	else
-	{
-		m_capacity = 1;
-		m_data = static_cast<pair_type*>(operator new[](sizeof(pair_type)));
-	}
+
+	operator delete[](m_data);
+	m_data = newArr;
 }
 
 template <typename KeyType, typename ObjType, bool maxHeap>
-Heap<KeyType, ObjType, maxHeap>::Heap(const Heap& ref) : m_size(ref.m_size), m_capacity(ref.m_capacity)
+Heap<KeyType, ObjType, maxHeap>::Heap(const Heap& ref) : m_size(ref.m_size), m_capacity(ref.m_size)
 {
-	pair_type* refArr = ref.m_data + ref.m_size;
-	m_data = static_cast<pair_type*>(operator new[](sizeof(pair_type) * m_capacity)) + m_size;
-
-	while (refArr != ref.m_data)
+	if (ref.m_size > 0)
 	{
-		--m_data;
-		--refArr;
+		pair_type* refArr = ref.m_data + ref.m_size;
+		m_data = static_cast<pair_type*>(operator new[](sizeof(pair_type) * ref.m_size)) + ref.m_size;
 
-		*m_data = *refArr;
+		while (refArr != ref.m_data)
+		{
+			--m_data;
+			--refArr;
+
+			new(m_data) pair_type(*refArr);
+		}
 	}
 }
 
 template <typename KeyType, typename ObjType, bool maxHeap>
 auto Heap<KeyType, ObjType, maxHeap>::operator=(const Heap& ref) -> Heap&
 {
-	if (&ref == this) return *this;
-	Clear(true);
+	if (&ref == this)
+		return *this;
 
-	m_size = ref.m_size;
-	m_capacity = ref.m_capacity;
-
-	pair_type* refArr = ref.m_data + ref.m_size;
-	m_data = static_cast<pair_type*>(operator new[](sizeof(pair_type) * m_capacity)) + m_size;
-
-	while (refArr != ref.m_data)
+	Reset();
+	if (ref.m_size > 0)
 	{
-		--m_data;
-		--refArr;
+		m_size = ref.m_size;
+		m_capacity = ref.m_size;
 
-		*m_data = *refArr;
+		pair_type* refArr = ref.m_data + ref.m_size;
+		m_data = static_cast<pair_type*>(operator new[](sizeof(pair_type) * ref.m_size)) + ref.m_size;
+
+		while (refArr != ref.m_data)
+		{
+			--m_data;
+			--refArr;
+
+			new(m_data) pair_type(*refArr);
+		}
 	}
 
 	return *this;
 }
 
 template <typename KeyType, typename ObjType, bool maxHeap>
-Heap<KeyType, ObjType, maxHeap>::Heap(Heap&& ref) noexcept : m_size(ref.m_size), m_capacity(ref.m_capacity), m_data(ref.m_data)
-{
-	ref.m_size = 0;
-	ref.m_capacity = 0;
-	ref.m_data = nullptr;
-}
+Heap<KeyType, ObjType, maxHeap>::Heap(Heap&& ref) noexcept
+	: m_data(std::exchange(ref.m_data, nullptr)), m_size(std::exchange(ref.m_size, 0)), m_capacity(std::exchange(ref.m_capacity, 0)) {}
 
 template <typename KeyType, typename ObjType, bool maxHeap>
 auto Heap<KeyType, ObjType, maxHeap>::operator=(Heap&& ref) noexcept -> Heap&
 {
-	if (&ref == this) return *this;
-	Clear(true);
+	if (&ref == this)
+		return *this;
 
-	m_size = ref.m_size;
-	m_capacity = ref.m_capacity;
-	m_data = ref.m_data;
+	Reset();
 
-	ref.m_size = 0;
-	ref.m_capacity = 0;
-	ref.m_data = nullptr;
+	m_data = std::exchange(ref.m_data, nullptr);
+	m_size = std::exchange(ref.m_size, 0);
+	m_capacity = std::exchange(ref.m_capacity, 0);
 
 	return *this;
 }
 
 template <typename KeyType, typename ObjType, bool maxHeap>
-void Heap<KeyType, ObjType, maxHeap>::Pop()
+void Heap<KeyType, ObjType, maxHeap>::Clear()
 {
-	if (m_size == 0) return;
-
-	m_data -> ~pair_type();
-	if (--m_size == 0) return;
-
-	*m_data = std::move(m_data[m_size]);
-	size_t crrIndex = 0;
-
-	while (true)
-	{
-		size_t chdIndex = (crrIndex << 1) + 1;
-		if (const size_t rIndex = chdIndex + 1; rIndex < m_size)
-		{
-			if constexpr (maxHeap)
-			{
-				if (m_data[rIndex].first > m_data[chdIndex].first) chdIndex = rIndex;
-			}
-			else
-			{
-				if (m_data[rIndex].first < m_data[chdIndex].first) chdIndex = rIndex;
-			}
-		}
-		else if (chdIndex >= m_size) break;
-
-		pair_type& crrPair = m_data[crrIndex];
-		pair_type& chdPair = m_data[chdIndex];
-
-		if constexpr (maxHeap)
-		{
-			if (crrPair.first >= chdPair.first) break;
-		}
-		else
-		{
-			if (crrPair.first <= chdPair.first) break;
-		}
-
-		crrIndex = chdIndex;
-		std::swap(crrPair, chdPair);
-	}
-}
-
-template <typename KeyType, typename ObjType, bool maxHeap>
-void Heap<KeyType, ObjType, maxHeap>::Clear(bool reset)
-{
-	if (m_data == nullptr) return;
-
 	pair_type* iter = m_data + m_size;
 	while (iter != m_data)
 	{
@@ -189,23 +140,102 @@ void Heap<KeyType, ObjType, maxHeap>::Clear(bool reset)
 	}
 
 	m_size = 0;
-	if (reset)
+}
+
+template <typename KeyType, typename ObjType, bool maxHeap>
+void Heap<KeyType, ObjType, maxHeap>::Reset()
+{
+	Clear();
+
+	operator delete[](m_data);
+	m_data = nullptr;
+	m_capacity = 0;
+}
+
+template <typename KeyType, typename ObjType, bool maxHeap>
+void Heap<KeyType, ObjType, maxHeap>::Expand()
+{
+	m_capacity = (m_capacity > 0) ? (m_capacity << 1) : 1;
+	Reallocate();
+}
+
+template <typename KeyType, typename ObjType, bool maxHeap>
+void Heap<KeyType, ObjType, maxHeap>::Reserve(size_t newCapacity)
+{
+	m_capacity = newCapacity;
+
+	if (m_capacity < m_size)
+		m_capacity = m_size;
+
+	if (m_capacity > 0) Reallocate();
+	else Reset();
+}
+
+template <typename KeyType, typename ObjType, bool maxHeap>
+void Heap<KeyType, ObjType, maxHeap>::Pop()
+{
+	switch (m_size)
 	{
-		operator delete[](m_data);
-		m_data = nullptr;
-		m_capacity = 0;
+	case 1:
+		m_size = 0;
+		m_data -> ~pair_type();
+		[[fallthrough]];
+
+	case 0:
+		return;
+	}
+
+	*m_data = std::move(m_data[--m_size]);
+	m_data[m_size].~pair_type();
+
+	size_t crrIndex = 0;
+	while (true)
+	{
+		size_t chdIndex = (crrIndex << 1) + 1;
+		if (chdIndex >= m_size) break;
+
+		if (const size_t rIndex = chdIndex + 1; rIndex < m_size)
+		{
+			if constexpr (maxHeap)
+			{
+				if (m_data[rIndex].first > m_data[chdIndex].first)
+					chdIndex = rIndex;
+			}
+			else
+			{
+				if (m_data[rIndex].first < m_data[chdIndex].first)
+					chdIndex = rIndex;
+			}
+		}
+
+		pair_type& crrPair = m_data[crrIndex];
+		pair_type& chdPair = m_data[chdIndex];
+
+		if constexpr (maxHeap)
+		{
+			if (crrPair.first >= chdPair.first)
+				break;
+		}
+		else
+		{
+			if (crrPair.first <= chdPair.first)
+				break;
+		}
+
+		crrIndex = chdIndex;
+		std::swap(crrPair, chdPair);
 	}
 }
 
 template <typename KeyType, typename ObjType, bool maxHeap>
 void Heap<KeyType, ObjType, maxHeap>::Push(KeyType key, const ObjType& object)
 {
-	if (m_size >= m_capacity) Expand();
+	if (m_size >= m_capacity)
+		Expand();
 
 	new(m_data + m_size) pair_type(key, object);
-	size_t crrIndex = m_size;
+	size_t crrIndex = m_size++;
 
-	m_size++;
 	while (crrIndex > 0)
 	{
 		const size_t parIndex = (crrIndex - 1) >> 1;
@@ -215,11 +245,13 @@ void Heap<KeyType, ObjType, maxHeap>::Push(KeyType key, const ObjType& object)
 
 		if constexpr (maxHeap)
 		{
-			if (parPair.first >= crrPair.first) break;
+			if (parPair.first >= crrPair.first)
+				break;
 		}
 		else
 		{
-			if (parPair.first <= crrPair.first) break;
+			if (parPair.first <= crrPair.first)
+				break;
 		}
 
 		crrIndex = parIndex;

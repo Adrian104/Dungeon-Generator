@@ -168,7 +168,7 @@ void Generator::FindPaths()
 
 			do
 			{
-				crrNode = heap.Top();
+				crrNode = heap.TopObject();
 				heap.Pop();
 
 			} while (crrNode -> status > statusCounter);
