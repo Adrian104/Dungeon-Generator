@@ -183,7 +183,6 @@
     <ClInclude Include="src\widgets\menu.hpp" />
     <ClInclude Include="src\widgets\mod.hpp" />
     <ClInclude Include="src\widgets\warning.hpp" />
-    <ClInclude Include="src\widgets\widget.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\dgen\dgen.vcxproj">

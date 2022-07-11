@@ -1,6 +1,6 @@
 #pragma once
-#include <string>
 #include <chrono>
+#include <string>
 #include <utility>
 
 inline const int g_minDepth = 9;

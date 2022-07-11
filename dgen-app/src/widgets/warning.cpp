@@ -1,5 +1,4 @@
 #include "warning.hpp"
-#include "../app.hpp"
 
 void Warning::Clear()
 {

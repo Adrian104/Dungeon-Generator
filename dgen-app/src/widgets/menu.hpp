@@ -1,8 +1,7 @@
 #pragma once
-#include <vector>
 #include "mod.hpp"
-#include "widget.hpp"
-#include "../anim.hpp"
+#include "../app.hpp"
+#include <vector>
 
 class Menu : public Widget, public Animator
 {

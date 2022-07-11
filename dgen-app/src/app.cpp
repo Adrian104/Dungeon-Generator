@@ -1,9 +1,9 @@
-#include <cmath>
-#include <stdexcept>
 #include "app.hpp"
-#include "global.hpp"
 #include "widgets/menu.hpp"
 #include "widgets/warning.hpp"
+
+#include <cmath>
+#include <stdexcept>
 
 SDL_FPoint ToFPoint(const Point& point) { return { static_cast<float>(point.x), static_cast<float>(point.y) }; }
 SDL_FRect ToFRect(const Rect& rect) { return { static_cast<float>(rect.x), static_cast<float>(rect.y), static_cast<float>(rect.w), static_cast<float>(rect.h) }; }

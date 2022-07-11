@@ -1,11 +1,15 @@
 #pragma once
-#include <map>
-#include <vector>
-#include <random>
-#include <limits>
+
 #include "btree.hpp"
 #include "heap.hpp"
 #include "rand.hpp"
+
+#include <limits>
+#include <map>
+#include <random>
+#include <vector>
+
+struct Room;
 
 struct Point
 {
@@ -23,19 +27,11 @@ struct Rect
 	Rect(int pX, int pY, int pW, int pH) : x(pX), y(pY), w(pW), h(pH) {}
 };
 
-struct Room;
+enum Dir { NORTH, EAST, SOUTH, WEST };
 
 using Vec = Point;
 using uint = unsigned int;
 using byte = unsigned char;
-
-inline float Distance(const Point a, const Point b)
-{
-	const int dx = b.x - a.x;
-	const int dy = b.y - a.y;
-
-	return std::sqrt(static_cast<float>(dx * dx + dy * dy));
-}
 
 struct Cell
 {

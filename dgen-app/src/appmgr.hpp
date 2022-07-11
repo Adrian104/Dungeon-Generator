@@ -1,8 +1,8 @@
 #pragma once
-#include <map>
-#include <string>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <map>
+#include <string>
 
 class Text
 {

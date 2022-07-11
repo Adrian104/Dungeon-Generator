@@ -1,6 +1,4 @@
 #include "menu.hpp"
-#include "../app.hpp"
-#include "../global.hpp"
 
 Menu::Menu(Application& app) : Widget(app), Animator(g_menuAnimTime)
 {

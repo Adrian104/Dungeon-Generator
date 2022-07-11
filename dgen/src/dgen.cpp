@@ -1,8 +1,6 @@
+#include "dgen.hpp"
 #include <cmath>
 #include <stdexcept>
-#include "dgen.hpp"
-
-enum Dir { NORTH, EAST, SOUTH, WEST };
 
 Generator::Generator() : extDist(0), intDist(0), roomCount(0), deltaDepth(0), targetDepth(0), minSpaceSize(0), statusCounter(1), gOutput(nullptr), gInput(nullptr), root(nullptr) {}
 Generator::~Generator() { Clear(); }
@@ -150,7 +148,12 @@ void Generator::FindPaths()
 
 				if (nNode -> status < statusCounter)
 				{
-					nNode -> hCost = static_cast<int>(Distance(nNode -> pos, stop -> pos) * gInput -> heuristicFactor);
+					const int dx = stop -> pos.x - nNode -> pos.x;
+					const int dy = stop -> pos.y - nNode -> pos.y;
+
+					const float dist = std::sqrt(static_cast<float>(dx * dx + dy * dy));
+
+					nNode -> hCost = static_cast<int>(dist * gInput -> heuristicFactor);
 					nNode -> status = statusCounter;
 
 					goto add_to_heap;

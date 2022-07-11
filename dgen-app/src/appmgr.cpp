@@ -1,5 +1,5 @@
-#include <stdexcept>
 #include "appmgr.hpp"
+#include <stdexcept>
 
 Text::Text(Text&& ref) noexcept : m_width(ref.m_width), m_height(ref.m_height), m_texture(ref.m_texture)
 {

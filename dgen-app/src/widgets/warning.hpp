@@ -1,9 +1,7 @@
 #pragma once
-#include <string>
+#include "../app.hpp"
 #include <functional>
-#include "widget.hpp"
-#include "../anim.hpp"
-#include "../global.hpp"
+#include <string>
 
 class Warning : public Widget, public Animator
 {
