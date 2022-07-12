@@ -1,10 +1,14 @@
 #pragma once
 #include <iterator>
+#include <type_traits>
+#include <utility>
 
 namespace bt
 {
+	enum class Traversal : unsigned int { PREORDER, INORDER, POSTORDER };
+
 	template <typename Type>
-	struct Node : public Type
+	class Node : public Type
 	{
 		class Iterator
 		{
@@ -28,7 +32,7 @@ namespace bt
 			public:
 			int m_counter = 0;
 
-			Iterator(pointer tree, int breakAt);
+			Iterator(pointer tree, Traversal traversal);
 
 			pointer operator->() { return m_crr; }
 			reference operator*() const { return *m_crr; }
@@ -40,14 +44,14 @@ namespace bt
 			bool operator!=(const Iterator& iter) const { return m_crr != iter.m_crr; };
 		};
 
-		static int defaultBreakAt;
-
 		public:
+		static Traversal defaultTraversal;
+
 		Node* m_parent;
 		Node* m_left = nullptr;
 		Node* m_right = nullptr;
 
-		Node(Node* parent, Type&& ref) : Type(ref), m_parent(parent) {}
+		Node(Node* parent, Type&& ref) : Type(std::move(ref)), m_parent(parent) {}
 		Node(Node* parent, const Type& ref) : Type(ref), m_parent(parent) {}
 		~Node() { delete m_right; delete m_left; }
 
@@ -57,12 +61,8 @@ namespace bt
 		Node(Node&& ref) noexcept = delete;
 		Node& operator=(Node&& ref) noexcept = delete;
 
-		Iterator begin() { return Iterator(this, defaultBreakAt); }
-		Iterator end() { return Iterator(nullptr, defaultBreakAt); }
-
-		static void SetDefaultPreorder() { defaultBreakAt = 0; }
-		static void SetDefaultInorder() { defaultBreakAt = 1; }
-		static void SetDefaultPostorder() { defaultBreakAt = 2; }
+		Iterator begin() { return Iterator(this, defaultTraversal); }
+		Iterator end() { return Iterator(nullptr, defaultTraversal); }
 	};
 
 	template <typename Type>
@@ -115,18 +115,22 @@ namespace bt
 	}
 
 	template <typename Type>
-	Node<Type>::Iterator::Iterator(pointer tree, int breakAt) : m_crr(tree), m_breakAt(breakAt)
+	Node<Type>::Iterator::Iterator(pointer tree, Traversal traversal)
+		: m_crr(tree), m_breakAt(static_cast<std::underlying_type_t<Traversal>>(traversal))
 	{
-		while (m_breakAt != m_index && m_crr != nullptr) Advance();
+		while (m_breakAt != m_index && m_crr != nullptr)
+			Advance();
 	}
 
 	template <typename Type>
 	auto Node<Type>::Iterator::operator++() -> Iterator&
 	{
-		do { Advance(); } while (m_breakAt != m_index && m_crr != nullptr);
+		do { Advance(); }
+		while (m_breakAt != m_index && m_crr != nullptr);
+
 		return *this;
 	}
 
 	template <typename Type>
-	int Node<Type>::defaultBreakAt = 0;
+	Traversal Node<Type>::defaultTraversal = Traversal::PREORDER;
 }

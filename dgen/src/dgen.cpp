@@ -99,7 +99,7 @@ void Generator::LinkNodes()
 
 void Generator::FindPaths()
 {
-	bt::Node<Cell>::SetDefaultPostorder();
+	bt::Node<Cell>::defaultTraversal = bt::Traversal::POSTORDER;
 	for (auto& btNode : *root)
 	{
 		if (btNode.m_left == nullptr || btNode.m_right == nullptr)
@@ -266,7 +266,7 @@ void Generator::OptimizeNodes()
 void Generator::GenerateRooms()
 {
 	rooms.reserve(roomCount);
-	bt::Node<Cell>::SetDefaultPostorder();
+	bt::Node<Cell>::defaultTraversal = bt::Traversal::POSTORDER;
 
 	for (auto& btNode : *root)
 	{

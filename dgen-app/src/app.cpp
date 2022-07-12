@@ -97,7 +97,7 @@ void Application::Render()
 		};
 
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
-		bt::Node<Cell>::SetDefaultPreorder();
+		bt::Node<Cell>::defaultTraversal = bt::Traversal::PREORDER;
 
 		for (auto& btNode : *m_generator.root)
 		{
