@@ -14,7 +14,7 @@ class Warning : public Widget, public Animator
 	void Clear();
 
 	public:
-	Warning(Application& app) : Widget(app), Animator(g_warningAnimTime) {}
+	Warning() : Animator(g_warningAnimTime) {}
 	~Warning() { Clear(); }
 
 	void Draw() override;

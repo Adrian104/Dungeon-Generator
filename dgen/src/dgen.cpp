@@ -274,9 +274,7 @@ void Generator::GenerateRooms()
 			continue;
 
 		const Rect& space = btNode.space;
-		auto& engine = random.GetEngine();
-
-		Vec priSize(static_cast<int>(space.w * uniRoom(engine)), static_cast<int>(space.h * uniRoom(engine)));
+		Vec priSize(static_cast<int>(space.w * random(uniRoom)), static_cast<int>(space.h * random(uniRoom)));
 
 		if (priSize.x < roomSizeLimit)
 			priSize.x = roomSizeLimit;
@@ -300,7 +298,7 @@ void Generator::GenerateRooms()
 			secSize.*decAxis = priSize.*decAxis >> 1;
 			if (secSize.*decAxis < roomSizeLimit) goto skip_double_room;
 
-			const int extra = static_cast<int>(remSize.*incAxis * uniRoom(engine));
+			const int extra = static_cast<int>(remSize.*incAxis * random(uniRoom));
 
 			secSize.*incAxis = priSize.*incAxis + extra;
 			remSize.*incAxis -= extra;
@@ -347,7 +345,7 @@ void Generator::GenerateOutput()
 	}
 
 	gOutput -> entrances.reserve(c);
-	for (auto &[pair, node] : posXNodes)
+	for (auto &[pos, node] : posXNodes)
 	{
 		if ((node.path & (1 << Dir::NORTH)) != 0) c += node.links[Dir::NORTH] -> ToRoom() == nullptr;
 		if ((node.path & (1 << Dir::EAST)) != 0) c += node.links[Dir::EAST] -> ToRoom() == nullptr;
@@ -369,7 +367,7 @@ void Generator::GenerateOutput()
 		}
 	}
 
-	for (auto &[pair, node] : posXNodes)
+	for (auto &[pos, node] : posXNodes)
 	{
 		if ((node.path & (1 << Dir::NORTH)) != 0)
 		{
@@ -422,7 +420,7 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 	else { xy = &Rect::x; wh = &Rect::w; }
 
 	const int totalSize = crrSpace.*wh;
-	const int randSize = static_cast<int>(totalSize * uniSpace(random.GetEngine()));
+	const int randSize = static_cast<int>(totalSize * random(uniSpace));
 
 	if (randSize < minSpaceSize || totalSize - randSize < minSpaceSize) goto no_more;
 

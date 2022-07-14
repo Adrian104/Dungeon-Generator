@@ -25,5 +25,8 @@ class Random
 	engine_type& GetEngine() { return m_engine; }
 	result_type operator()() { return m_engine(); }
 
+	template <typename Type>
+	auto operator()(const Type& distribution) { return distribution(m_engine); }
+
 	void Init(const seed_type seed = engine_type::default_seed);
 };

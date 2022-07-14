@@ -1,6 +1,6 @@
 #include "menu.hpp"
 
-Menu::Menu(Application& app) : Widget(app), Animator(g_menuAnimTime)
+Menu::Menu() : Animator(g_menuAnimTime)
 {
 	m_renderOutput = m_app.CreateTexture(g_menuWidth, m_app.GetHeight());
 }

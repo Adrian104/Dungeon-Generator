@@ -10,13 +10,13 @@ class Menu : public Widget, public Animator
 	std::vector<Modifier*> m_mods;
 
 	public:
-	Menu(Application& app);
+	Menu();
 	~Menu();
 
 	void Draw() override;
 	void Render() override;
 	void HandleEvent(SDL_Event& sdlEvent) override;
 
-	template <typename Type>
-	void Add(const Type& mod) { m_mods.push_back(new Type(mod)); }
+	template <typename Type, typename... Args>
+	void Add(Args&&... args) { m_mods.push_back(new Type(std::forward<Args>(args)...)); }
 };

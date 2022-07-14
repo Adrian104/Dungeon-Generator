@@ -1,26 +1,28 @@
 #include "appmgr.hpp"
 #include <stdexcept>
 
-Text::Text(Text&& ref) noexcept : m_width(ref.m_width), m_height(ref.m_height), m_texture(ref.m_texture)
-{
-	ref.m_texture = nullptr;
-}
+Text::Text(Text&& ref) noexcept
+	: m_width(std::exchange(ref.m_width, 0)), m_height(std::exchange(ref.m_height, 0)), m_texture(std::exchange(ref.m_texture, nullptr)) {}
 
 Text& Text::operator=(Text&& ref) noexcept
 {
-	if (this == &ref) return *this;
+	if (&ref == this)
+		return *this;
+
 	Clear();
 
-	m_width = ref.m_width;
-	m_height = ref.m_height;
-	m_texture = ref.m_texture;
+	m_width = std::exchange(ref.m_width, 0);
+	m_height = std::exchange(ref.m_height, 0);
+	m_texture = std::exchange(ref.m_texture, nullptr);
 
-	ref.m_texture = nullptr;
 	return *this;
 }
 
 void Text::Clear()
 {
+	m_width = 0;
+	m_height = 0;
+
 	if (m_texture != nullptr)
 	{
 		SDL_DestroyTexture(m_texture);

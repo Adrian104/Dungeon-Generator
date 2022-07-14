@@ -8,6 +8,8 @@
 SDL_FPoint ToFPoint(const Point& point) { return { static_cast<float>(point.x), static_cast<float>(point.y) }; }
 SDL_FRect ToFRect(const Rect& rect) { return { static_cast<float>(rect.x), static_cast<float>(rect.y), static_cast<float>(rect.w), static_cast<float>(rect.h) }; }
 
+Application* Widget::appPointer = nullptr;
+
 void Application::Draw()
 {
 	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
@@ -124,11 +126,11 @@ void Application::Render()
 		}
 
 		SDL_SetRenderDrawColor(renderer, 0x50, 0x50, 0x50, 0xFF);
-		for (auto& [pair, node] : m_generator.posXNodes) DrawLinks(node);
+		for (auto& [pos, node] : m_generator.posXNodes) DrawLinks(node);
 
 		SDL_SetRenderDrawColor(renderer, 0, 0xC0, 0, 0xFF);
 		for (Room& room : m_generator.rooms) DrawNode(room);
-		for (auto& [pair, node] : m_generator.posXNodes) DrawNode(node);
+		for (auto& [pos, node] : m_generator.posXNodes) DrawNode(node);
 	}
 	else
 	{
@@ -146,10 +148,10 @@ void Application::Render()
 		if (m_visPaths)
 		{
 			SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-			for (std::pair<Point, Vec>& path : m_output.paths)
+			for (auto& [origin, offset] : m_output.paths)
 			{
-				SDL_FPoint p1 = { path.first.x + 0.5f, path.first.y + 0.5f };
-				SDL_FPoint p2 = { path.second.x + p1.x, path.second.y + p1.y };
+				SDL_FPoint p1 = { origin.x + 0.5f, origin.y + 0.5f };
+				SDL_FPoint p2 = { offset.x + p1.x, offset.y + p1.y };
 
 				m_viewport.ToScreen(p1.x, p1.y, p1.x, p1.y);
 				m_viewport.ToScreen(p2.x, p2.y, p2.x, p2.y);
@@ -317,21 +319,21 @@ void Application::SetupWidgets()
 {
 	Menu& menu = AccessWidget<Menu>();
 
-	menu.Add(FactorMod("Size factor", m_factor));
-	menu.Add(IntMod("Minimum depth", m_input.minDepth));
-	menu.Add(IntMod("Maximum depth", m_input.maxDepth));
-	menu.Add(PercentMod("Heuristic", m_input.heuristicFactor));
-	menu.Add(PercentMod("Minimum room size", m_input.minRoomSize));
-	menu.Add(PercentMod("Maximum room size", m_input.maxRoomSize));
-	menu.Add(PercentMod("Space randomness", m_input.spaceSizeRandomness));
-	menu.Add(PercentMod("Double room probability", m_input.doubleRoomProb));
-	menu.Add(IntMod("Space interdistance", m_input.spaceInterdistance));
-	menu.Add(IntMod("Random area depth", m_input.randAreaDepth));
-	menu.Add(PercentMod("Random area density", m_input.randAreaDens));
-	menu.Add(PercentMod("Random area probability", m_input.randAreaProb));
-	menu.Add(BoolMod("Rooms visibility", m_visRooms));
-	menu.Add(BoolMod("Paths visibility", m_visPaths));
-	menu.Add(BoolMod("Entrances visibility", m_visEntrances));
+	menu.Add<FactorMod>("Size factor", m_factor);
+	menu.Add<IntMod>("Minimum depth", m_input.minDepth);
+	menu.Add<IntMod>("Maximum depth", m_input.maxDepth);
+	menu.Add<PercentMod>("Heuristic", m_input.heuristicFactor);
+	menu.Add<PercentMod>("Minimum room size", m_input.minRoomSize);
+	menu.Add<PercentMod>("Maximum room size", m_input.maxRoomSize);
+	menu.Add<PercentMod>("Space randomness", m_input.spaceSizeRandomness);
+	menu.Add<PercentMod>("Double room probability", m_input.doubleRoomProb);
+	menu.Add<IntMod>("Space interdistance", m_input.spaceInterdistance);
+	menu.Add<IntMod>("Random area depth", m_input.randAreaDepth);
+	menu.Add<PercentMod>("Random area density", m_input.randAreaDens);
+	menu.Add<PercentMod>("Random area probability", m_input.randAreaProb);
+	menu.Add<BoolMod>("Rooms visibility", m_visRooms);
+	menu.Add<BoolMod>("Paths visibility", m_visPaths);
+	menu.Add<BoolMod>("Entrances visibility", m_visEntrances);
 }
 
 void Application::Init(bool full)
@@ -342,8 +344,8 @@ void Application::Init(bool full)
 	{
 		for (int i = 0; i < sizeof(g_fonts) / sizeof(*g_fonts); i++)
 		{
-			const auto& font = g_fonts[i];
-			LoadFont(i, font.first, font.second);
+			const auto& [size, path] = g_fonts[i];
+			LoadFont(i, size, path);
 		}
 	}
 
