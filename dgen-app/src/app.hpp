@@ -35,14 +35,14 @@ class Widget
 	Widget(Widget&& ref) noexcept = delete;
 	Widget& operator=(Widget&& ref) noexcept = delete;
 
-	void ScheduleRendering() { m_render = true; }
+	void ScheduleRendering();
 	friend class Application;
 };
 
 class Application : protected AppManager
 {
 	enum class SeedMode { KEEP, INCREMENT, RANDOMIZE };
-	enum class Task { NOTHING, DRAW, RENDER, GENERATE };
+	enum class Task { IDLE, DRAW, RENDER_WIDGETS, RENDER, GENERATE };
 
 	bool m_visRooms;
 	bool m_visPaths;
@@ -72,6 +72,7 @@ class Application : protected AppManager
 	void Generate();
 	void LoadDefaults();
 	void SetupWidgets();
+	void RenderWidgets();
 
 	void Init(bool full);
 	void Quit(bool full);
@@ -93,7 +94,14 @@ class Application : protected AppManager
 
 	friend class Menu;
 	friend class Warning;
+	friend class Widget;
 };
+
+inline void Widget::ScheduleRendering()
+{
+	m_render = true;
+	m_app.Schedule(Application::Task::RENDER_WIDGETS);
+}
 
 template <typename Type>
 Type* Application::GetWidget() const

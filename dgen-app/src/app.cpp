@@ -12,15 +12,6 @@ Application* Widget::appPointer = nullptr;
 
 void Application::Draw()
 {
-	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
-	{
-		if (crr -> m_render)
-		{
-			crr -> Render();
-			crr -> m_render = false;
-		}
-	}
-
 	SDL_Renderer* const renderer = GetRenderer();
 
 	SDL_SetRenderTarget(renderer, nullptr);
@@ -175,19 +166,18 @@ void Application::Render()
 
 bool Application::Update()
 {
-	bool redraw = false;
-	SDL_Event sdlEvent = {};
-
 	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
 	{
 		Animator* const animator = crr -> m_animator;
-		if (animator == nullptr) continue;
-
-		redraw |= animator -> IsPlaying();
-		animator -> Update();
+		if (animator != nullptr && animator -> IsPlaying())
+		{
+			animator -> Update();
+			Schedule(Task::DRAW);
+		}
 	}
 
-	bool pending = redraw ? SDL_PollEvent(&sdlEvent) : SDL_WaitEvent(&sdlEvent);
+	SDL_Event sdlEvent = {};
+	bool pending = (m_task != Task::IDLE) ? SDL_PollEvent(&sdlEvent) : SDL_WaitEvent(&sdlEvent);
 
 	while (pending)
 	{
@@ -241,18 +231,6 @@ bool Application::Update()
 		pending = SDL_PollEvent(&sdlEvent);
 	}
 
-	if (m_task == Task::NOTHING)
-	{
-		if (redraw)
-			goto draw;
-
-		for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
-		{
-			if (crr -> m_render)
-				goto draw;
-		}
-	}
-
 	switch (m_task)
 	{
 	case Task::GENERATE:
@@ -263,9 +241,13 @@ bool Application::Update()
 		Render();
 		[[fallthrough]];
 
-	case Task::DRAW: draw:
+	case Task::RENDER_WIDGETS:
+		RenderWidgets();
+		[[fallthrough]];
+
+	case Task::DRAW:
 		Draw();
-		m_task = Task::NOTHING;
+		m_task = Task::IDLE;
 	}
 
 	return true;
@@ -334,6 +316,18 @@ void Application::SetupWidgets()
 	menu.Add<BoolMod>("Rooms visibility", m_visRooms);
 	menu.Add<BoolMod>("Paths visibility", m_visPaths);
 	menu.Add<BoolMod>("Entrances visibility", m_visEntrances);
+}
+
+void Application::RenderWidgets()
+{
+	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
+	{
+		if (crr -> m_render)
+		{
+			crr -> Render();
+			crr -> m_render = false;
+		}
+	}
 }
 
 void Application::Init(bool full)
