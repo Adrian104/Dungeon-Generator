@@ -7,6 +7,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dgen", "dgen\dgen.vcxproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dgen-app", "dgen-app\dgen-app.vcxproj", "{17D2E18C-2167-40A0-B87B-5F2399DD5B64}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dgen-benchmark", "dgen-benchmark\dgen-benchmark.vcxproj", "{EB45B9CE-F225-4D9F-95E2-CA8DE8BCA2D3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{317A7243-AFA9-48ED-8D4B-05D1D25028FB} = {317A7243-AFA9-48ED-8D4B-05D1D25028FB}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +36,14 @@ Global
 		{17D2E18C-2167-40A0-B87B-5F2399DD5B64}.Release|x64.Build.0 = Release|x64
 		{17D2E18C-2167-40A0-B87B-5F2399DD5B64}.Release|x86.ActiveCfg = Release|Win32
 		{17D2E18C-2167-40A0-B87B-5F2399DD5B64}.Release|x86.Build.0 = Release|Win32
+		{EB45B9CE-F225-4D9F-95E2-CA8DE8BCA2D3}.Debug|x64.ActiveCfg = Debug|x64
+		{EB45B9CE-F225-4D9F-95E2-CA8DE8BCA2D3}.Debug|x64.Build.0 = Debug|x64
+		{EB45B9CE-F225-4D9F-95E2-CA8DE8BCA2D3}.Debug|x86.ActiveCfg = Debug|Win32
+		{EB45B9CE-F225-4D9F-95E2-CA8DE8BCA2D3}.Debug|x86.Build.0 = Debug|Win32
+		{EB45B9CE-F225-4D9F-95E2-CA8DE8BCA2D3}.Release|x64.ActiveCfg = Release|x64
+		{EB45B9CE-F225-4D9F-95E2-CA8DE8BCA2D3}.Release|x64.Build.0 = Release|x64
+		{EB45B9CE-F225-4D9F-95E2-CA8DE8BCA2D3}.Release|x86.ActiveCfg = Release|Win32
+		{EB45B9CE-F225-4D9F-95E2-CA8DE8BCA2D3}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
