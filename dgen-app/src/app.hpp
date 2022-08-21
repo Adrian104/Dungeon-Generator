@@ -57,14 +57,13 @@ class Application : protected AppManager
 	Generator m_generator;
 
 	Viewport m_viewport;
+	std::random_device m_randomDevice;
+
 	Widget* m_widgetList = nullptr;
 	SDL_Texture* m_renderOutput = nullptr;
 
 	Task m_task = Task::GENERATE;
 	SeedMode m_seedMode = SeedMode::KEEP;
-
-	Random::seed_type m_seed = 0;
-	std::random_device m_randomDevice;
 
 	void Draw();
 	void Render();

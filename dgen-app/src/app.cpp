@@ -70,8 +70,8 @@ void Application::Render()
 			SDL_FPoint p1 = { static_cast<float>(node.pos.x + 0.5f), static_cast<float>(node.pos.y + 0.5f) };
 			m_viewport.ToScreen(p1.x, p1.y, p1.x, p1.y);
 
-			const int end = (m_seed & 0b10) + 2;
-			for (int i = m_seed & 0b10; i < end; i++)
+			const int end = (m_input.seed & 0b10) + 2;
+			for (int i = m_input.seed & 0b10; i < end; i++)
 			{
 				Node* const node2 = node.links[i];
 				if (node2 == nullptr) continue;
@@ -262,10 +262,10 @@ void Application::Generate()
 
 	try
 	{
-		if (m_seedMode == SeedMode::INCREMENT) m_seed++;
-		else if (m_seedMode == SeedMode::RANDOMIZE) m_seed = m_randomDevice();
+		if (m_seedMode == SeedMode::INCREMENT) m_input.seed++;
+		else if (m_seedMode == SeedMode::RANDOMIZE) m_input.seed = m_randomDevice();
 
-		m_generator.Generate(&m_input, &m_output, m_seed);
+		m_generator.Generate(&m_input, &m_output);
 
 		if (Warning* warning = GetWidget<Warning>(); warning != nullptr)
 			warning -> Set("");
@@ -280,6 +280,7 @@ void Application::LoadDefaults()
 	m_visPaths = g_visPaths;
 	m_visEntrances = g_visEntrances;
 
+	m_input.seed = 0;
 	m_input.minDepth = g_minDepth;
 	m_input.maxDepth = g_maxDepth;
 	m_input.maxRoomSize = g_maxRoomSize;

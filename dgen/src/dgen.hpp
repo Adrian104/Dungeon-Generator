@@ -74,6 +74,7 @@ struct Room : public Node
 
 struct GenInput
 {
+	Random::seed_type seed;
 	bool generateFewerPaths;
 
 	int width, height;
@@ -141,5 +142,5 @@ struct Generator
 	Generator();
 	~Generator();
 
-	void Generate(const GenInput *genInput, GenOutput *genOutput, const Random::seed_type seed);
+	void Generate(const GenInput *genInput, GenOutput *genOutput);
 };

@@ -23,6 +23,7 @@ void Generator::Prepare()
 		throw std::runtime_error("Variable 'maxRoomSize' is not a positive number");
 
 	*gOutput = {};
+	random.Init(gInput -> seed);
 
 	extDist = gInput -> spaceInterdistance + 1;
 	intDist = (extDist << 1) - 1;
@@ -527,11 +528,10 @@ Room *Generator::GetRandomRoom(bt::Node<Cell> *const btNode)
 	return room != nullptr ? room : btNode -> room;
 }
 
-void Generator::Generate(const GenInput *genInput, GenOutput *genOutput, const Random::seed_type seed)
+void Generator::Generate(const GenInput *genInput, GenOutput *genOutput)
 {
 	gInput = genInput;
 	gOutput = genOutput;
-	random.Init(seed);
 
 	Clear();
 	Prepare();
