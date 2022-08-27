@@ -155,6 +155,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\benchmark.cpp" />
     <ClCompile Include="src\ini_utils.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
@@ -164,7 +165,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\benchmark.hpp" />
     <ClInclude Include="src\ini_utils.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="config.ini" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
