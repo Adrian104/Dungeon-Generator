@@ -88,6 +88,10 @@ void Animator::Play(DirMode dirMode)
 		if (m_elapsed <= zero) m_backward = false;
 		else if (m_elapsed >= m_totalTime) m_backward = true;
 		else if (m_playing) m_backward = !m_backward;
+		[[fallthrough]];
+
+	default:
+		break;
 	}
 
 	m_playing = true;

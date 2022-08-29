@@ -27,7 +27,7 @@ class Widget
 
 	virtual void Draw() {}
 	virtual void Render() {}
-	virtual void HandleEvent(SDL_Event& sdlEvent) {}
+	virtual void HandleEvent(SDL_Event&) {}
 
 	Widget(const Widget& ref) = delete;
 	Widget& operator=(const Widget& ref) = delete;

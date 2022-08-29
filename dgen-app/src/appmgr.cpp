@@ -1,5 +1,6 @@
 #include "appmgr.hpp"
 #include <stdexcept>
+#include <utility>
 
 Text::Text(Text&& ref) noexcept
 	: m_width(std::exchange(ref.m_width, 0)), m_height(std::exchange(ref.m_height, 0)), m_texture(std::exchange(ref.m_texture, nullptr)) {}

@@ -85,7 +85,7 @@ void Menu::HandleEvent(SDL_Event& sdlEvent)
 			break;
 
 		case SDLK_DOWN:
-			if (++m_selection >= m_mods.size())
+			if (++m_selection >= static_cast<int>(m_mods.size()))
 				m_selection = 0;
 			break;
 

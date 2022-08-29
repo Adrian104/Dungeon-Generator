@@ -22,8 +22,8 @@ class Animator
 	void ToggleState();
 
 	public:
-	LoopMode m_loopMode;
 	duration_type m_totalTime;
+	LoopMode m_loopMode;
 
 	Animator(duration_type totalTime, LoopMode loopMode = LoopMode::NO_LOOP);
 

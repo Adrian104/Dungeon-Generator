@@ -247,6 +247,9 @@ bool Application::Update()
 
 	case Task::DRAW:
 		Draw();
+		[[fallthrough]];
+
+	default:
 		m_task = Task::IDLE;
 	}
 
@@ -337,11 +340,9 @@ void Application::Init(bool full)
 
 	if (full)
 	{
-		for (int i = 0; i < sizeof(g_fonts) / sizeof(*g_fonts); i++)
-		{
-			const auto& [size, path] = g_fonts[i];
-			LoadFont(i, size, path);
-		}
+		int index = 0;
+		for (const auto& [size, path] : g_fonts)
+			LoadFont(index++, size, path);
 	}
 
 	SDL_DisplayMode dm;

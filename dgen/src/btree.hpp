@@ -40,8 +40,8 @@ namespace bt
 			auto operator++() -> Iterator&;
 			Iterator operator++(int) { Iterator iter = *this; ++(*this); return iter; }
 
-			bool operator==(const Iterator& iter) const { return m_crr == iter.m_crr; };
-			bool operator!=(const Iterator& iter) const { return m_crr != iter.m_crr; };
+			bool operator==(const Iterator& iter) const { return m_crr == iter.m_crr; }
+			bool operator!=(const Iterator& iter) const { return m_crr != iter.m_crr; }
 		};
 
 		public:
