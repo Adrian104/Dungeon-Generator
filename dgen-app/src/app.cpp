@@ -286,8 +286,8 @@ void Application::LoadDefaults()
 	m_input.seed = 0;
 	m_input.minDepth = g_minDepth;
 	m_input.maxDepth = g_maxDepth;
-	m_input.maxRoomSize = g_maxRoomSize;
 	m_input.minRoomSize = g_minRoomSize;
+	m_input.maxRoomSize = g_maxRoomSize;
 	m_input.randAreaDens = g_randAreaDens;
 	m_input.randAreaProb = g_randAreaProb;
 	m_input.randAreaDepth = g_randAreaDepth;

@@ -59,14 +59,14 @@ namespace ini
 		if (!file.good()) return;
 
 		bool next = false;
-		for (auto& [sectionName, section] : container)
+		for (const auto& [sectionName, section] : container)
 		{
 			if (next) file << '\n';
 			next = true;
 
 			file << '[' << sectionName << "]\n";
 
-			for (auto& [key, value] : section)
+			for (const auto& [key, value] : section)
 				file << key << " = " << value << '\n';
 		}
 	}

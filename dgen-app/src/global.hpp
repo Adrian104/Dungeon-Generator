@@ -9,8 +9,8 @@ inline const int g_randAreaDepth = 2;
 inline const int g_spaceInterdistance = 2;
 
 inline const float g_factor = 1.0f;
-inline const float g_maxRoomSize = 0.75f;
 inline const float g_minRoomSize = 0.25f;
+inline const float g_maxRoomSize = 0.75f;
 inline const float g_randAreaDens = 0.5f;
 inline const float g_randAreaProb = 0.25f;
 inline const float g_doubleRoomProb = 0.25f;

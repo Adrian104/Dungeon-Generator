@@ -136,18 +136,18 @@ void Benchmark::RunTests()
 
 	if (m_delay > 0)
 	{
-		std::cout << "\n Delay " << m_delay << " ms\n";
+		std::cout << "\n Delay " << m_delay << " ms\n" << std::flush;
 		std::this_thread::sleep_for(milliseconds(m_delay));
 	}
 
-	std::cout << "\n ******** BENCHMARKING ********\n\n";
+	std::cout << "\n ************ BENCHMARKING ************\n\n";
 
 	Result result;
 	unsigned int index = 1;
 
 	for (Test& test : m_tests)
 	{
-		std::cout << ' ' << index++ << '/' << m_tests.size() << ' ' << test.m_name;
+		std::cout << ' ' << index++ << '/' << m_tests.size() << ' ' << test.m_name << std::flush;
 
 		bool measure = false;
 		int remIter = m_minWarmupIter;
@@ -177,11 +177,11 @@ void Benchmark::RunTests()
 			startTime = now;
 			minDuration = milliseconds(m_minTime);
 
-			std::cout << "... ";
+			std::cout << "... " << std::flush;
 		}
 
 		const auto elapsed = std::chrono::duration_cast<milliseconds>(now - startTime).count();
-		std::cout << "Done! (" << elapsed << " ms, " << test.m_iterations << " i)\n";
+		std::cout << "Done! (" << elapsed << " ms, " << test.m_iterations << " i)\n" << std::flush;
 	}
 
 	std::cout << '\n';
@@ -194,10 +194,10 @@ void Benchmark::LoadConfig()
 		ini::Get(section, "seed", dest.seed, req);
 		ini::Get(section, "width", dest.width, req);
 		ini::Get(section, "height", dest.height, req);
-		ini::Get(section, "maxDepth", dest.maxDepth, req);
 		ini::Get(section, "minDepth", dest.minDepth, req);
-		ini::Get(section, "maxRoomSize", dest.maxRoomSize, req);
+		ini::Get(section, "maxDepth", dest.maxDepth, req);
 		ini::Get(section, "minRoomSize", dest.minRoomSize, req);
+		ini::Get(section, "maxRoomSize", dest.maxRoomSize, req);
 		ini::Get(section, "randAreaDens", dest.randAreaDens, req);
 		ini::Get(section, "randAreaProb", dest.randAreaProb, req);
 		ini::Get(section, "randAreaDepth", dest.randAreaDepth, req);

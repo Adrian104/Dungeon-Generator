@@ -79,13 +79,13 @@ struct GenInput
 
 	int width, height;
 	int randAreaDepth;
-	int maxDepth, minDepth;
+	int minDepth, maxDepth;
 	int spaceInterdistance;
 
 	float doubleRoomProb;
 	float heuristicFactor;
 	float spaceSizeRandomness;
-	float maxRoomSize, minRoomSize;
+	float minRoomSize, maxRoomSize;
 	float randAreaDens, randAreaProb;
 };
 
