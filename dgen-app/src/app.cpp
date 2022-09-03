@@ -40,11 +40,11 @@ void Application::Render()
 			else if (var > max) var -= std::floor((var - max) / scale) * scale;
 		};
 
-		SDL_FPoint p1 = {};
+		SDL_FPoint p1{};
 		m_viewport.ToScreen(0.0f, 0.0f, p1.x, p1.y);
 
-		SDL_FPoint p2 = {};
-		m_viewport.ToScreen(static_cast<float>(m_input.width), static_cast<float>(m_input.height), p2.x, p2.y);
+		SDL_FPoint p2{};
+		m_viewport.ToScreen(static_cast<float>(m_input.m_width), static_cast<float>(m_input.m_height), p2.x, p2.y);
 
 		const float xMax = static_cast<float>(GetWidth());
 		const float yMax = static_cast<float>(GetHeight());
@@ -70,8 +70,8 @@ void Application::Render()
 			SDL_FPoint p1 = { static_cast<float>(node.pos.x + 0.5f), static_cast<float>(node.pos.y + 0.5f) };
 			m_viewport.ToScreen(p1.x, p1.y, p1.x, p1.y);
 
-			const int end = (m_input.seed & 0b10) + 2;
-			for (int i = m_input.seed & 0b10; i < end; i++)
+			const int end = (m_input.m_seed & 0b10) + 2;
+			for (int i = m_input.m_seed & 0b10; i < end; i++)
 			{
 				Node* const node2 = node.links[i];
 				if (node2 == nullptr) continue;
@@ -128,7 +128,7 @@ void Application::Render()
 		if (m_visRooms)
 		{
 			SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
-			for (Rect& room : m_output.rooms)
+			for (Rect& room : m_output.m_rooms)
 			{
 				SDL_FRect rect = ToFRect(room);
 				m_viewport.RectToScreen(rect, rect);
@@ -139,7 +139,7 @@ void Application::Render()
 		if (m_visPaths)
 		{
 			SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-			for (auto& [origin, offset] : m_output.paths)
+			for (auto& [origin, offset] : m_output.m_paths)
 			{
 				SDL_FPoint p1 = { origin.x + 0.5f, origin.y + 0.5f };
 				SDL_FPoint p2 = { offset.x + p1.x, offset.y + p1.y };
@@ -154,7 +154,7 @@ void Application::Render()
 		if (m_visEntrances)
 		{
 			SDL_SetRenderDrawColor(renderer, 0xFF, 0x60, 0, 0xFF);
-			for (Point& entrance : m_output.entrances)
+			for (Point& entrance : m_output.m_entrances)
 			{
 				SDL_FRect rect = { static_cast<float>(entrance.x), static_cast<float>(entrance.y), 1, 1 };
 				m_viewport.RectToScreen(rect, rect);
@@ -176,7 +176,7 @@ bool Application::Update()
 		}
 	}
 
-	SDL_Event sdlEvent = {};
+	SDL_Event sdlEvent{};
 	bool pending = (m_task != Task::IDLE) ? SDL_PollEvent(&sdlEvent) : SDL_WaitEvent(&sdlEvent);
 
 	while (pending)
@@ -260,13 +260,13 @@ void Application::Generate()
 {
 	m_viewport.SetDefaultScale(m_factor);
 
-	m_input.width = static_cast<int>(GetWidth() / m_factor);
-	m_input.height = static_cast<int>(GetHeight() / m_factor);
+	m_input.m_width = static_cast<int>(GetWidth() / m_factor);
+	m_input.m_height = static_cast<int>(GetHeight() / m_factor);
 
 	try
 	{
-		if (m_seedMode == SeedMode::INCREMENT) m_input.seed++;
-		else if (m_seedMode == SeedMode::RANDOMIZE) m_input.seed = m_randomDevice();
+		if (m_seedMode == SeedMode::INCREMENT) m_input.m_seed++;
+		else if (m_seedMode == SeedMode::RANDOMIZE) m_input.m_seed = m_randomDevice();
 
 		m_generator.Generate(&m_input, &m_output);
 
@@ -283,19 +283,19 @@ void Application::LoadDefaults()
 	m_visPaths = g_visPaths;
 	m_visEntrances = g_visEntrances;
 
-	m_input.seed = 0;
-	m_input.minDepth = g_minDepth;
-	m_input.maxDepth = g_maxDepth;
-	m_input.minRoomSize = g_minRoomSize;
-	m_input.maxRoomSize = g_maxRoomSize;
-	m_input.randAreaDens = g_randAreaDens;
-	m_input.randAreaProb = g_randAreaProb;
-	m_input.randAreaDepth = g_randAreaDepth;
-	m_input.doubleRoomProb = g_doubleRoomProb;
-	m_input.heuristicFactor = g_heuristicFactor;
-	m_input.generateFewerPaths = g_generateFewerPaths;
-	m_input.spaceInterdistance = g_spaceInterdistance;
-	m_input.spaceSizeRandomness = g_spaceSizeRandomness;
+	m_input.m_seed = 0;
+	m_input.m_minDepth = g_minDepth;
+	m_input.m_maxDepth = g_maxDepth;
+	m_input.m_minRoomSize = g_minRoomSize;
+	m_input.m_maxRoomSize = g_maxRoomSize;
+	m_input.m_randAreaDens = g_randAreaDens;
+	m_input.m_randAreaProb = g_randAreaProb;
+	m_input.m_randAreaDepth = g_randAreaDepth;
+	m_input.m_doubleRoomProb = g_doubleRoomProb;
+	m_input.m_heuristicFactor = g_heuristicFactor;
+	m_input.m_generateFewerPaths = g_generateFewerPaths;
+	m_input.m_spaceInterdistance = g_spaceInterdistance;
+	m_input.m_spaceSizeRandomness = g_spaceSizeRandomness;
 
 	if (Menu* menu = GetWidget<Menu>(); menu != nullptr)
 		menu -> ScheduleRendering();
@@ -306,17 +306,17 @@ void Application::SetupWidgets()
 	Menu& menu = AccessWidget<Menu>();
 
 	menu.Add<FactorMod>("Size factor", m_factor);
-	menu.Add<IntMod>("Minimum depth", m_input.minDepth);
-	menu.Add<IntMod>("Maximum depth", m_input.maxDepth);
-	menu.Add<PercentMod>("Heuristic", m_input.heuristicFactor);
-	menu.Add<PercentMod>("Minimum room size", m_input.minRoomSize);
-	menu.Add<PercentMod>("Maximum room size", m_input.maxRoomSize);
-	menu.Add<PercentMod>("Space randomness", m_input.spaceSizeRandomness);
-	menu.Add<PercentMod>("Double room probability", m_input.doubleRoomProb);
-	menu.Add<IntMod>("Space interdistance", m_input.spaceInterdistance);
-	menu.Add<IntMod>("Random area depth", m_input.randAreaDepth);
-	menu.Add<PercentMod>("Random area density", m_input.randAreaDens);
-	menu.Add<PercentMod>("Random area probability", m_input.randAreaProb);
+	menu.Add<IntMod>("Minimum depth", m_input.m_minDepth);
+	menu.Add<IntMod>("Maximum depth", m_input.m_maxDepth);
+	menu.Add<PercentMod>("Heuristic", m_input.m_heuristicFactor);
+	menu.Add<PercentMod>("Minimum room size", m_input.m_minRoomSize);
+	menu.Add<PercentMod>("Maximum room size", m_input.m_maxRoomSize);
+	menu.Add<PercentMod>("Space randomness", m_input.m_spaceSizeRandomness);
+	menu.Add<PercentMod>("Double room probability", m_input.m_doubleRoomProb);
+	menu.Add<IntMod>("Space interdistance", m_input.m_spaceInterdistance);
+	menu.Add<IntMod>("Random area depth", m_input.m_randAreaDepth);
+	menu.Add<PercentMod>("Random area density", m_input.m_randAreaDens);
+	menu.Add<PercentMod>("Random area probability", m_input.m_randAreaProb);
 	menu.Add<BoolMod>("Rooms visibility", m_visRooms);
 	menu.Add<BoolMod>("Paths visibility", m_visPaths);
 	menu.Add<BoolMod>("Entrances visibility", m_visEntrances);

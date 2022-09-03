@@ -74,26 +74,26 @@ struct Room : public Node
 
 struct GenInput
 {
-	Random::seed_type seed;
-	bool generateFewerPaths;
+	Random::seed_type m_seed;
+	bool m_generateFewerPaths;
 
-	int width, height;
-	int randAreaDepth;
-	int minDepth, maxDepth;
-	int spaceInterdistance;
+	int m_randAreaDepth;
+	int m_width, m_height;
+	int m_spaceInterdistance;
+	int m_minDepth, m_maxDepth;
 
-	float doubleRoomProb;
-	float heuristicFactor;
-	float spaceSizeRandomness;
-	float minRoomSize, maxRoomSize;
-	float randAreaDens, randAreaProb;
+	float m_doubleRoomProb;
+	float m_heuristicFactor;
+	float m_spaceSizeRandomness;
+	float m_minRoomSize, m_maxRoomSize;
+	float m_randAreaDens, m_randAreaProb;
 };
 
 struct GenOutput
 {
-	std::vector<Rect> rooms;
-	std::vector<Point> entrances;
-	std::vector<std::pair<Point, Vec>> paths;
+	std::vector<Rect> m_rooms;
+	std::vector<Point> m_entrances;
+	std::vector<std::pair<Point, Vec>> m_paths;
 };
 
 struct Generator

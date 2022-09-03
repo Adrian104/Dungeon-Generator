@@ -58,7 +58,7 @@ void TimedGenerator::TimedGenerate(const GenInput* genInput)
 	Prepare();
 	m_result.Measure("Prepare");
 
-	GenerateTree(*root, gInput -> maxDepth);
+	GenerateTree(*root, gInput -> m_maxDepth);
 	m_result.Measure("Generate Tree");
 
 	GenerateRooms();
@@ -79,9 +79,9 @@ void TimedGenerator::TimedGenerate(const GenInput* genInput)
 	Clear();
 	m_result.Measure("Clear");
 
-	m_result.ComputeHash(m_output.rooms.data(), SizeInBytes(m_output.rooms));
-	m_result.ComputeHash(m_output.paths.data(), SizeInBytes(m_output.paths));
-	m_result.ComputeHash(m_output.entrances.data(), SizeInBytes(m_output.entrances));
+	m_result.ComputeHash(m_output.m_rooms.data(), SizeInBytes(m_output.m_rooms));
+	m_result.ComputeHash(m_output.m_paths.data(), SizeInBytes(m_output.m_paths));
+	m_result.ComputeHash(m_output.m_entrances.data(), SizeInBytes(m_output.m_entrances));
 }
 
 void Test::Interpret(const Result& result, std::vector<const char*>& columns, bool measure)
@@ -191,21 +191,21 @@ void Benchmark::LoadConfig()
 {
 	auto LoadGenInput = [](ini::section_type& section, GenInput& dest, bool req) -> void
 	{
-		ini::Get(section, "seed", dest.seed, req);
-		ini::Get(section, "width", dest.width, req);
-		ini::Get(section, "height", dest.height, req);
-		ini::Get(section, "minDepth", dest.minDepth, req);
-		ini::Get(section, "maxDepth", dest.maxDepth, req);
-		ini::Get(section, "minRoomSize", dest.minRoomSize, req);
-		ini::Get(section, "maxRoomSize", dest.maxRoomSize, req);
-		ini::Get(section, "randAreaDens", dest.randAreaDens, req);
-		ini::Get(section, "randAreaProb", dest.randAreaProb, req);
-		ini::Get(section, "randAreaDepth", dest.randAreaDepth, req);
-		ini::Get(section, "doubleRoomProb", dest.doubleRoomProb, req);
-		ini::Get(section, "heuristicFactor", dest.heuristicFactor, req);
-		ini::Get(section, "spaceInterdistance", dest.spaceInterdistance, req);
-		ini::Get(section, "generateFewerPaths", dest.generateFewerPaths, req);
-		ini::Get(section, "spaceSizeRandomness", dest.spaceSizeRandomness, req);
+		ini::Get(section, "seed", dest.m_seed, req);
+		ini::Get(section, "width", dest.m_width, req);
+		ini::Get(section, "height", dest.m_height, req);
+		ini::Get(section, "minDepth", dest.m_minDepth, req);
+		ini::Get(section, "maxDepth", dest.m_maxDepth, req);
+		ini::Get(section, "minRoomSize", dest.m_minRoomSize, req);
+		ini::Get(section, "maxRoomSize", dest.m_maxRoomSize, req);
+		ini::Get(section, "randAreaDens", dest.m_randAreaDens, req);
+		ini::Get(section, "randAreaProb", dest.m_randAreaProb, req);
+		ini::Get(section, "randAreaDepth", dest.m_randAreaDepth, req);
+		ini::Get(section, "doubleRoomProb", dest.m_doubleRoomProb, req);
+		ini::Get(section, "heuristicFactor", dest.m_heuristicFactor, req);
+		ini::Get(section, "spaceInterdistance", dest.m_spaceInterdistance, req);
+		ini::Get(section, "generateFewerPaths", dest.m_generateFewerPaths, req);
+		ini::Get(section, "spaceSizeRandomness", dest.m_spaceSizeRandomness, req);
 	};
 
 	ini::container_type container;

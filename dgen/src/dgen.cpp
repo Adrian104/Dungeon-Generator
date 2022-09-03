@@ -19,29 +19,29 @@ void Generator::Clear()
 
 void Generator::Prepare()
 {
-	if (gInput -> maxRoomSize <= 0)
+	if (gInput -> m_maxRoomSize <= 0)
 		throw std::runtime_error("Variable 'maxRoomSize' is not a positive number");
 
 	*gOutput = {};
-	random.Init(gInput -> seed);
+	random.Init(gInput -> m_seed);
 
-	extDist = gInput -> spaceInterdistance + 1;
+	extDist = gInput -> m_spaceInterdistance + 1;
 	intDist = (extDist << 1) - 1;
 
-	minSpaceSize = static_cast<int>(roomSizeLimit / gInput -> maxRoomSize) + intDist;
+	minSpaceSize = static_cast<int>(roomSizeLimit / gInput -> m_maxRoomSize) + intDist;
 
-	if (gInput -> width <= minSpaceSize || gInput -> height <= minSpaceSize)
+	if (gInput -> m_width <= minSpaceSize || gInput -> m_height <= minSpaceSize)
 		throw std::runtime_error("Root node is too small");
 
-	root = new bt::Node<Cell>(nullptr, Cell(gInput -> width - 1, gInput -> height - 1));
+	root = new bt::Node<Cell>(nullptr, Cell(gInput -> m_width - 1, gInput -> m_height - 1));
 
 	roomCount = 0;
 	targetDepth = 0;
 	statusCounter = 1;
-	deltaDepth = gInput -> maxDepth - gInput -> minDepth;
+	deltaDepth = gInput -> m_maxDepth - gInput -> m_minDepth;
 
-	uniRoom = std::uniform_real_distribution<float>(gInput -> minRoomSize, gInput -> maxRoomSize);
-	uniSpace = std::uniform_real_distribution<float>(0.5f - gInput -> spaceSizeRandomness / 2.0f, 0.5f + gInput -> spaceSizeRandomness / 2.0f);
+	uniRoom = std::uniform_real_distribution<float>(gInput -> m_minRoomSize, gInput -> m_maxRoomSize);
+	uniSpace = std::uniform_real_distribution<float>(0.5f - gInput -> m_spaceSizeRandomness / 2.0f, 0.5f + gInput -> m_spaceSizeRandomness / 2.0f);
 }
 
 void Generator::LinkNodes()
@@ -154,7 +154,7 @@ void Generator::FindPaths()
 
 					const float dist = std::sqrt(static_cast<float>(dx * dx + dy * dy));
 
-					nNode -> hCost = static_cast<int>(dist * gInput -> heuristicFactor);
+					nNode -> hCost = static_cast<int>(dist * gInput -> m_heuristicFactor);
 					nNode -> status = statusCounter;
 
 					goto add_to_heap;
@@ -200,8 +200,8 @@ void Generator::OptimizeNodes()
 	auto iter = posXNodes.begin();
 	const auto endIter = posXNodes.end();
 
-	const byte maskEW = gInput -> generateFewerPaths ? 0b1010 : 0b1111;
-	const byte maskNS = gInput -> generateFewerPaths ? 0b0101 : 0b1111;
+	const byte maskEW = gInput -> m_generateFewerPaths ? 0b1010 : 0b1111;
+	const byte maskNS = gInput -> m_generateFewerPaths ? 0b0101 : 0b1111;
 
 	while (iter != endIter)
 	{
@@ -289,7 +289,7 @@ void Generator::GenerateRooms()
 		Vec secPos(-1, 0);
 		Vec secSize(0, 0);
 
-		if (random.GetFloat() < gInput -> doubleRoomProb)
+		if (random.GetFloat() < gInput -> m_doubleRoomProb)
 		{
 			int Vec::*incAxis; int Vec::*decAxis;
 
@@ -336,23 +336,23 @@ void Generator::GenerateRooms()
 
 void Generator::GenerateOutput()
 {
-	gOutput -> rooms.reserve(roomCount);
+	gOutput -> m_rooms.reserve(roomCount);
 
 	int c = 0;
 	for (Room &room : rooms)
 	{
 		for (uint path = uint(room.path); path; path >>= 1) c += path & 1;
-		for (Rect &rect : room.rects) gOutput -> rooms.push_back(rect);
+		for (Rect &rect : room.rects) gOutput -> m_rooms.push_back(rect);
 	}
 
-	gOutput -> entrances.reserve(c);
+	gOutput -> m_entrances.reserve(c);
 	for (auto &[pos, node] : posXNodes)
 	{
 		if ((node.path & (1 << Dir::NORTH)) != 0) c += node.links[Dir::NORTH] -> ToRoom() == nullptr;
 		if ((node.path & (1 << Dir::EAST)) != 0) c += node.links[Dir::EAST] -> ToRoom() == nullptr;
 	}
 
-	gOutput -> paths.reserve(c);
+	gOutput -> m_paths.reserve(c);
 	for (Room &room : rooms)
 	{
 		c = 0;
@@ -363,8 +363,8 @@ void Generator::GenerateOutput()
 			const Point bPos = room.links[c] -> pos;
 			const Point ePos = bool(c & 1) ? Point(room.edges[c], bPos.y) : Point(bPos.x, room.edges[c]);
 
-			gOutput -> entrances.push_back(ePos);
-			gOutput -> paths.push_back(std::make_pair(ePos, Vec(bPos.x - ePos.x, bPos.y - ePos.y)));
+			gOutput -> m_entrances.push_back(ePos);
+			gOutput -> m_paths.push_back(std::make_pair(ePos, Vec(bPos.x - ePos.x, bPos.y - ePos.y)));
 		}
 	}
 
@@ -373,21 +373,21 @@ void Generator::GenerateOutput()
 		if ((node.path & (1 << Dir::NORTH)) != 0)
 		{
 			Node *const nNode = node.links[Dir::NORTH];
-			if (nNode -> ToRoom() == nullptr) gOutput -> paths.push_back(std::make_pair(node.pos, Vec(nNode -> pos.x - node.pos.x, nNode -> pos.y - node.pos.y)));
+			if (nNode -> ToRoom() == nullptr) gOutput -> m_paths.push_back(std::make_pair(node.pos, Vec(nNode -> pos.x - node.pos.x, nNode -> pos.y - node.pos.y)));
 		}
 
 		if ((node.path & (1 << Dir::EAST)) != 0)
 		{
 			Node *const nNode = node.links[Dir::EAST];
-			if (nNode -> ToRoom() == nullptr) gOutput -> paths.push_back(std::make_pair(node.pos, Vec(nNode -> pos.x - node.pos.x, nNode -> pos.y - node.pos.y)));
+			if (nNode -> ToRoom() == nullptr) gOutput -> m_paths.push_back(std::make_pair(node.pos, Vec(nNode -> pos.x - node.pos.x, nNode -> pos.y - node.pos.y)));
 		}
 	}
 }
 
 void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 {
-	if (left <= gInput -> randAreaDepth)
-		btNode.flag |= random.GetFloat() < gInput -> randAreaProb;
+	if (left <= gInput -> m_randAreaDepth)
+		btNode.flag |= random.GetFloat() < gInput -> m_randAreaProb;
 
 	if (left == deltaDepth)
 	{
@@ -406,7 +406,7 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 		CreateSpaceNodes(space);
 		if (btNode.flag)
 		{
-			btNode.flag = random.GetFloat() >= gInput -> randAreaDens;
+			btNode.flag = random.GetFloat() >= gInput -> m_randAreaDens;
 			if (btNode.flag) return;
 		}
 
@@ -535,7 +535,7 @@ void Generator::Generate(const GenInput *genInput, GenOutput *genOutput)
 
 	Clear();
 	Prepare();
-	GenerateTree(*root, gInput -> maxDepth);
+	GenerateTree(*root, gInput -> m_maxDepth);
 	GenerateRooms();
 	LinkNodes();
 	FindPaths();
