@@ -274,8 +274,7 @@ void Generator::GenerateRooms()
 		if (btNode.m_left != nullptr || btNode.m_right != nullptr || btNode.flag)
 			continue;
 
-		const Rect& space = btNode.space;
-		Vec priSize(static_cast<int>(space.w * random(uniRoom)), static_cast<int>(space.h * random(uniRoom)));
+		Vec priSize(static_cast<int>(btNode.space.w * random(uniRoom)), static_cast<int>(btNode.space.h * random(uniRoom)));
 
 		if (priSize.x < roomSizeLimit)
 			priSize.x = roomSizeLimit;
@@ -283,8 +282,8 @@ void Generator::GenerateRooms()
 		if (priSize.y < roomSizeLimit)
 			priSize.y = roomSizeLimit;
 
-		Vec priPos(space.x, space.y);
-		Vec remSize(space.w - priSize.x, space.h - priSize.y);
+		Vec priPos(btNode.space.x, btNode.space.y);
+		Vec remSize(btNode.space.w - priSize.x, btNode.space.h - priSize.y);
 
 		Vec secPos(-1, 0);
 		Vec secSize(0, 0);
@@ -300,16 +299,17 @@ void Generator::GenerateRooms()
 			if (secSize.*decAxis < roomSizeLimit) goto skip_double_room;
 
 			const int extra = static_cast<int>(remSize.*incAxis * random(uniRoom));
+			if (extra <= 0) goto skip_double_room;
 
 			secSize.*incAxis = priSize.*incAxis + extra;
 			remSize.*incAxis -= extra;
 			secPos = priPos;
 
-			if (random.GetBool())
-				secPos.*decAxis += priSize.*decAxis - secSize.*decAxis;
+			if (const int rem = random() % 3; rem < 2)
+				priPos.*incAxis += extra >> rem;
 
-			if (random.GetBool())
-				priPos.*incAxis += secSize.*incAxis - priSize.*incAxis;
+			if (const int rem = random() % 3; rem < 2)
+				secPos.*decAxis += (priSize.*decAxis - secSize.*decAxis) >> rem;
 		}
 
 		skip_double_room:
@@ -318,16 +318,54 @@ void Generator::GenerateRooms()
 		Room& room = rooms.emplace_back();
 		room.rects.emplace_back(priPos.x + offset.x, priPos.y + offset.y, priSize.x, priSize.y);
 
-		if (secPos.x != -1)
+		if (secPos.x == -1)
+		{
+			const Rect& rect = room.rects.front();
+
+			room.pos.x = rect.x + 1 + (random() % (rect.w - 2));
+			room.pos.y = rect.y + 1 + (random() % (rect.h - 2));
+		}
+		else
 		{
 			room.rects.emplace_back(secPos.x + offset.x, secPos.y + offset.y, secSize.x, secSize.y);
 			roomCount++;
+
+			const bool randBool = random.GetBool();
+			const Rect& priRect = room.rects.at(static_cast<size_t>(randBool));
+			const Rect& secRect = room.rects.at(static_cast<size_t>(!randBool));
+
+			room.pos.x = priRect.x + 1;
+			room.pos.y = priRect.y + 1;
+
+			if (priRect.w > secRect.w)
+			{
+				const int flag1 = static_cast<int>(secRect.x > priRect.x);
+				const int flag2 = static_cast<int>(secRect.x + secRect.w < priRect.x + priRect.w);
+
+				room.pos.x += random() % (priRect.w - 2 - flag1 - flag2);
+				room.pos.y += random() % (priRect.h - 2);
+
+				if (room.pos.x >= secRect.x)
+				{
+					room.pos.x += flag1;
+					room.pos.x += static_cast<int>(room.pos.x >= secRect.x + secRect.w - 1);
+				}
+			}
+			else
+			{
+				const int flag1 = static_cast<int>(secRect.y > priRect.y);
+				const int flag2 = static_cast<int>(secRect.y + secRect.h < priRect.y + priRect.h);
+
+				room.pos.x += random() % (priRect.w - 2);
+				room.pos.y += random() % (priRect.h - 2 - flag1 - flag2);
+
+				if (room.pos.y >= secRect.y)
+				{
+					room.pos.y += flag1;
+					room.pos.y += static_cast<int>(room.pos.y >= secRect.y + secRect.h - 1);
+				}
+			}
 		}
-
-		Rect& selRect = room.rects.at(random() % room.rects.size());
-
-		room.pos.x = selRect.x + (random() % (selRect.w - 2)) + 1;
-		room.pos.y = selRect.y + (random() % (selRect.h - 2)) + 1;
 
 		btNode.room = &room;
 		CreateRoomNodes(btNode.space, room);
