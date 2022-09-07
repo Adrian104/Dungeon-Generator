@@ -39,7 +39,7 @@ struct PercentMod : public Modifier
 	void Increment() override { m_ref += m_step; if (m_ref > 1.0f) m_ref = 1.0f; }
 	void Decrement() override { m_ref -= m_step; if (m_ref < 0.0f) m_ref = 0.0f; }
 
-	std::string GetValue() const override { return std::to_string(static_cast<int>(std::round(m_ref * 100.0f))) + " %"; }
+	std::string GetValue() const override { return std::to_string(std::lround(m_ref * 100.0f)) + " %"; }
 };
 
 struct BoolMod : public Modifier

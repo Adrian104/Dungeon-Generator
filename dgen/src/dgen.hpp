@@ -106,21 +106,16 @@ struct Generator
 	int targetDepth;
 	int minSpaceSize;
 
-	uint statusCounter;
-
 	GenOutput *gOutput;
 	const GenInput *gInput;
 
 	Random random;
-	MinHeap<int, Node*> heap;
 
 	bt::Node<Cell> *root;
 	std::vector<Room> rooms;
 
 	std::map<std::pair<int, int>, Node> posXNodes;
 	std::map<std::pair<int, int>, Node*> posYNodes;
-
-	std::uniform_real_distribution<float> uniRoom;
 	std::uniform_real_distribution<float> uniSpace;
 	
 	static constexpr int roomSizeLimit = 4;

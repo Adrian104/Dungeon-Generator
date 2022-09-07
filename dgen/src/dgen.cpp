@@ -2,15 +2,13 @@
 #include <cmath>
 #include <stdexcept>
 
-Generator::Generator() : extDist(0), intDist(0), roomCount(0), deltaDepth(0), targetDepth(0), minSpaceSize(0), statusCounter(1), gOutput(nullptr), gInput(nullptr), root(nullptr) {}
+Generator::Generator() : extDist(0), intDist(0), roomCount(0), deltaDepth(0), targetDepth(0), minSpaceSize(0), gOutput(nullptr), gInput(nullptr), root(nullptr) {}
 Generator::~Generator() { Clear(); }
 
 void Generator::Clear()
 {
 	posYNodes.clear();
 	posXNodes.clear();
-
-	heap.Clear();
 	rooms.clear();
 
 	delete root;
@@ -37,10 +35,8 @@ void Generator::Prepare()
 
 	roomCount = 0;
 	targetDepth = 0;
-	statusCounter = 1;
 	deltaDepth = gInput -> m_maxDepth - gInput -> m_minDepth;
 
-	uniRoom = std::uniform_real_distribution<float>(gInput -> m_minRoomSize, gInput -> m_maxRoomSize);
 	uniSpace = std::uniform_real_distribution<float>(0.5f - gInput -> m_spaceSizeRandomness / 2.0f, 0.5f + gInput -> m_spaceSizeRandomness / 2.0f);
 }
 
@@ -100,6 +96,9 @@ void Generator::LinkNodes()
 
 void Generator::FindPaths()
 {
+	uint statusCounter = 1;
+	MinHeap<int, Node*> heap;
+
 	bt::Node<Cell>::defaultTraversal = bt::Traversal::POSTORDER;
 	for (auto& btNode : *root)
 	{
@@ -110,7 +109,7 @@ void Generator::FindPaths()
 		if (start == nullptr) continue;
 
 		Room *const stop = GetRandomRoom(btNode.m_right);
-		if (stop == nullptr || start == stop) continue;
+		if (stop == nullptr) continue;
 
 		Node *crrNode = start;
 		start -> gCost = 0;
@@ -118,19 +117,16 @@ void Generator::FindPaths()
 		do
 		{
 			crrNode -> status = statusCounter + 1;
-
-			byte crrPaths = crrNode -> path;
 			Room *const crrRoom = crrNode -> ToRoom();
 
-			for (int i = 0; i < 4; i++, crrPaths >>= 1)
+			for (int i = 0; i < 4; i++)
 			{
 				Node *const nNode = crrNode -> links[i];
-
-				if (nNode == nullptr) continue;
-				if (nNode -> status > statusCounter) continue;
+				if (nNode == nullptr || nNode -> status > statusCounter)
+					continue;
 
 				int newGCost = crrNode -> gCost;
-				if ((crrPaths & 1) == 0)
+				if ((crrNode -> path & (1 << i)) == 0)
 				{
 					int diff;
 					int Point::*const axis = bool(i & 1) ? &Point::x : &Point::y;
@@ -205,8 +201,8 @@ void Generator::OptimizeNodes()
 
 	while (iter != endIter)
 	{
-		byte &path = iter -> second.path;
-		auto &links = iter -> second.links;
+		byte& path = iter -> second.path;
+		Node** links = iter -> second.links;
 
 		if (path != 0)
 		{
@@ -266,6 +262,8 @@ void Generator::OptimizeNodes()
 
 void Generator::GenerateRooms()
 {
+	std::uniform_real_distribution<float> uniRoom(gInput -> m_minRoomSize, gInput -> m_maxRoomSize);
+
 	rooms.reserve(roomCount);
 	bt::Node<Cell>::defaultTraversal = bt::Traversal::POSTORDER;
 
