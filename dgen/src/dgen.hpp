@@ -1,7 +1,6 @@
 #pragma once
 
 #include "btree.hpp"
-#include "heap.hpp"
 #include "rand.hpp"
 
 #include <limits>
@@ -35,12 +34,12 @@ using byte = unsigned char;
 
 struct Cell
 {
-	bool flag;
+	bool locked;
 	Rect space;
 	Room *room;
 
-	Cell() : flag(false), space(), room(nullptr) {}
-	Cell(int w, int h) : flag(false), space(0, 0, w, h), room(nullptr) {}
+	Cell() : locked(false), space(), room(nullptr) {}
+	Cell(int w, int h) : locked(false), space(0, 0, w, h), room(nullptr) {}
 };
 
 struct Node

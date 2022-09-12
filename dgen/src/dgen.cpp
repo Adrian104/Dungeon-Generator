@@ -1,4 +1,6 @@
 #include "dgen.hpp"
+#include "heap.hpp"
+
 #include <cmath>
 #include <stdexcept>
 
@@ -42,53 +44,46 @@ void Generator::Prepare()
 
 void Generator::LinkNodes()
 {
+	if (posXNodes.empty())
+		return;
+
 	{
-		using iter_type = decltype(posXNodes)::iterator;
-		const iter_type end = posXNodes.end();
+		const decltype(posXNodes)::iterator end = posXNodes.end();
+		decltype(posXNodes)::iterator iter = posXNodes.begin();
 
-		iter_type prev = posXNodes.begin();
-		iter_type crr = prev;
-
-		crr++;
-		while (crr != end)
+		Node* secondary = &(iter -> second);
+		while (++iter != end)
 		{
-			Node *const crrNode = &crr -> second;
-			if (crrNode -> path & (1 << Dir::NORTH))
+			Node* const primary = &(iter -> second);
+			if (primary -> path & (1 << Dir::NORTH))
 			{
-				Node *const prevNode = &prev -> second;
-				crrNode -> links[Dir::NORTH] = prevNode;
-				prevNode -> links[Dir::SOUTH] = crrNode;
+				primary -> links[Dir::NORTH] = secondary;
+				secondary -> links[Dir::SOUTH] = primary;
 			}
 
-			prev = crr;
-			crr++;
+			secondary = primary;
 		}
 	}
 
 	{
-		using iter_type = decltype(posYNodes)::iterator;
-		const iter_type end = posYNodes.end();
+		const decltype(posYNodes)::iterator end = posYNodes.end();
+		decltype(posYNodes)::iterator iter = posYNodes.begin();
 
-		iter_type crr = posYNodes.begin();
-		iter_type next = crr;
-
-		next++;
-		while (next != end)
+		Node* secondary = iter -> second;
+		while (++iter != end)
 		{
-			Node *const crrNode = crr -> second;
-			if (crrNode -> path & (1 << Dir::EAST))
+			Node* const primary = iter -> second;
+			if (secondary -> path & (1 << Dir::EAST))
 			{
-				Node *const nextNode = next -> second;
-				crrNode -> links[Dir::EAST] = nextNode;
-				nextNode -> links[Dir::WEST] = crrNode;
+				secondary -> links[Dir::EAST] = primary;
+				primary -> links[Dir::WEST] = secondary;
 			}
 
-			crrNode -> path = 0;
-			crr = next;
-			next++;
+			secondary -> path = 0;
+			secondary = primary;
 		}
 
-		crr -> second -> path = 0;
+		secondary -> path = 0;
 	}
 
 	posYNodes.clear();
@@ -269,7 +264,7 @@ void Generator::GenerateRooms()
 
 	for (auto& btNode : *root)
 	{
-		if (btNode.m_left != nullptr || btNode.m_right != nullptr || btNode.flag)
+		if (btNode.locked)
 			continue;
 
 		Vec priSize(static_cast<int>(btNode.space.w * random(uniRoom)), static_cast<int>(btNode.space.h * random(uniRoom)));
@@ -423,7 +418,7 @@ void Generator::GenerateOutput()
 void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 {
 	if (left <= gInput -> m_randAreaDepth)
-		btNode.flag |= random.GetFloat() < gInput -> m_randAreaProb;
+		btNode.locked |= random.GetFloat() < gInput -> m_randAreaProb;
 
 	if (left == deltaDepth)
 	{
@@ -440,10 +435,10 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 		space.w -= intDist; space.h -= intDist;
 
 		CreateSpaceNodes(space);
-		if (btNode.flag)
+		if (btNode.locked)
 		{
-			btNode.flag = random.GetFloat() >= gInput -> m_randAreaDens;
-			if (btNode.flag) return;
+			btNode.locked = random.GetFloat() >= gInput -> m_randAreaDens;
+			if (btNode.locked) return;
 		}
 
 		roomCount++;
@@ -459,9 +454,10 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 	const int totalSize = crrSpace.*wh;
 	const int randSize = static_cast<int>(totalSize * random(uniSpace));
 
-	if (randSize < minSpaceSize || totalSize - randSize < minSpaceSize) goto no_more;
+	if (randSize < minSpaceSize || totalSize - randSize < minSpaceSize)
+		goto no_more;
 
-	btNode.m_left = new bt::Node<Cell>(&btNode, btNode); 
+	btNode.m_left = new bt::Node<Cell>(&btNode, btNode);
 	btNode.m_right = new bt::Node<Cell>(&btNode, btNode);
 
 	btNode.m_left -> space.*wh = randSize;
@@ -473,7 +469,7 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 	GenerateTree(*btNode.m_left, left);
 	GenerateTree(*btNode.m_right, left);
 
-	btNode.room = nullptr;
+	btNode.locked = true;
 }
 
 Node &Generator::AddRegNode(int x, int y)
