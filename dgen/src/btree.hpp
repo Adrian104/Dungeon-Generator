@@ -1,11 +1,11 @@
 #pragma once
 #include <iterator>
-#include <type_traits>
 #include <utility>
 
 namespace bt
 {
-	enum class Traversal : unsigned int { PREORDER, INORDER, POSTORDER };
+	using state_type = unsigned int;
+	enum class Traversal : state_type { PREORDER, INORDER, POSTORDER };
 
 	template <typename Type>
 	class Node : public Type
@@ -21,8 +21,8 @@ namespace bt
 
 			private:
 			pointer m_crr;
-			unsigned int m_breakAt;
-			unsigned int m_index = 0;
+			state_type m_breakAt;
+			state_type m_state = 0;
 
 			void GoUp();
 			void GoLeft();
@@ -71,11 +71,15 @@ namespace bt
 		pointer const parent = m_crr -> m_parent;
 		if (parent != nullptr)
 		{
-			m_index = (parent -> m_right == m_crr) + 1;
+			m_state = (parent -> m_right == m_crr) + 1;
 			m_crr = parent;
 			m_counter--;
 		}
-		else m_crr = nullptr;
+		else
+		{
+			m_crr = nullptr;
+			m_state = m_breakAt;
+		}
 	}
 
 	template <typename Type>
@@ -85,10 +89,9 @@ namespace bt
 		if (left != nullptr)
 		{
 			m_crr = left;
-			m_index = 0;
 			m_counter++;
 		}
-		else m_index = 1;
+		else m_state = 1;
 	}
 
 	template <typename Type>
@@ -98,10 +101,10 @@ namespace bt
 		if (right != nullptr)
 		{
 			m_crr = right;
-			m_index = 0;
+			m_state = 0;
 			m_counter++;
 		}
-		else m_index = 2;
+		else m_state = 2;
 	}
 
 	template <typename Type>
@@ -111,14 +114,17 @@ namespace bt
 		using action = void (scope::*)();
 
 		static constexpr action actions[3] = { &scope::GoLeft, &scope::GoRight, &scope::GoUp };
-		(this ->* actions[m_index])();
+		(this ->* actions[m_state])();
 	}
 
 	template <typename Type>
 	Node<Type>::Iterator::Iterator(pointer tree, Traversal traversal)
-		: m_crr(tree), m_breakAt(static_cast<std::underlying_type_t<Traversal>>(traversal))
+		: m_crr(tree), m_breakAt(static_cast<state_type>(traversal))
 	{
-		while (m_breakAt != m_index && m_crr != nullptr)
+		if (m_crr == nullptr)
+			return;
+
+		while (m_state != m_breakAt)
 			Advance();
 	}
 
@@ -126,7 +132,7 @@ namespace bt
 	auto Node<Type>::Iterator::operator++() -> Iterator&
 	{
 		do { Advance(); }
-		while (m_breakAt != m_index && m_crr != nullptr);
+		while (m_state != m_breakAt);
 
 		return *this;
 	}
