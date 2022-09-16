@@ -4,6 +4,30 @@
 #include <cmath>
 #include <stdexcept>
 
+void Room::ComputeEdges()
+{
+	for (const Rect& rect : rects)
+	{
+		const int xPlusW = rect.x + rect.w;
+		const int yPlusH = rect.y + rect.h;
+
+		if (pos.x >= rect.x && pos.x < xPlusW)
+		{
+			if (edges[Dir::NORTH] > rect.y) edges[Dir::NORTH] = rect.y;
+			if (edges[Dir::SOUTH] < yPlusH) edges[Dir::SOUTH] = yPlusH;
+		}
+
+		if (pos.y >= rect.y && pos.y < yPlusH)
+		{
+			if (edges[Dir::WEST] > rect.x) edges[Dir::WEST] = rect.x;
+			if (edges[Dir::EAST] < xPlusW) edges[Dir::EAST] = xPlusW;
+		}
+	}
+
+	edges[Dir::EAST]--;
+	edges[Dir::SOUTH]--;
+}
+
 Generator::Generator() : extDist(0), intDist(0), roomCount(0), deltaDepth(0), targetDepth(0), minSpaceSize(0), gOutput(nullptr), gInput(nullptr), root(nullptr) {}
 Generator::~Generator() { Clear(); }
 
@@ -47,43 +71,30 @@ void Generator::LinkNodes()
 	if (posXNodes.empty())
 		return;
 
+	Node* secondary = &(posXNodes.begin() -> second);
+	for (auto& pair : posXNodes)
 	{
-		const decltype(posXNodes)::iterator end = posXNodes.end();
-		decltype(posXNodes)::iterator iter = posXNodes.begin();
-
-		Node* secondary = &(iter -> second);
-		while (++iter != end)
+		Node* const primary = &pair.second;
+		if (primary -> path & (1 << Dir::NORTH))
 		{
-			Node* const primary = &(iter -> second);
-			if (primary -> path & (1 << Dir::NORTH))
-			{
-				primary -> links[Dir::NORTH] = secondary;
-				secondary -> links[Dir::SOUTH] = primary;
-			}
-
-			secondary = primary;
+			primary -> links[Dir::NORTH] = secondary;
+			secondary -> links[Dir::SOUTH] = primary;
 		}
+
+		secondary = primary;
 	}
 
+	for (auto& pair : posYNodes)
 	{
-		const decltype(posYNodes)::iterator end = posYNodes.end();
-		decltype(posYNodes)::iterator iter = posYNodes.begin();
-
-		Node* secondary = iter -> second;
-		while (++iter != end)
+		Node* const primary = pair.second;
+		if (primary -> path & (1 << Dir::WEST))
 		{
-			Node* const primary = iter -> second;
-			if (secondary -> path & (1 << Dir::EAST))
-			{
-				secondary -> links[Dir::EAST] = primary;
-				primary -> links[Dir::WEST] = secondary;
-			}
-
-			secondary -> path = 0;
-			secondary = primary;
+			primary -> links[Dir::WEST] = secondary;
+			secondary -> links[Dir::EAST] = primary;
 		}
 
-		secondary -> path = 0;
+		primary -> path = 0;
+		secondary = primary;
 	}
 
 	posYNodes.clear();
@@ -361,6 +372,7 @@ void Generator::GenerateRooms()
 		}
 
 		btNode.room = &room;
+		room.ComputeEdges();
 		CreateRoomNodes(btNode.space, room);
 	}
 }
@@ -480,72 +492,43 @@ Node &Generator::AddRegNode(int x, int y)
 	return pair.first -> second;
 }
 
-void Generator::CreateSpaceNodes(Rect &space)
+void Generator::CreateSpaceNodes(Rect& space)
 {
+	const int dist = extDist - 1;
+
 	const int xMin = space.x - extDist;
 	const int yMin = space.y - extDist;
-
-	const int dist = extDist - 1;
 
 	const int xMax = space.x + space.w + dist;
 	const int yMax = space.y + space.h + dist;
 
-	Node &SW = AddRegNode(xMin, yMax);
-	SW.path |= (1 << Dir::NORTH) | (1 << Dir::EAST);
-
-	Node &SE = AddRegNode(xMax, yMax);
-	SE.path |= 1 << Dir::NORTH;
-
-	Node &NW = AddRegNode(xMin, yMin);
-	NW.path |= 1 << Dir::EAST;
-
-	AddRegNode(xMax, yMin);
+	AddRegNode(xMax, yMax).path |= (1 << Dir::NORTH) | (1 << Dir::WEST);
+	AddRegNode(xMin, yMax).path |= 1 << Dir::NORTH;
+	AddRegNode(xMax, yMin).path |= 1 << Dir::WEST;
+	AddRegNode(xMin, yMin);
 }
 
-void Generator::CreateRoomNodes(Rect &space, Room &room)
+void Generator::CreateRoomNodes(Rect& space, Room& room)
 {
-	int *const edges = room.edges;
-	const Point iPoint = room.pos;
-
-	for (Rect &rect : room.rects)
-	{
-		const int xPlusW = rect.x + rect.w;
-		const int yPlusH = rect.y + rect.h;
-
-		if (iPoint.x >= rect.x && iPoint.x < xPlusW)
-		{
-			if (edges[Dir::NORTH] > rect.y) edges[Dir::NORTH] = rect.y;
-			if (edges[Dir::SOUTH] < yPlusH) edges[Dir::SOUTH] = yPlusH;
-		}
-
-		if (iPoint.y >= rect.y && iPoint.y < yPlusH)
-		{
-			if (edges[Dir::WEST] > rect.x) edges[Dir::WEST] = rect.x;
-			if (edges[Dir::EAST] < xPlusW) edges[Dir::EAST] = xPlusW;
-		}
-	}
-
-	edges[Dir::EAST]--;
-	edges[Dir::SOUTH]--;
-
 	const int dist = extDist - 1;
+	const Point iPoint = room.pos;
+	auto& [north, east, south, west] = room.links;
 
-	Node *const bNodes[4] =
-	{
-		&AddRegNode(iPoint.x, space.y - extDist),
-		&AddRegNode(space.x + space.w + dist, iPoint.y),
-		&AddRegNode(iPoint.x, space.y + space.h + dist),
-		&AddRegNode(space.x - extDist, iPoint.y)
-	};
+	north = &AddRegNode(iPoint.x, space.y - extDist);
+	north -> path |= 1 << Dir::WEST;
+	north -> links[Dir::SOUTH] = &room;
 
-	for (int i = 0; i < 4; i++)
-	{
-		Node *const bNode = bNodes[i];
-		room.links[i] = bNode;
+	east = &AddRegNode(space.x + space.w + dist, iPoint.y);
+	east -> path |= 1 << Dir::NORTH;
+	east -> links[Dir::WEST] = &room;
 
-		bNode -> path |= 0b10 >> (i & 0b1);
-		bNode -> links[i ^ 0b10] = &room;
-	}
+	south = &AddRegNode(iPoint.x, space.y + space.h + dist);
+	south -> path |= 1 << Dir::WEST;
+	south -> links[Dir::NORTH] = &room;
+
+	west = &AddRegNode(space.x - extDist, iPoint.y);
+	west -> path |= 1 << Dir::NORTH;
+	west -> links[Dir::EAST] = &room;
 }
 
 Room *Generator::GetRandomRoom(bt::Node<Cell> *const btNode)

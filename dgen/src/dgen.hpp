@@ -68,6 +68,7 @@ struct Room : public Node
 	Room() : Node(), edges{ std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() } {}
 	Room(int x, int y) : Node(x, y), edges{ std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() } {}
 
+	void ComputeEdges();
 	Room *ToRoom() override { return this; }
 };
 
@@ -129,8 +130,8 @@ struct Generator
 	void GenerateTree(bt::Node<Cell> &btNode, int left);
 
 	Node &AddRegNode(int x, int y);
-	void CreateSpaceNodes(Rect &space);
-	void CreateRoomNodes(Rect &space, Room &room);
+	void CreateSpaceNodes(Rect& space);
+	void CreateRoomNodes(Rect& space, Room& room);
 	Room *GetRandomRoom(bt::Node<Cell> *const btNode);
 
 	Generator();
