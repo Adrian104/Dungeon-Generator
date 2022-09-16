@@ -1,6 +1,7 @@
 #include "dgen.hpp"
 #include "heap.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 
@@ -33,8 +34,7 @@ Generator::~Generator() { Clear(); }
 
 void Generator::Clear()
 {
-	posYNodes.clear();
-	posXNodes.clear();
+	nodes.clear();
 	rooms.clear();
 
 	delete root;
@@ -68,13 +68,22 @@ void Generator::Prepare()
 
 void Generator::LinkNodes()
 {
-	if (posXNodes.empty())
+	if (nodes.empty())
 		return;
 
-	Node* secondary = &(posXNodes.begin() -> second);
-	for (auto& pair : posXNodes)
+	struct Entry
 	{
-		Node* const primary = &pair.second;
+		int m_x; int m_y; Node* m_node;
+		Entry(std::pair<int, int> pos, Node* node) : m_x(pos.first), m_y(pos.second), m_node(node) {}
+	};
+
+	std::vector<Entry> cache;
+	cache.reserve(nodes.size());
+
+	Node* secondary = &(nodes.begin() -> second);
+	for (auto& [pos, node] : nodes)
+	{
+		Node* const primary = &node;
 		if (primary -> path & (1 << Dir::NORTH))
 		{
 			primary -> links[Dir::NORTH] = secondary;
@@ -82,11 +91,15 @@ void Generator::LinkNodes()
 		}
 
 		secondary = primary;
+		cache.emplace_back(pos, primary);
 	}
 
-	for (auto& pair : posYNodes)
+	auto cmp = [](const Entry& a, const Entry& b) -> bool { return a.m_y < b.m_y || (a.m_y == b.m_y && a.m_x < b.m_x); };
+	std::sort(cache.begin(), cache.end(), cmp);
+
+	for (Entry& entry : cache)
 	{
-		Node* const primary = pair.second;
+		Node* const primary = entry.m_node;
 		if (primary -> path & (1 << Dir::WEST))
 		{
 			primary -> links[Dir::WEST] = secondary;
@@ -96,8 +109,6 @@ void Generator::LinkNodes()
 		primary -> path = 0;
 		secondary = primary;
 	}
-
-	posYNodes.clear();
 }
 
 void Generator::FindPaths()
@@ -199,8 +210,8 @@ void Generator::FindPaths()
 
 void Generator::OptimizeNodes()
 {
-	auto iter = posXNodes.begin();
-	const auto endIter = posXNodes.end();
+	auto iter = nodes.begin();
+	const auto endIter = nodes.end();
 
 	const byte maskEW = gInput -> m_generateFewerPaths ? 0b1010 : 0b1111;
 	const byte maskNS = gInput -> m_generateFewerPaths ? 0b0101 : 0b1111;
@@ -261,7 +272,7 @@ void Generator::OptimizeNodes()
 					link -> links[i ^ 0b10] = nullptr;
 			}
 
-			iter = posXNodes.erase(iter);
+			iter = nodes.erase(iter);
 		}
 	}
 }
@@ -389,7 +400,7 @@ void Generator::GenerateOutput()
 	}
 
 	gOutput -> m_entrances.reserve(c);
-	for (auto &[pos, node] : posXNodes)
+	for (auto &[pos, node] : nodes)
 	{
 		if ((node.path & (1 << Dir::NORTH)) != 0) c += node.links[Dir::NORTH] -> ToRoom() == nullptr;
 		if ((node.path & (1 << Dir::EAST)) != 0) c += node.links[Dir::EAST] -> ToRoom() == nullptr;
@@ -411,7 +422,7 @@ void Generator::GenerateOutput()
 		}
 	}
 
-	for (auto &[pos, node] : posXNodes)
+	for (auto &[pos, node] : nodes)
 	{
 		if ((node.path & (1 << Dir::NORTH)) != 0)
 		{
@@ -484,12 +495,9 @@ void Generator::GenerateTree(bt::Node<Cell> &btNode, int left)
 	btNode.locked = true;
 }
 
-Node &Generator::AddRegNode(int x, int y)
+Node &Generator::RegisterNode(int x, int y)
 {
-	auto pair = posXNodes.emplace(std::make_pair(x, y), Node(x, y));
-	if (pair.second) posYNodes.emplace(std::make_pair(y, x), &pair.first -> second);
-
-	return pair.first -> second;
+	return nodes.emplace(std::make_pair(x, y), Node(x, y)).first -> second;
 }
 
 void Generator::CreateSpaceNodes(Rect& space)
@@ -502,10 +510,10 @@ void Generator::CreateSpaceNodes(Rect& space)
 	const int xMax = space.x + space.w + dist;
 	const int yMax = space.y + space.h + dist;
 
-	AddRegNode(xMax, yMax).path |= (1 << Dir::NORTH) | (1 << Dir::WEST);
-	AddRegNode(xMin, yMax).path |= 1 << Dir::NORTH;
-	AddRegNode(xMax, yMin).path |= 1 << Dir::WEST;
-	AddRegNode(xMin, yMin);
+	RegisterNode(xMax, yMax).path |= (1 << Dir::NORTH) | (1 << Dir::WEST);
+	RegisterNode(xMin, yMax).path |= 1 << Dir::NORTH;
+	RegisterNode(xMax, yMin).path |= 1 << Dir::WEST;
+	RegisterNode(xMin, yMin);
 }
 
 void Generator::CreateRoomNodes(Rect& space, Room& room)
@@ -514,19 +522,19 @@ void Generator::CreateRoomNodes(Rect& space, Room& room)
 	const Point iPoint = room.pos;
 	auto& [north, east, south, west] = room.links;
 
-	north = &AddRegNode(iPoint.x, space.y - extDist);
+	north = &RegisterNode(iPoint.x, space.y - extDist);
 	north -> path |= 1 << Dir::WEST;
 	north -> links[Dir::SOUTH] = &room;
 
-	east = &AddRegNode(space.x + space.w + dist, iPoint.y);
+	east = &RegisterNode(space.x + space.w + dist, iPoint.y);
 	east -> path |= 1 << Dir::NORTH;
 	east -> links[Dir::WEST] = &room;
 
-	south = &AddRegNode(iPoint.x, space.y + space.h + dist);
+	south = &RegisterNode(iPoint.x, space.y + space.h + dist);
 	south -> path |= 1 << Dir::WEST;
 	south -> links[Dir::NORTH] = &room;
 
-	west = &AddRegNode(space.x - extDist, iPoint.y);
+	west = &RegisterNode(space.x - extDist, iPoint.y);
 	west -> path |= 1 << Dir::NORTH;
 	west -> links[Dir::EAST] = &room;
 }

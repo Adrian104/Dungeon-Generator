@@ -117,11 +117,11 @@ void Application::Render()
 		}
 
 		SDL_SetRenderDrawColor(renderer, 0x50, 0x50, 0x50, 0xFF);
-		for (auto& [pos, node] : m_generator.posXNodes) DrawLinks(node);
+		for (auto& [pos, node] : m_generator.nodes) DrawLinks(node);
 
 		SDL_SetRenderDrawColor(renderer, 0, 0xC0, 0, 0xFF);
 		for (Room& room : m_generator.rooms) DrawNode(room);
-		for (auto& [pos, node] : m_generator.posXNodes) DrawNode(node);
+		for (auto& [pos, node] : m_generator.nodes) DrawNode(node);
 	}
 	else
 	{

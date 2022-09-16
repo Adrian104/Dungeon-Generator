@@ -114,8 +114,7 @@ struct Generator
 	bt::Node<Cell> *root;
 	std::vector<Room> rooms;
 
-	std::map<std::pair<int, int>, Node> posXNodes;
-	std::map<std::pair<int, int>, Node*> posYNodes;
+	std::map<std::pair<int, int>, Node> nodes;
 	std::uniform_real_distribution<float> uniSpace;
 	
 	static constexpr int roomSizeLimit = 4;
@@ -129,7 +128,7 @@ struct Generator
 	void GenerateOutput();
 	void GenerateTree(bt::Node<Cell> &btNode, int left);
 
-	Node &AddRegNode(int x, int y);
+	Node &RegisterNode(int x, int y);
 	void CreateSpaceNodes(Rect& space);
 	void CreateRoomNodes(Rect& space, Room& room);
 	Room *GetRandomRoom(bt::Node<Cell> *const btNode);
