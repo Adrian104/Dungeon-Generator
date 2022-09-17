@@ -72,7 +72,7 @@ void AppManager::LoadFont(int id, int size, const std::string& path)
 {
 	UnloadFont(id);
 
-	TTF_Font *const font = TTF_OpenFont(path.c_str(), size);
+	TTF_Font* const font = TTF_OpenFont(path.c_str(), size);
 	if (font == nullptr) throw std::runtime_error(TTF_GetError());
 
 	m_fonts.emplace(id, font);
@@ -82,10 +82,10 @@ void AppManager::LoadFont(int id, int size, const void* data, int dataSize)
 {
 	UnloadFont(id);
 
-	SDL_RWops *const rwOps = SDL_RWFromConstMem(data, dataSize);
+	SDL_RWops* const rwOps = SDL_RWFromConstMem(data, dataSize);
 	if (rwOps == nullptr) throw std::runtime_error(SDL_GetError());
 
-	TTF_Font *const font = TTF_OpenFontRW(rwOps, true, size);
+	TTF_Font* const font = TTF_OpenFontRW(rwOps, true, size);
 	if (font == nullptr) throw std::runtime_error(TTF_GetError());
 
 	m_fonts.emplace(id, font);
@@ -130,10 +130,10 @@ SDL_Texture* AppManager::CreateTexture(int width, int height, bool blend)
 
 Text AppManager::RenderText(const std::string& str, int id, int style, const SDL_Color& color) const
 {
-	TTF_Font *const font = m_fonts.at(id);
+	TTF_Font* const font = m_fonts.at(id);
 	TTF_SetFontStyle(font, style);
 
-	SDL_Surface *const surface = TTF_RenderText_Blended(font, str.c_str(), color);
+	SDL_Surface* const surface = TTF_RenderText_Blended(font, str.c_str(), color);
 	if (surface == nullptr) throw std::runtime_error(TTF_GetError());
 
 	Text text;

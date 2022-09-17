@@ -34,42 +34,42 @@ using byte = unsigned char;
 
 struct Cell
 {
-	bool locked;
-	Rect space;
-	Room *room;
+	bool locked = false;
+	Room* room = nullptr;
+	Rect space{};
 
-	Cell() : locked(false), space(), room(nullptr) {}
-	Cell(int w, int h) : locked(false), space(0, 0, w, h), room(nullptr) {}
+	Cell() = default;
+	Cell(int w, int h) : space(0, 0, w, h) {}
 };
 
 struct Node
 {
-	int gCost;
-	int hCost;
+	int gCost = 0;
+	int hCost = 0;
 
-	byte path;
-	byte origin;
+	byte path = 0;
+	byte origin = 0;
+	uint status = 0;
 
-	Point pos;
-	uint status;
-	Node *links[4];
+	Point pos{};
+	Node* links[4]{};
 
-	Node() : gCost(0), hCost(0), path(0), origin(0), pos{ 0, 0 }, status(0), links{ nullptr, nullptr, nullptr, nullptr } {}
-	Node(int x, int y) : gCost(0), hCost(0), path(0), origin(0), pos{ x, y }, status(0), links{ nullptr, nullptr, nullptr, nullptr } {}
+	Node() = default;
+	Node(int x, int y) : pos(x, y) {}
 
-	virtual Room *ToRoom() { return nullptr; }
+	virtual Room* ToRoom() { return nullptr; }
 };
 
 struct Room : public Node
 {
-	int edges[4];
 	std::vector<Rect> rects;
+	int edges[4]{ std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() };
 
-	Room() : Node(), edges{ std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() } {}
-	Room(int x, int y) : Node(x, y), edges{ std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() } {}
+	Room() = default;
+	Room(int x, int y) : Node(x, y) {}
 
 	void ComputeEdges();
-	Room *ToRoom() override { return this; }
+	Room* ToRoom() override { return this; }
 };
 
 struct GenInput
@@ -98,25 +98,25 @@ struct GenOutput
 
 struct Generator
 {
-	int extDist;
-	int intDist;
+	int extDist = 0;
+	int intDist = 0;
 
-	int roomCount;
-	int deltaDepth;
-	int targetDepth;
-	int minSpaceSize;
-
-	GenOutput *gOutput;
-	const GenInput *gInput;
+	int roomCount = 0;
+	int deltaDepth = 0;
+	int targetDepth = 0;
+	int minSpaceSize = 0;
 
 	Random random;
 
-	bt::Node<Cell> *root;
+	GenOutput* gOutput = nullptr;
+	const GenInput* gInput = nullptr;
+
 	std::vector<Room> rooms;
+	bt::Node<Cell>* root = nullptr;
 
 	std::map<std::pair<int, int>, Node> nodes;
 	std::uniform_real_distribution<float> uniSpace;
-	
+
 	static constexpr int roomSizeLimit = 4;
 
 	void Clear();
@@ -126,15 +126,15 @@ struct Generator
 	void OptimizeNodes();
 	void GenerateRooms();
 	void GenerateOutput();
-	void GenerateTree(bt::Node<Cell> &btNode, int left);
+	void GenerateTree(bt::Node<Cell>& btNode, int left);
 
-	Node &RegisterNode(int x, int y);
+	Node& RegisterNode(int x, int y);
 	void CreateSpaceNodes(Rect& space);
 	void CreateRoomNodes(Rect& space, Room& room);
-	Room *GetRandomRoom(bt::Node<Cell> *const btNode);
+	Room* GetRandomRoom(bt::Node<Cell>* const btNode);
 
-	Generator();
-	~Generator();
+	Generator() = default;
+	~Generator() { Clear(); }
 
-	void Generate(const GenInput *genInput, GenOutput *genOutput);
+	void Generate(const GenInput* genInput, GenOutput* genOutput);
 };
