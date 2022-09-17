@@ -35,8 +35,10 @@ using byte = unsigned char;
 struct Cell
 {
 	bool locked = false;
-	Room* room = nullptr;
 	Rect space{};
+
+	int roomOffset = std::numeric_limits<int>::max();
+	int roomCount = 0;
 
 	Cell() = default;
 	Cell(int w, int h) : space(0, 0, w, h) {}
@@ -131,7 +133,6 @@ struct Generator
 	Node& RegisterNode(int x, int y);
 	void CreateSpaceNodes(Rect& space);
 	void CreateRoomNodes(Rect& space, Room& room);
-	Room* GetRandomRoom(bt::Node<Cell>* const btNode);
 
 	Generator() = default;
 	~Generator() { Clear(); }

@@ -116,14 +116,34 @@ void Generator::FindPaths()
 	bt::Node<Cell>::defaultTraversal = bt::Traversal::POSTORDER;
 	for (auto& btNode : *root)
 	{
-		if (btNode.m_left == nullptr || btNode.m_right == nullptr)
+		if (btNode.roomCount < 2)
 			continue;
 
-		Room* const start = GetRandomRoom(btNode.m_left);
-		if (start == nullptr) continue;
+		int leftIndex = btNode.m_left -> roomOffset;
+		const int leftCount = btNode.m_left -> roomCount;
 
-		Room* const stop = GetRandomRoom(btNode.m_right);
-		if (stop == nullptr) continue;
+		int rightIndex = btNode.m_right -> roomOffset;
+		const int rightCount = btNode.m_right -> roomCount;
+
+		if (leftCount <= 0 || rightCount <= 0)
+			continue;
+
+		switch (leftCount)
+		{
+		case 1: break;
+		case 2: leftIndex += static_cast<int>(random.GetBool()); break;
+		default: leftIndex += random() % leftCount;
+		}
+
+		switch (rightCount)
+		{
+		case 1: break;
+		case 2: rightIndex += static_cast<int>(random.GetBool()); break;
+		default: rightIndex += random() % rightCount;
+		}
+
+		Room* const start = rooms.data() + leftIndex;
+		Room* const stop = rooms.data() + rightIndex;
 
 		Node* crrNode = start;
 		start -> gCost = 0;
@@ -379,7 +399,6 @@ void Generator::GenerateRooms()
 			}
 		}
 
-		btNode.room = &room;
 		room.ComputeEdges();
 		CreateRoomNodes(btNode.space, room);
 	}
@@ -461,7 +480,9 @@ void Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 			if (btNode.locked) return;
 		}
 
-		roomCount++;
+		btNode.roomOffset = roomCount++;
+		btNode.roomCount = 1;
+
 		return;
 	}
 
@@ -489,6 +510,8 @@ void Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 	GenerateTree(*btNode.m_left, left);
 	GenerateTree(*btNode.m_right, left);
 
+	btNode.roomOffset = std::min(btNode.m_left -> roomOffset, btNode.m_right -> roomOffset);
+	btNode.roomCount = btNode.m_left -> roomCount + btNode.m_right -> roomCount;
 	btNode.locked = true;
 }
 
@@ -534,18 +557,6 @@ void Generator::CreateRoomNodes(Rect& space, Room& room)
 	west = &RegisterNode(space.x - extDist, iPoint.y);
 	west -> path |= 1 << Dir::NORTH;
 	west -> links[Dir::EAST] = &room;
-}
-
-Room* Generator::GetRandomRoom(bt::Node<Cell>* const btNode)
-{
-	if (btNode == nullptr) return nullptr;
-	const bool firstLeft = random.GetBool();
-
-	Room* room = GetRandomRoom(firstLeft ? btNode -> m_left : btNode -> m_right);
-	if (room != nullptr) return room;
-
-	room = GetRandomRoom(firstLeft ? btNode -> m_right : btNode -> m_left);
-	return room != nullptr ? room : btNode -> room;
 }
 
 void Generator::Generate(const GenInput* genInput, GenOutput* genOutput)
