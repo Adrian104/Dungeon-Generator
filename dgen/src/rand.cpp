@@ -31,12 +31,14 @@ bool Random::GetBool()
 
 float Random::GetFloat()
 {
-	return m_engine() / static_cast<float>(engine_type::max());
+	static constexpr float invMax = 1.0f / static_cast<float>(engine_type::max());
+	return m_engine() * invMax;
 }
 
 double Random::GetDouble()
 {
-	return m_engine() / static_cast<double>(engine_type::max());
+	static constexpr double invMax = 1.0 / static_cast<double>(engine_type::max());
+	return m_engine() * invMax;
 }
 
 void Random::Init(const seed_type seed)

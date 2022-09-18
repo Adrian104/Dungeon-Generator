@@ -60,7 +60,8 @@ void Generator::Prepare()
 	targetDepth = 0;
 	deltaDepth = gInput -> m_maxDepth - gInput -> m_minDepth;
 
-	uniSpace = std::uniform_real_distribution<float>(0.5f - gInput -> m_spaceSizeRandomness / 2.0f, 0.5f + gInput -> m_spaceSizeRandomness / 2.0f);
+	const float halfRand = gInput -> m_spaceSizeRandomness * 0.5f;
+	uniSpace = std::uniform_real_distribution<float>(0.5f - halfRand, 0.5f + halfRand);
 }
 
 void Generator::LinkNodes()
