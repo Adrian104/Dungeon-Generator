@@ -1,13 +1,11 @@
 #pragma once
 #include <random>
-#include <type_traits>
 
 class Random
 {
 	public:
 	using engine_type = std::mt19937;
 	using result_type = engine_type::result_type;
-	using seed_type = std::remove_const<decltype(engine_type::default_seed)>::type;
 
 	private:
 	int m_bitCount = 0;
@@ -16,7 +14,7 @@ class Random
 
 	public:
 	Random() { Init(); }
-	Random(const seed_type seed) { Init(seed); }
+	Random(const result_type seed) { Init(seed); }
 
 	bool GetBool();
 	float GetFloat();
@@ -28,5 +26,39 @@ class Random
 	template <typename Type>
 	auto operator()(Type&& distribution) { return distribution(m_engine); }
 
-	void Init(const seed_type seed = engine_type::default_seed);
+	void Init(const result_type seed = engine_type::default_seed);
 };
+
+inline bool Random::GetBool()
+{
+	if (m_bitCount > 0)
+	{
+		m_bits >>= 1;
+		m_bitCount--;
+	}
+	else
+	{
+		m_bits = m_engine();
+		m_bitCount = sizeof(result_type) * 8 - 1;
+	}
+
+	return static_cast<bool>(m_bits & 0b1);
+}
+
+inline float Random::GetFloat()
+{
+	static constexpr float invMax = 1.0f / static_cast<float>(engine_type::max());
+	return m_engine() * invMax;
+}
+
+inline double Random::GetDouble()
+{
+	static constexpr double invMax = 1.0 / static_cast<double>(engine_type::max());
+	return m_engine() * invMax;
+}
+
+inline void Random::Init(const result_type seed)
+{
+	m_bitCount = 0;
+	m_engine.seed(seed);
+}

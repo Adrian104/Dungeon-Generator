@@ -76,7 +76,7 @@ struct Room : public Node
 
 struct GenInput
 {
-	Random::seed_type m_seed;
+	Random::result_type m_seed;
 	bool m_generateFewerPaths;
 
 	int m_randAreaDepth;

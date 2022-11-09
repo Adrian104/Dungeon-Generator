@@ -162,7 +162,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dgen.cpp" />
-    <ClCompile Include="src\rand.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

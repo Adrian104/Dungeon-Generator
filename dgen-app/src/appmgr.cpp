@@ -120,7 +120,7 @@ void AppManager::CreateWindow(const std::string& title, int width, int height, U
 	if (m_renderer == nullptr) throw std::runtime_error(SDL_GetError());
 }
 
-SDL_Texture* AppManager::CreateTexture(int width, int height, bool blend)
+SDL_Texture* AppManager::CreateTexture(int width, int height, bool blend) const
 {
 	SDL_Texture* const texture = SDL_CreateTexture(m_renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
 	if (blend) SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);

@@ -1,6 +1,6 @@
 #pragma once
-#include "mod.hpp"
 #include "../app.hpp"
+#include "mod.hpp"
 #include <vector>
 
 class Menu : public Widget, public Animator

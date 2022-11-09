@@ -63,6 +63,6 @@ class AppManager
 	void DestroyWindow();
 	void CreateWindow(const std::string& title, int width, int height, Uint32 flags = 0);
 
-	SDL_Texture* CreateTexture(int width, int height, bool blend = true);
+	SDL_Texture* CreateTexture(int width, int height, bool blend = true) const;
 	Text RenderText(const std::string& str, int id, int style = TTF_STYLE_NORMAL, const SDL_Color& color = { 0xFF, 0xFF, 0xFF, 0xFF }) const;
 };
