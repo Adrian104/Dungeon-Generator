@@ -49,16 +49,16 @@ void Result::ComputeHash(const void* data, size_t size)
 	}
 }
 
-void TimedGenerator::TimedGenerate(const GenInput* genInput)
+void TimedGenerator::TimedGenerate(const GenInput* input)
 {
 	m_result.Start();
-	gInput = genInput;
-	gOutput = &m_output;
+	m_input = input;
+	m_output = &m_genOutput;
 
 	Prepare();
 	m_result.Measure("Prepare");
 
-	GenerateTree(*root, gInput -> m_maxDepth);
+	GenerateTree(*m_root, m_input -> m_maxDepth);
 	m_result.Measure("Generate Tree");
 
 	GenerateRooms();
@@ -79,9 +79,9 @@ void TimedGenerator::TimedGenerate(const GenInput* genInput)
 	Clear();
 	m_result.Measure("Clear");
 
-	m_result.ComputeHash(m_output.m_rooms.data(), SizeInBytes(m_output.m_rooms));
-	m_result.ComputeHash(m_output.m_paths.data(), SizeInBytes(m_output.m_paths));
-	m_result.ComputeHash(m_output.m_entrances.data(), SizeInBytes(m_output.m_entrances));
+	m_result.ComputeHash(m_genOutput.m_rooms.data(), SizeInBytes(m_genOutput.m_rooms));
+	m_result.ComputeHash(m_genOutput.m_paths.data(), SizeInBytes(m_genOutput.m_paths));
+	m_result.ComputeHash(m_genOutput.m_entrances.data(), SizeInBytes(m_genOutput.m_entrances));
 }
 
 void Test::Interpret(const Result& result, std::vector<const char*>& columns, bool measure)

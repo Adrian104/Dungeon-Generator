@@ -100,24 +100,24 @@ struct GenOutput
 
 struct Generator
 {
-	int extDist = 0;
-	int intDist = 0;
+	int m_spaceOffset = 0;
+	int m_spaceShrink = 0;
 
-	int roomCount = 0;
-	int deltaDepth = 0;
-	int targetDepth = 0;
-	int minSpaceSize = 0;
+	int m_deltaDepth = 0;
+	int m_targetDepth = 0;
+	int m_minSpaceSize = 0;
+	int m_totalRoomCount = 0;
 
-	Random random;
+	Random m_random;
 
-	GenOutput* gOutput = nullptr;
-	const GenInput* gInput = nullptr;
+	GenOutput* m_output = nullptr;
+	const GenInput* m_input = nullptr;
 
-	std::vector<Room> rooms;
-	bt::Node<Cell>* root = nullptr;
+	std::vector<Room> m_rooms;
+	bt::Node<Cell>* m_root = nullptr;
 
-	std::map<std::pair<int, int>, Node> nodes;
-	std::uniform_real_distribution<float> uniSpace;
+	std::map<std::pair<int, int>, Node> m_nodes;
+	std::uniform_real_distribution<float> m_uniSpace;
 
 	static constexpr int roomSizeLimit = 4;
 
@@ -137,5 +137,5 @@ struct Generator
 	Generator() = default;
 	~Generator() { Clear(); }
 
-	void Generate(const GenInput* genInput, GenOutput* genOutput);
+	void Generate(const GenInput* input, GenOutput* output);
 };

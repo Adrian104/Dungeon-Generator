@@ -92,7 +92,7 @@ void Application::Render()
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
 		bt::Node<Cell>::defaultTraversal = bt::Traversal::PREORDER;
 
-		for (auto& btNode : *m_generator.root)
+		for (auto& btNode : *m_generator.m_root)
 		{
 			if (btNode.m_left != nullptr || btNode.m_right != nullptr)
 				continue;
@@ -102,7 +102,7 @@ void Application::Render()
 			SDL_RenderDrawRectF(renderer, &rect);
 		}
 
-		for (Room& room : m_generator.rooms)
+		for (Room& room : m_generator.m_rooms)
 		{
 			SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
 			for (Rect& rect : room.rects)
@@ -117,11 +117,11 @@ void Application::Render()
 		}
 
 		SDL_SetRenderDrawColor(renderer, 0x50, 0x50, 0x50, 0xFF);
-		for (auto& [pos, node] : m_generator.nodes) DrawLinks(node);
+		for (auto& [pos, node] : m_generator.m_nodes) DrawLinks(node);
 
 		SDL_SetRenderDrawColor(renderer, 0, 0xC0, 0, 0xFF);
-		for (Room& room : m_generator.rooms) DrawNode(room);
-		for (auto& [pos, node] : m_generator.nodes) DrawNode(node);
+		for (Room& room : m_generator.m_rooms) DrawNode(room);
+		for (auto& [pos, node] : m_generator.m_nodes) DrawNode(node);
 	}
 	else
 	{

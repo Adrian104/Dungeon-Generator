@@ -30,11 +30,11 @@ class Result
 class TimedGenerator : protected Generator
 {
 	Result& m_result;
-	GenOutput m_output;
+	GenOutput m_genOutput;
 
 	public:
 	TimedGenerator(Result& result) : m_result(result) {}
-	void TimedGenerate(const GenInput* genInput);
+	void TimedGenerate(const GenInput* input);
 };
 
 class Test
