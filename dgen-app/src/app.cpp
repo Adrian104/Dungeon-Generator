@@ -67,16 +67,16 @@ void Application::Render()
 	{
 		auto DrawLinks = [this, renderer](Node& node) -> void
 		{
-			SDL_FPoint p1 = { static_cast<float>(node.pos.x + 0.5f), static_cast<float>(node.pos.y + 0.5f) };
+			SDL_FPoint p1 = { static_cast<float>(node.m_pos.x + 0.5f), static_cast<float>(node.m_pos.y + 0.5f) };
 			m_viewport.ToScreen(p1.x, p1.y, p1.x, p1.y);
 
 			const int end = (m_input.m_seed & 0b10) + 2;
 			for (int i = m_input.m_seed & 0b10; i < end; i++)
 			{
-				Node* const node2 = node.links[i];
+				Node* const node2 = node.m_links[i];
 				if (node2 == nullptr) continue;
 
-				SDL_FPoint p2 = { static_cast<float>(node2 -> pos.x + 0.5f), static_cast<float>(node2 -> pos.y + 0.5f) };
+				SDL_FPoint p2 = { static_cast<float>(node2 -> m_pos.x + 0.5f), static_cast<float>(node2 -> m_pos.y + 0.5f) };
 				m_viewport.ToScreen(p2.x, p2.y, p2.x, p2.y);
 				SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
 			}
@@ -84,7 +84,7 @@ void Application::Render()
 
 		auto DrawNode = [this, renderer](Node& node) -> void
 		{
-			SDL_FRect rect = { static_cast<float>(node.pos.x), static_cast<float>(node.pos.y), 1, 1 };
+			SDL_FRect rect = { static_cast<float>(node.m_pos.x), static_cast<float>(node.m_pos.y), 1, 1 };
 			m_viewport.RectToScreen(rect, rect);
 			SDL_RenderFillRectF(renderer, &rect);
 		};
@@ -97,7 +97,7 @@ void Application::Render()
 			if (btNode.m_left != nullptr || btNode.m_right != nullptr)
 				continue;
 
-			SDL_FRect rect = ToFRect(btNode.space);
+			SDL_FRect rect = ToFRect(btNode.m_space);
 			m_viewport.RectToScreen(rect, rect);
 			SDL_RenderDrawRectF(renderer, &rect);
 		}
@@ -105,7 +105,7 @@ void Application::Render()
 		for (Room& room : m_generator.m_rooms)
 		{
 			SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
-			for (Rect& rect : room.rects)
+			for (Rect& rect : room.m_rects)
 			{
 				SDL_FRect sdlRect = ToFRect(rect);
 				m_viewport.RectToScreen(sdlRect, sdlRect);

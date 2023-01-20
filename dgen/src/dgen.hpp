@@ -34,38 +34,38 @@ using byte = unsigned char;
 
 struct Cell
 {
-	bool locked = false;
-	Rect space{};
+	bool m_locked = false;
+	Rect m_space{};
 
-	int roomOffset = std::numeric_limits<int>::max();
-	int roomCount = 0;
+	int m_roomOffset = std::numeric_limits<int>::max();
+	int m_roomCount = 0;
 
 	Cell() = default;
-	Cell(int w, int h) : space(0, 0, w, h) {}
+	Cell(int w, int h) : m_space(0, 0, w, h) {}
 };
 
 struct Node
 {
-	int gCost = 0;
-	int hCost = 0;
+	int m_gCost = 0;
+	int m_hCost = 0;
 
-	byte path = 0;
-	byte origin = 0;
-	uint status = 0;
+	byte m_path = 0;
+	byte m_origin = 0;
+	uint m_status = 0;
 
-	Point pos{};
-	Node* links[4]{};
+	Point m_pos{};
+	Node* m_links[4]{};
 
 	Node() = default;
-	Node(int x, int y) : pos(x, y) {}
+	Node(int x, int y) : m_pos(x, y) {}
 
 	virtual Room* ToRoom() { return nullptr; }
 };
 
 struct Room : public Node
 {
-	std::vector<Rect> rects;
-	int edges[4]{ std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() };
+	std::vector<Rect> m_rects;
+	int m_edges[4]{ std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() };
 
 	Room() = default;
 	Room(int x, int y) : Node(x, y) {}
