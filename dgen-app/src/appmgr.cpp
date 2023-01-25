@@ -116,7 +116,7 @@ void AppManager::CreateWindow(const std::string& title, int width, int height, U
 	m_window = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, flags);
 	if (m_window == nullptr) throw std::runtime_error(SDL_GetError());
 
-	m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_ACCELERATED);
+	m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if (m_renderer == nullptr) throw std::runtime_error(SDL_GetError());
 }
 
