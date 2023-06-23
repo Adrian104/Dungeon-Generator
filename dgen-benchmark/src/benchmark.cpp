@@ -1,5 +1,4 @@
 #include "benchmark.hpp"
-#include "ini_utils.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -12,19 +11,19 @@ static size_t SizeInBytes(const Type& container)
 	return container.size() * sizeof(typename Type::value_type);
 }
 
-void Result::Start()
+void Probe::Start()
 {
 	m_hash = g_initialHash;
 	m_timePoints.clear();
 	m_startTimePoint = clock_type::now();
 }
 
-void Result::Measure(const char* name)
+void Probe::Measure(const char* name)
 {
 	m_timePoints.emplace_back(clock_type::now(), name);
 }
 
-void Result::ComputeHash(const void* data, size_t size)
+void Probe::ComputeHash(const void* data, size_t size)
 {
 	const hash_type* crr = static_cast<const hash_type*>(data);
 	const hash_type* const end = static_cast<const hash_type*>(data) + (size / sizeof(hash_type));
@@ -49,52 +48,78 @@ void Result::ComputeHash(const void* data, size_t size)
 	}
 }
 
-void TimedGenerator::TimedGenerate(const GenInput* input)
+void TimedGenerator::TimedGenerate(Probe& probe, const GenInput* input)
 {
-	m_result.Start();
+	GenOutput output;
+
+	probe.Start();
 	m_input = input;
-	m_output = &m_genOutput;
+	m_output = &output;
 
 	Prepare();
-	m_result.Measure("Prepare");
+	probe.Measure("Prepare");
 
 	GenerateTree(*m_root, m_input -> m_maxDepth);
-	m_result.Measure("Generate Tree");
+	probe.Measure("Generate Tree");
 
 	GenerateRooms();
-	m_result.Measure("Generate Rooms");
+	probe.Measure("Generate Rooms");
 
 	LinkNodes();
-	m_result.Measure("Link Nodes");
+	probe.Measure("Link Nodes");
 
 	FindPaths();
-	m_result.Measure("Find Paths");
+	probe.Measure("Find Paths");
 
 	OptimizeNodes();
-	m_result.Measure("Optimize Nodes");
+	probe.Measure("Optimize Nodes");
 
 	GenerateOutput();
-	m_result.Measure("Generate Output");
+	probe.Measure("Generate Output");
 
 	Clear();
-	m_result.Measure("Clear");
+	probe.Measure("Clear");
 
-	m_result.ComputeHash(m_genOutput.m_rooms.data(), SizeInBytes(m_genOutput.m_rooms));
-	m_result.ComputeHash(m_genOutput.m_paths.data(), SizeInBytes(m_genOutput.m_paths));
-	m_result.ComputeHash(m_genOutput.m_entrances.data(), SizeInBytes(m_genOutput.m_entrances));
+	probe.ComputeHash(output.m_rooms.data(), SizeInBytes(output.m_rooms));
+	probe.ComputeHash(output.m_paths.data(), SizeInBytes(output.m_paths));
+	probe.ComputeHash(output.m_entrances.data(), SizeInBytes(output.m_entrances));
 }
 
-void Test::Interpret(const Result& result, std::vector<const char*>& columns, bool measure)
+void Config::Load(ini::section_type& section, bool req)
+{
+	ini::Get(section, "minIter", m_minIter, req);
+	ini::Get(section, "minTime", m_minTime, req);
+	ini::Get(section, "minWarmupIter", m_minWarmupIter, req);
+	ini::Get(section, "minWarmupTime", m_minWarmupTime, req);
+
+	ini::Get(section, "seed", m_seed, req);
+	ini::Get(section, "width", m_width, req);
+	ini::Get(section, "height", m_height, req);
+	ini::Get(section, "minDepth", m_minDepth, req);
+	ini::Get(section, "maxDepth", m_maxDepth, req);
+	ini::Get(section, "minRoomSize", m_minRoomSize, req);
+	ini::Get(section, "maxRoomSize", m_maxRoomSize, req);
+	ini::Get(section, "randAreaDens", m_randAreaDens, req);
+	ini::Get(section, "randAreaProb", m_randAreaProb, req);
+	ini::Get(section, "randAreaDepth", m_randAreaDepth, req);
+	ini::Get(section, "doubleRoomProb", m_doubleRoomProb, req);
+	ini::Get(section, "heuristicFactor", m_heuristicFactor, req);
+	ini::Get(section, "spaceInterdistance", m_spaceInterdistance, req);
+	ini::Get(section, "generateFewerPaths", m_generateFewerPaths, req);
+	ini::Get(section, "spaceSizeRandomness", m_spaceSizeRandomness, req);
+}
+
+void Trial::Interpret(const Probe& probe, std::vector<const char*>& columns, bool measure)
 {
 	if (columns.empty())
 	{
-		columns.reserve(result.m_timePoints.size());
-		for (const auto& [time, name] : result.m_timePoints)
+		columns.reserve(probe.m_timePoints.size());
+		for (const auto& [time, name] : probe.m_timePoints)
 			columns.push_back(name);
 	}
 
 	const size_t size = columns.size();
-	if (result.m_timePoints.size() != size)
+	if (probe.m_timePoints.size() != size)
 	{
 		unsteady:
 		throw std::runtime_error("Unsteady measurement");
@@ -105,10 +130,10 @@ void Test::Interpret(const Result& result, std::vector<const char*>& columns, bo
 
 	if (measure)
 	{
-		time_type prevTime = result.m_startTimePoint;
+		time_type prevTime = probe.m_startTimePoint;
 		for (size_t i = 0; i < size; i++)
 		{
-			const auto& [time, name] = result.m_timePoints.at(i);
+			const auto& [time, name] = probe.m_timePoints.at(i);
 			if (name != columns.at(i)) goto unsteady;
 
 			m_durations[i] += time - prevTime;
@@ -120,17 +145,17 @@ void Test::Interpret(const Result& result, std::vector<const char*>& columns, bo
 
 	if (m_hashBehavior == HashBehavior::STEADY)
 	{
-		if (m_hash != result.m_hash)
+		if (m_hash != probe.m_hash)
 			m_hashBehavior = HashBehavior::UNSTEADY;
 	}
 	else if (m_hashBehavior == HashBehavior::UNKNOWN)
 	{
-		m_hash = result.m_hash;
+		m_hash = probe.m_hash;
 		m_hashBehavior = HashBehavior::STEADY;
 	}
 }
 
-void Benchmark::RunTests()
+void Benchmark::RunTrials()
 {
 	using std::chrono::milliseconds;
 
@@ -142,25 +167,25 @@ void Benchmark::RunTests()
 
 	std::cout << "\n ************ BENCHMARKING ************\n\n";
 
-	Result result;
+	Probe probe;
 	unsigned int index = 1;
 
-	for (Test& test : m_tests)
+	for (Trial& trial : m_trials)
 	{
-		std::cout << ' ' << index++ << '/' << m_tests.size() << ' ' << test.m_name << std::flush;
+		std::cout << ' ' << index++ << '/' << m_trials.size() << ' ' << trial.m_name << std::flush;
 
 		bool measure = false;
-		int remIter = m_minWarmupIter;
+		int remIter = trial.m_config.m_minWarmupIter;
 
 		time_type now;
 		time_type startTime = clock_type::now();
-		duration_type minDuration = milliseconds(m_minWarmupTime);
+		duration_type minDuration = milliseconds(trial.m_config.m_minWarmupTime);
 
 		while (true)
 		{
-			TimedGenerator generator(result);
-			generator.TimedGenerate(&test.m_input);
-			test.Interpret(result, m_columns, measure);
+			TimedGenerator generator;
+			generator.TimedGenerate(probe, &trial.m_config);
+			trial.Interpret(probe, m_columns, measure);
 
 			remIter--;
 			now = clock_type::now();
@@ -172,16 +197,16 @@ void Benchmark::RunTests()
 				break;
 
 			measure = true;
-			remIter = m_minIter;
+			remIter = trial.m_config.m_minIter;
 
 			startTime = now;
-			minDuration = milliseconds(m_minTime);
+			minDuration = milliseconds(trial.m_config.m_minTime);
 
 			std::cout << "... " << std::flush;
 		}
 
 		const auto elapsed = std::chrono::duration_cast<milliseconds>(now - startTime).count();
-		std::cout << "Done! (" << elapsed << " ms, " << test.m_iterations << " i)\n" << std::flush;
+		std::cout << "Done! (" << elapsed << " ms, " << trial.m_iterations << " i)\n" << std::flush;
 	}
 
 	std::cout << '\n';
@@ -189,52 +214,29 @@ void Benchmark::RunTests()
 
 void Benchmark::LoadConfig()
 {
-	auto LoadGenInput = [](ini::section_type& section, GenInput& dest, bool req) -> void
-	{
-		ini::Get(section, "seed", dest.m_seed, req);
-		ini::Get(section, "width", dest.m_width, req);
-		ini::Get(section, "height", dest.m_height, req);
-		ini::Get(section, "minDepth", dest.m_minDepth, req);
-		ini::Get(section, "maxDepth", dest.m_maxDepth, req);
-		ini::Get(section, "minRoomSize", dest.m_minRoomSize, req);
-		ini::Get(section, "maxRoomSize", dest.m_maxRoomSize, req);
-		ini::Get(section, "randAreaDens", dest.m_randAreaDens, req);
-		ini::Get(section, "randAreaProb", dest.m_randAreaProb, req);
-		ini::Get(section, "randAreaDepth", dest.m_randAreaDepth, req);
-		ini::Get(section, "doubleRoomProb", dest.m_doubleRoomProb, req);
-		ini::Get(section, "heuristicFactor", dest.m_heuristicFactor, req);
-		ini::Get(section, "spaceInterdistance", dest.m_spaceInterdistance, req);
-		ini::Get(section, "generateFewerPaths", dest.m_generateFewerPaths, req);
-		ini::Get(section, "spaceSizeRandomness", dest.m_spaceSizeRandomness, req);
-	};
-
 	ini::container_type container;
 	ini::Load(container, "config.ini");
 	ini::section_type& globalSection = container[""];
 
-	GenInput globalGenInput;
-	LoadGenInput(globalSection, globalGenInput, true);
+	Config globalConfig;
+	globalConfig.Load(globalSection, true);
 
 	ini::Get(globalSection, "delay", m_delay, true);
-	ini::Get(globalSection, "minIter", m_minIter, true);
-	ini::Get(globalSection, "minTime", m_minTime, true);
-	ini::Get(globalSection, "minWarmupIter", m_minWarmupIter, true);
-	ini::Get(globalSection, "minWarmupTime", m_minWarmupTime, true);
 	ini::Get(globalSection, "outputFile", m_outputFile, true);
 
 	for (unsigned int i = 0; true; i++)
 	{
-		const std::string name = "test_" + std::to_string(i);
+		const std::string name = "trial_" + std::to_string(i);
 		const auto iter = container.find(name);
 
 		if (iter == container.end())
 			break;
 
 		ini::section_type& crrSection = iter -> second;
-		Test& crrTest = m_tests.emplace_back(globalGenInput, name);
+		Trial& trial = m_trials.emplace_back(globalConfig, name);
 
-		LoadGenInput(crrSection, crrTest.m_input, false);
-		ini::Get(crrSection, "name", crrTest.m_name, false);
+		trial.m_config.Load(crrSection, false);
+		ini::Get(crrSection, "name", trial.m_name, false);
 	}
 }
 
@@ -248,25 +250,25 @@ void Benchmark::SaveSummary() const
 		file << '\t' << column;
 
 	file << "\tAvg Time\tIterations\tHash\n";
-	for (const Test& test : m_tests)
+	for (const Trial& trial : m_trials)
 	{
-		file << test.m_name;
+		file << trial.m_name;
 
 		duration_type total = duration_type::zero();
-		for (const duration_type duration : test.m_durations)
+		for (const duration_type duration : trial.m_durations)
 		{
 			total += duration;
-			file << '\t' << (duration / test.m_iterations).count();
+			file << '\t' << (duration / trial.m_iterations).count();
 		}
 
-		file << '\t' << (total / test.m_iterations).count();
-		file << '\t' << test.m_iterations << '\t';
+		file << '\t' << (total / trial.m_iterations).count();
+		file << '\t' << trial.m_iterations << '\t';
 
-		switch (test.m_hashBehavior)
+		switch (trial.m_hashBehavior)
 		{
 		case HashBehavior::STEADY:
 			file << std::hex << std::uppercase;
-			file << test.m_hash;
+			file << trial.m_hash;
 			file << std::dec << std::nouppercase;
 			break;
 
@@ -285,6 +287,6 @@ void Benchmark::SaveSummary() const
 void Benchmark::Run()
 {
 	LoadConfig();
-	RunTests();
+	RunTrials();
 	SaveSummary();
 }
