@@ -130,14 +130,33 @@ void Trial::Interpret(const Probe& probe, std::vector<const char*>& columns, boo
 
 	if (measure)
 	{
+		duration_type diff, total = duration_type::zero();
 		time_type prevTime = probe.m_startTimePoint;
+
 		for (size_t i = 0; i < size; i++)
 		{
 			const auto& [time, name] = probe.m_timePoints.at(i);
 			if (name != columns.at(i)) goto unsteady;
 
-			m_durations[i] += time - prevTime;
+			diff = time - prevTime;
+			m_durations[i].m_sum += diff;
+
+			total += diff;
 			prevTime = time;
+		}
+
+		m_sumDuration += total;
+		if (m_minDuration > total)
+		{
+			m_minDuration = total;
+			prevTime = probe.m_startTimePoint;
+
+			for (size_t i = 0; i < size; i++)
+			{
+				const time_type time = probe.m_timePoints.at(i).first;
+				m_durations[i].m_min = time - prevTime;
+				prevTime = time;
+			}
 		}
 
 		m_iterations++;
@@ -206,7 +225,7 @@ void Benchmark::RunTrials()
 		}
 
 		const auto elapsed = std::chrono::duration_cast<milliseconds>(now - startTime).count();
-		std::cout << "Done! (" << elapsed << " ms, " << trial.m_iterations << " i)\n" << std::flush;
+		std::cout << "done! (" << elapsed << " ms, " << trial.m_iterations << " i)\n" << std::flush;
 	}
 
 	std::cout << '\n';
@@ -218,7 +237,7 @@ void Benchmark::LoadConfig()
 	ini::Load(container, "config.ini");
 	ini::section_type& globalSection = container[""];
 
-	Config globalConfig;
+	Config globalConfig{};
 	globalConfig.Load(globalSection, true);
 
 	ini::Get(globalSection, "delay", m_delay, true);
@@ -246,23 +265,26 @@ void Benchmark::SaveSummary() const
 	if (!file.good()) return;
 
 	file << "Name";
-	for (const char* column : m_columns)
-		file << '\t' << column;
 
-	file << "\tAvg Time\tIterations\tHash\n";
+	for (const char* column : m_columns)
+		file << ',' << column;
+	file << ",Avg Total Time";
+
+	for (const char* column : m_columns)
+		file << ',' << column;
+	file << ",Min Total Time,Iterations,Hash\n";
+
 	for (const Trial& trial : m_trials)
 	{
 		file << trial.m_name;
 
-		duration_type total = duration_type::zero();
-		for (const duration_type duration : trial.m_durations)
-		{
-			total += duration;
-			file << '\t' << (duration / trial.m_iterations).count();
-		}
+		for (const Trial::Durations& durations : trial.m_durations)
+			file << ',' << (durations.m_sum / trial.m_iterations).count();
+		file << ',' << (trial.m_sumDuration / trial.m_iterations).count();
 
-		file << '\t' << (total / trial.m_iterations).count();
-		file << '\t' << trial.m_iterations << '\t';
+		for (const Trial::Durations& durations : trial.m_durations)
+			file << ',' << durations.m_min.count();
+		file << ',' << trial.m_minDuration.count() << ',' << trial.m_iterations << ',';
 
 		switch (trial.m_hashBehavior)
 		{

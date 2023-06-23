@@ -48,13 +48,22 @@ class Config : public GenInput
 
 class Trial
 {
+	struct Durations
+	{
+		duration_type m_sum = duration_type::zero();
+		duration_type m_min = duration_type::max();
+	};
+
 	Config m_config;
 	std::string m_name;
 
-	unsigned int m_iterations = 0;
+	size_t m_iterations = 0;
 	hash_type m_hash = g_initialHash;
-	std::vector<duration_type> m_durations;
 	HashBehavior m_hashBehavior = HashBehavior::UNKNOWN;
+
+	std::vector<Durations> m_durations;
+	duration_type m_sumDuration = duration_type::zero();
+	duration_type m_minDuration = duration_type::max();
 
 	public:
 	Trial(const Config& config, const std::string& name) : m_config(config), m_name(name) {}
