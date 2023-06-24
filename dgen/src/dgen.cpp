@@ -111,7 +111,7 @@ void Generator::LinkNodes()
 
 void Generator::FindPaths()
 {
-	uint statusCounter = 1;
+	uint32_t statusCounter = 1;
 	MinHeap<int, Node*> heap;
 
 	bt::Node<Cell>::defaultTraversal = bt::Traversal::POSTORDER;
@@ -215,8 +215,8 @@ void Generator::FindPaths()
 
 		do
 		{
-			const byte origin = crrNode -> m_origin;
-			const byte realOrigin = origin ^ 0b10;
+			const uint8_t origin = crrNode -> m_origin;
+			const uint8_t realOrigin = origin ^ 0b10;
 
 			crrNode -> m_path |= 1 << realOrigin;
 			crrNode = crrNode -> m_links[realOrigin];
@@ -231,12 +231,12 @@ void Generator::OptimizeNodes()
 	auto iter = m_nodes.begin();
 	const auto endIter = m_nodes.end();
 
-	const byte maskEW = m_input -> m_generateFewerPaths ? 0b1010 : 0b1111;
-	const byte maskNS = m_input -> m_generateFewerPaths ? 0b0101 : 0b1111;
+	const uint8_t maskEW = m_input -> m_generateFewerPaths ? 0b1010 : 0b1111;
+	const uint8_t maskNS = m_input -> m_generateFewerPaths ? 0b0101 : 0b1111;
 
 	while (iter != endIter)
 	{
-		byte& path = iter -> second.m_path;
+		uint8_t& path = iter -> second.m_path;
 		Node** links = iter -> second.m_links;
 
 		if (path != 0)
@@ -412,7 +412,7 @@ void Generator::GenerateOutput()
 	int c = 0;
 	for (Room& room : m_rooms)
 	{
-		for (uint path = uint(room.m_path); path; path >>= 1) c += path & 1;
+		for (uint32_t path = uint32_t(room.m_path); path; path >>= 1) c += path & 1;
 		for (Rect& rect : room.m_rects) m_output -> m_rooms.push_back(rect);
 	}
 
@@ -427,7 +427,7 @@ void Generator::GenerateOutput()
 	for (Room& room : m_rooms)
 	{
 		c = 0;
-		for (uint path = uint(room.m_path); path; path >>= 1, c++)
+		for (uint32_t path = uint32_t(room.m_path); path; path >>= 1, c++)
 		{
 			if (!static_cast<bool>(path & 1)) continue;
 
@@ -506,9 +506,7 @@ void Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 	btNode.m_right -> m_space.*xy += randSize;
 	btNode.m_right -> m_space.*wh -= randSize;
 
-	left--;
-
-	GenerateTree(*btNode.m_left, left);
+	GenerateTree(*btNode.m_left, --left);
 	GenerateTree(*btNode.m_right, left);
 
 	btNode.m_roomOffset = std::min(btNode.m_left -> m_roomOffset, btNode.m_right -> m_roomOffset);

@@ -5,9 +5,6 @@
 #include <cmath>
 #include <stdexcept>
 
-SDL_FPoint ToFPoint(const Point& point) { return { static_cast<float>(point.x), static_cast<float>(point.y) }; }
-SDL_FRect ToFRect(const Rect& rect) { return { static_cast<float>(rect.x), static_cast<float>(rect.y), static_cast<float>(rect.w), static_cast<float>(rect.h) }; }
-
 Application* Widget::appPointer = nullptr;
 
 void Application::Draw()
@@ -97,8 +94,8 @@ void Application::Render()
 			if (btNode.m_left != nullptr || btNode.m_right != nullptr)
 				continue;
 
-			SDL_FRect rect = ToFRect(btNode.m_space);
-			m_viewport.RectToScreen(rect, rect);
+			SDL_FRect rect;
+			m_viewport.RectToScreen(btNode.m_space, rect);
 			SDL_RenderDrawRectF(renderer, &rect);
 		}
 
@@ -107,8 +104,8 @@ void Application::Render()
 			SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
 			for (Rect& rect : room.m_rects)
 			{
-				SDL_FRect sdlRect = ToFRect(rect);
-				m_viewport.RectToScreen(sdlRect, sdlRect);
+				SDL_FRect sdlRect;
+				m_viewport.RectToScreen(rect, sdlRect);
 				SDL_RenderDrawRectF(renderer, &sdlRect);
 			}
 
@@ -130,8 +127,8 @@ void Application::Render()
 			SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
 			for (Rect& room : m_output.m_rooms)
 			{
-				SDL_FRect rect = ToFRect(room);
-				m_viewport.RectToScreen(rect, rect);
+				SDL_FRect rect;
+				m_viewport.RectToScreen(room, rect);
 				SDL_RenderDrawRectF(renderer, &rect);
 			}
 		}

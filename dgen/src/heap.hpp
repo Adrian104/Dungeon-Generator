@@ -162,26 +162,30 @@ void Heap<KeyType, ObjType, maxHeap>::Expand()
 template <typename KeyType, typename ObjType, bool maxHeap>
 void Heap<KeyType, ObjType, maxHeap>::Reserve(size_t newCapacity)
 {
-	m_capacity = newCapacity;
-
-	if (m_capacity < m_size)
+	if (newCapacity < m_size)
+	{
 		m_capacity = m_size;
+		goto run_reallocate;
+	}
 
-	if (m_capacity > 0) Reallocate();
+	m_capacity = newCapacity;
+	if (newCapacity > 0)
+	{
+		run_reallocate:
+		Reallocate();
+	}
 	else Reset();
 }
 
 template <typename KeyType, typename ObjType, bool maxHeap>
 void Heap<KeyType, ObjType, maxHeap>::Pop()
 {
-	switch (m_size)
+	if (m_size < 2)
 	{
-	case 1:
-		m_size = 0;
-		m_data -> ~pair_type();
-		[[fallthrough]];
+		if (m_size > 0)
+			m_data -> ~pair_type();
 
-	case 0:
+		m_size = 0;
 		return;
 	}
 

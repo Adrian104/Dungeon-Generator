@@ -5,10 +5,7 @@
 
 #include <limits>
 #include <map>
-#include <random>
 #include <vector>
-
-struct Room;
 
 struct Point
 {
@@ -26,11 +23,9 @@ struct Rect
 	Rect(int pX, int pY, int pW, int pH) : x(pX), y(pY), w(pW), h(pH) {}
 };
 
-enum Dir { NORTH, EAST, SOUTH, WEST };
-
+struct Room;
 using Vec = Point;
-using uint = unsigned int;
-using byte = unsigned char;
+enum Dir { NORTH, EAST, SOUTH, WEST };
 
 struct Cell
 {
@@ -49,9 +44,9 @@ struct Node
 	int m_gCost = 0;
 	int m_hCost = 0;
 
-	byte m_path = 0;
-	byte m_origin = 0;
-	uint m_status = 0;
+	uint8_t m_path = 0;
+	uint8_t m_origin = 0;
+	uint32_t m_status = 0;
 
 	Point m_pos{};
 	Node* m_links[4]{};
