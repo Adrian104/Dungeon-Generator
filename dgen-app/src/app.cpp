@@ -71,7 +71,7 @@ void Application::Render()
 			for (int i = m_input.m_seed & 0b10; i < end; i++)
 			{
 				Node* const node2 = node.m_links[i];
-				if (node2 == nullptr) continue;
+				if (node2 == &Node::sentinel) continue;
 
 				SDL_FPoint p2 = { static_cast<float>(node2 -> m_pos.x + 0.5f), static_cast<float>(node2 -> m_pos.y + 0.5f) };
 				m_viewport.ToScreen(p2.x, p2.y, p2.x, p2.y);

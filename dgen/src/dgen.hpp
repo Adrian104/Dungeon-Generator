@@ -41,6 +41,8 @@ struct Cell
 
 struct Node
 {
+	static Node sentinel;
+
 	int m_gCost = 0;
 	int m_hCost = 0;
 
@@ -49,10 +51,11 @@ struct Node
 	uint32_t m_status = 0;
 
 	Point m_pos{};
-	Node* m_links[4]{};
+	Node* m_links[4]{ &sentinel, &sentinel, &sentinel, &sentinel };
 
 	Node() = default;
 	Node(int x, int y) : m_pos(x, y) {}
+	Node(uint32_t status) : m_status(status) {}
 
 	virtual Room* ToRoom() { return nullptr; }
 };

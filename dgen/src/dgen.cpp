@@ -5,6 +5,8 @@
 #include <cmath>
 #include <stdexcept>
 
+Node Node::sentinel(std::numeric_limits<decltype(Node::m_status)>::max());
+
 void Room::ComputeEdges()
 {
 	for (const Rect& rect : m_rects)
@@ -157,7 +159,7 @@ void Generator::FindPaths()
 			for (int i = 0; i < 4; i++)
 			{
 				Node* const nNode = crrNode -> m_links[i];
-				if (nNode == nullptr || nNode -> m_status > statusCounter)
+				if (nNode -> m_status > statusCounter)
 					continue;
 
 				int newGCost = crrNode -> m_gCost;
@@ -246,14 +248,14 @@ void Generator::OptimizeNodes()
 				Node* const east = links[Dir::EAST];
 				Node* const west = links[Dir::WEST];
 
-				if (east == nullptr || west == nullptr) goto skip1;
-				if (east -> ToRoom() != nullptr && west -> ToRoom() != nullptr) goto skip1;
+				if (east -> ToRoom() != nullptr && west -> ToRoom() != nullptr)
+					goto skip1;
 
 				east -> m_links[Dir::WEST] = west;
 				west -> m_links[Dir::EAST] = east;
 
-				links[Dir::EAST] = nullptr;
-				links[Dir::WEST] = nullptr;
+				links[Dir::EAST] = &Node::sentinel;
+				links[Dir::WEST] = &Node::sentinel;
 
 				path &= ~0b1010;
 				if (path == 0) goto zero;
@@ -265,14 +267,14 @@ void Generator::OptimizeNodes()
 				Node* const north = links[Dir::NORTH];
 				Node* const south = links[Dir::SOUTH];
 
-				if (north == nullptr || south == nullptr) goto skip2;
-				if (north -> ToRoom() != nullptr && south -> ToRoom() != nullptr) goto skip2;
+				if (north -> ToRoom() != nullptr && south -> ToRoom() != nullptr)
+					goto skip2;
 
 				north -> m_links[Dir::SOUTH] = south;
 				south -> m_links[Dir::NORTH] = north;
 
-				links[Dir::NORTH] = nullptr;
-				links[Dir::SOUTH] = nullptr;
+				links[Dir::NORTH] = &Node::sentinel;
+				links[Dir::SOUTH] = &Node::sentinel;
 
 				path &= ~0b0101;
 				if (path == 0) goto zero;
@@ -285,10 +287,7 @@ void Generator::OptimizeNodes()
 		{
 			zero:
 			for (int i = 0; i < 4; i++)
-			{
-				if (Node* const link = links[i]; link != nullptr)
-					link -> m_links[i ^ 0b10] = nullptr;
-			}
+				links[i] -> m_links[i ^ 0b10] = &Node::sentinel;
 
 			iter = m_nodes.erase(iter);
 		}
