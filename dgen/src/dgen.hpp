@@ -29,7 +29,9 @@ enum Dir { NORTH, EAST, SOUTH, WEST };
 
 struct Cell
 {
-	bool m_locked = false;
+	enum Flag : uint32_t { RAND_AREA, GENERATE_ROOMS, CONNECT_ROOMS };
+
+	uint32_t m_flags = 0;
 	Rect m_space{};
 
 	int m_roomOffset = std::numeric_limits<int>::max();
@@ -126,7 +128,7 @@ struct Generator
 	void OptimizeNodes();
 	void GenerateRooms();
 	void GenerateOutput();
-	void GenerateTree(bt::Node<Cell>& btNode, int left);
+	uint32_t GenerateTree(bt::Node<Cell>& btNode, int left);
 
 	Node& RegisterNode(int x, int y);
 	void CreateSpaceNodes(Rect& space);

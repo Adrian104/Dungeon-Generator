@@ -119,7 +119,7 @@ void Generator::FindPaths()
 	bt::Node<Cell>::defaultTraversal = bt::Traversal::POSTORDER;
 	for (auto& btNode : *m_root)
 	{
-		if (btNode.m_roomCount < 2)
+		if ((btNode.m_flags & (1 << Cell::Flag::CONNECT_ROOMS)) == 0)
 			continue;
 
 		int leftIndex = btNode.m_left -> m_roomOffset;
@@ -127,9 +127,6 @@ void Generator::FindPaths()
 
 		int rightIndex = btNode.m_right -> m_roomOffset;
 		const int rightCount = btNode.m_right -> m_roomCount;
-
-		if (leftCount <= 0 || rightCount <= 0)
-			continue;
 
 		switch (leftCount)
 		{
@@ -303,7 +300,7 @@ void Generator::GenerateRooms()
 
 	for (auto& btNode : *m_root)
 	{
-		if (btNode.m_locked)
+		if ((btNode.m_flags & (1 << Cell::Flag::GENERATE_ROOMS)) == 0)
 			continue;
 
 		Vec priSize(static_cast<int>(btNode.m_space.w * m_random(uniRoom)), static_cast<int>(btNode.m_space.h * m_random(uniRoom)));
@@ -454,10 +451,10 @@ void Generator::GenerateOutput()
 	}
 }
 
-void Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
+uint32_t Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 {
 	if (left <= m_input -> m_randAreaDepth)
-		btNode.m_locked |= m_random.GetFloat() < m_input -> m_randAreaProb;
+		btNode.m_flags |= static_cast<uint32_t>(m_random.GetFloat() < m_input -> m_randAreaProb) << Cell::Flag::RAND_AREA;
 
 	if (left == m_deltaDepth)
 	{
@@ -474,16 +471,17 @@ void Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 		space.w -= m_spaceShrink; space.h -= m_spaceShrink;
 
 		CreateSpaceNodes(space);
-		if (btNode.m_locked)
+		if (btNode.m_flags & (1 << Cell::Flag::RAND_AREA))
 		{
-			btNode.m_locked = m_random.GetFloat() >= m_input -> m_randAreaDens;
-			if (btNode.m_locked) return;
+			if (m_random.GetFloat() >= m_input -> m_randAreaDens)
+				return 0;
 		}
 
+		btNode.m_flags |= 1 << Cell::Flag::GENERATE_ROOMS;
 		btNode.m_roomOffset = m_totalRoomCount++;
 		btNode.m_roomCount = 1;
 
-		return;
+		return 1 << Cell::Flag::CONNECT_ROOMS;
 	}
 
 	int Rect::*xy; int Rect::*wh;
@@ -505,12 +503,14 @@ void Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 	btNode.m_right -> m_space.*xy += randSize;
 	btNode.m_right -> m_space.*wh -= randSize;
 
-	GenerateTree(*btNode.m_left, --left);
-	GenerateTree(*btNode.m_right, left);
+	const uint32_t l = GenerateTree(*btNode.m_left, --left);
+	const uint32_t r = GenerateTree(*btNode.m_right, left);
 
 	btNode.m_roomOffset = std::min(btNode.m_left -> m_roomOffset, btNode.m_right -> m_roomOffset);
 	btNode.m_roomCount = btNode.m_left -> m_roomCount + btNode.m_right -> m_roomCount;
-	btNode.m_locked = true;
+	btNode.m_flags |= l & r;
+
+	return l | r;
 }
 
 Node& Generator::RegisterNode(int x, int y)
