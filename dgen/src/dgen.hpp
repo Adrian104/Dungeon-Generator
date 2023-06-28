@@ -29,7 +29,7 @@ enum Dir { NORTH, EAST, SOUTH, WEST };
 
 struct Cell
 {
-	enum Flag : uint32_t { RAND_AREA, GENERATE_ROOMS, CONNECT_ROOMS };
+	enum Flag : uint32_t { SPARSE_AREA, GENERATE_ROOMS, CONNECT_ROOMS };
 
 	uint32_t m_flags = 0;
 	Rect m_space{};
@@ -79,7 +79,7 @@ struct GenInput
 	Random::result_type m_seed;
 	bool m_generateFewerPaths;
 
-	int m_randAreaDepth;
+	int m_sparseAreaDepth;
 	int m_width, m_height;
 	int m_spaceInterdistance;
 	int m_minDepth, m_maxDepth;
@@ -88,7 +88,7 @@ struct GenInput
 	float m_heuristicFactor;
 	float m_spaceSizeRandomness;
 	float m_minRoomSize, m_maxRoomSize;
-	float m_randAreaDens, m_randAreaProb;
+	float m_sparseAreaDens, m_sparseAreaProb;
 };
 
 struct GenOutput

@@ -86,13 +86,16 @@ void Application::Render()
 			SDL_RenderFillRectF(renderer, &rect);
 		};
 
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
 		bt::Node<Cell>::defaultTraversal = bt::Traversal::PREORDER;
-
 		for (auto& btNode : *m_generator.m_root)
 		{
 			if (btNode.m_left != nullptr || btNode.m_right != nullptr)
 				continue;
+
+			if (btNode.m_flags & (1 << Cell::Flag::SPARSE_AREA))
+				SDL_SetRenderDrawColor(renderer, 0x55, 0, 0, 0xFF);
+			else
+				SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
 
 			SDL_FRect rect;
 			m_viewport.RectToScreen(btNode.m_space, rect);
@@ -285,9 +288,9 @@ void Application::LoadDefaults()
 	m_input.m_maxDepth = g_maxDepth;
 	m_input.m_minRoomSize = g_minRoomSize;
 	m_input.m_maxRoomSize = g_maxRoomSize;
-	m_input.m_randAreaDens = g_randAreaDens;
-	m_input.m_randAreaProb = g_randAreaProb;
-	m_input.m_randAreaDepth = g_randAreaDepth;
+	m_input.m_sparseAreaDens = g_sparseAreaDens;
+	m_input.m_sparseAreaProb = g_sparseAreaProb;
+	m_input.m_sparseAreaDepth = g_sparseAreaDepth;
 	m_input.m_doubleRoomProb = g_doubleRoomProb;
 	m_input.m_heuristicFactor = g_heuristicFactor;
 	m_input.m_generateFewerPaths = g_generateFewerPaths;
@@ -311,9 +314,9 @@ void Application::SetupWidgets()
 	menu.Add<PercentMod>("Space randomness", m_input.m_spaceSizeRandomness);
 	menu.Add<PercentMod>("Double room probability", m_input.m_doubleRoomProb);
 	menu.Add<IntMod>("Space interdistance", m_input.m_spaceInterdistance);
-	menu.Add<IntMod>("Random area depth", m_input.m_randAreaDepth);
-	menu.Add<PercentMod>("Random area density", m_input.m_randAreaDens);
-	menu.Add<PercentMod>("Random area probability", m_input.m_randAreaProb);
+	menu.Add<IntMod>("Sparse area depth", m_input.m_sparseAreaDepth);
+	menu.Add<PercentMod>("Sparse area density", m_input.m_sparseAreaDens);
+	menu.Add<PercentMod>("Sparse area probability", m_input.m_sparseAreaProb);
 	menu.Add<BoolMod>("Rooms visibility", m_visRooms);
 	menu.Add<BoolMod>("Paths visibility", m_visPaths);
 	menu.Add<BoolMod>("Entrances visibility", m_visEntrances);

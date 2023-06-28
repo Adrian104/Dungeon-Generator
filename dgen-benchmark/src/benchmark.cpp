@@ -99,9 +99,9 @@ void Config::Load(ini::section_type& section, bool req)
 	ini::Get(section, "maxDepth", m_maxDepth, req);
 	ini::Get(section, "minRoomSize", m_minRoomSize, req);
 	ini::Get(section, "maxRoomSize", m_maxRoomSize, req);
-	ini::Get(section, "randAreaDens", m_randAreaDens, req);
-	ini::Get(section, "randAreaProb", m_randAreaProb, req);
-	ini::Get(section, "randAreaDepth", m_randAreaDepth, req);
+	ini::Get(section, "sparseAreaDens", m_sparseAreaDens, req);
+	ini::Get(section, "sparseAreaProb", m_sparseAreaProb, req);
+	ini::Get(section, "sparseAreaDepth", m_sparseAreaDepth, req);
 	ini::Get(section, "doubleRoomProb", m_doubleRoomProb, req);
 	ini::Get(section, "heuristicFactor", m_heuristicFactor, req);
 	ini::Get(section, "spaceInterdistance", m_spaceInterdistance, req);

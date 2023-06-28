@@ -453,8 +453,8 @@ void Generator::GenerateOutput()
 
 uint32_t Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 {
-	if (left <= m_input -> m_randAreaDepth)
-		btNode.m_flags |= static_cast<uint32_t>(m_random.GetFloat() < m_input -> m_randAreaProb) << Cell::Flag::RAND_AREA;
+	if (left <= m_input -> m_sparseAreaDepth)
+		btNode.m_flags |= static_cast<uint32_t>(m_random.GetFloat() < m_input -> m_sparseAreaProb) << Cell::Flag::SPARSE_AREA;
 
 	if (left == m_deltaDepth)
 	{
@@ -471,9 +471,9 @@ uint32_t Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 		space.w -= m_spaceShrink; space.h -= m_spaceShrink;
 
 		CreateSpaceNodes(space);
-		if (btNode.m_flags & (1 << Cell::Flag::RAND_AREA))
+		if (btNode.m_flags & (1 << Cell::Flag::SPARSE_AREA))
 		{
-			if (m_random.GetFloat() >= m_input -> m_randAreaDens)
+			if (m_random.GetFloat() >= m_input -> m_sparseAreaDens)
 				return 0;
 		}
 
