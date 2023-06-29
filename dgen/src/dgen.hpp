@@ -76,7 +76,7 @@ struct Room : public Node
 
 struct GenInput
 {
-	Random::result_type m_seed;
+	uint64_t m_seed;
 	bool m_generateFewerPaths;
 
 	int m_sparseAreaDepth;
@@ -107,6 +107,7 @@ struct Generator
 	int m_targetDepth = 0;
 	int m_minSpaceSize = 0;
 	int m_totalRoomCount = 0;
+	float m_minSpaceRand = 0;
 
 	Random m_random;
 
@@ -115,9 +116,7 @@ struct Generator
 
 	std::vector<Room> m_rooms;
 	bt::Node<Cell>* m_root = nullptr;
-
 	std::map<std::pair<int, int>, Node> m_nodes;
-	std::uniform_real_distribution<float> m_uniSpace;
 
 	static constexpr int roomSizeLimit = 4;
 

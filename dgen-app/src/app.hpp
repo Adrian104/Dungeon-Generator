@@ -5,6 +5,8 @@
 #include "global.hpp"
 #include "vport.hpp"
 
+#include <random>
+
 class Application;
 
 class Widget

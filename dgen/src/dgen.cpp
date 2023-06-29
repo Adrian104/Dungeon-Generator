@@ -46,12 +46,13 @@ void Generator::Prepare()
 		throw std::runtime_error("Variable 'maxRoomSize' is not a positive number");
 
 	*m_output = {};
-	m_random.Init(m_input -> m_seed);
+	m_random.Seed(m_input -> m_seed);
 
 	m_spaceOffset = m_input -> m_spaceInterdistance + 1;
 	m_spaceShrink = (m_spaceOffset << 1) - 1;
 
 	m_minSpaceSize = static_cast<int>(roomSizeLimit / m_input -> m_maxRoomSize) + m_spaceShrink;
+	m_minSpaceRand = (1.0f - m_input -> m_spaceSizeRandomness) * 0.5f;
 
 	if (m_input -> m_width <= m_minSpaceSize || m_input -> m_height <= m_minSpaceSize)
 		throw std::runtime_error("Root node is too small");
@@ -61,9 +62,6 @@ void Generator::Prepare()
 	m_targetDepth = 0;
 	m_totalRoomCount = 0;
 	m_deltaDepth = m_input -> m_maxDepth - m_input -> m_minDepth;
-
-	const float halfRand = m_input -> m_spaceSizeRandomness * 0.5f;
-	m_uniSpace = std::uniform_real_distribution<float>(0.5f - halfRand, 0.5f + halfRand);
 }
 
 void Generator::LinkNodes()
@@ -131,15 +129,15 @@ void Generator::FindPaths()
 		switch (leftCount)
 		{
 		case 1: break;
-		case 2: leftIndex += static_cast<int>(m_random.GetBool()); break;
-		default: leftIndex += m_random() % leftCount;
+		case 2: leftIndex += static_cast<int>(m_random.GetBit()); break;
+		default: leftIndex += m_random.Get32() % leftCount;
 		}
 
 		switch (rightCount)
 		{
 		case 1: break;
-		case 2: rightIndex += static_cast<int>(m_random.GetBool()); break;
-		default: rightIndex += m_random() % rightCount;
+		case 2: rightIndex += static_cast<int>(m_random.GetBit()); break;
+		default: rightIndex += m_random.Get32() % rightCount;
 		}
 
 		Room* const start = m_rooms.data() + leftIndex;
@@ -293,7 +291,8 @@ void Generator::OptimizeNodes()
 
 void Generator::GenerateRooms()
 {
-	std::uniform_real_distribution<float> uniRoom(m_input -> m_minRoomSize, m_input -> m_maxRoomSize);
+	const float minRoomSize = m_input -> m_minRoomSize;
+	const float diffRoomSize = m_input -> m_maxRoomSize - m_input -> m_minRoomSize;
 
 	m_rooms.reserve(m_totalRoomCount);
 	bt::Node<Cell>::defaultTraversal = bt::Traversal::POSTORDER;
@@ -303,7 +302,10 @@ void Generator::GenerateRooms()
 		if ((btNode.m_flags & (1 << Cell::Flag::GENERATE_ROOMS)) == 0)
 			continue;
 
-		Vec priSize(static_cast<int>(btNode.m_space.w * m_random(uniRoom)), static_cast<int>(btNode.m_space.h * m_random(uniRoom)));
+		const float a = m_random.GetFP32() * diffRoomSize + minRoomSize;
+		const float b = m_random.GetFP32() * diffRoomSize + minRoomSize;
+
+		Vec priSize(static_cast<int>(btNode.m_space.w * a), static_cast<int>(btNode.m_space.h * b));
 
 		if (priSize.x < roomSizeLimit)
 			priSize.x = roomSizeLimit;
@@ -317,7 +319,7 @@ void Generator::GenerateRooms()
 		Vec secPos(-1, 0);
 		Vec secSize(0, 0);
 
-		if (m_random.GetFloat() < m_input -> m_doubleRoomProb)
+		if (m_random.GetFP32() < m_input -> m_doubleRoomProb)
 		{
 			int Vec::*incAxis; int Vec::*decAxis;
 
@@ -327,22 +329,25 @@ void Generator::GenerateRooms()
 			secSize.*decAxis = priSize.*decAxis >> 1;
 			if (secSize.*decAxis < roomSizeLimit) goto skip_double_room;
 
-			const int extra = static_cast<int>(remSize.*incAxis * m_random(uniRoom));
-			if (extra <= 0) goto skip_double_room;
+			const float c = m_random.GetFP32() * diffRoomSize + minRoomSize;
+			const int extra = static_cast<int>(remSize.*incAxis * c);
+
+			if (extra <= 0)
+				goto skip_double_room;
 
 			secSize.*incAxis = priSize.*incAxis + extra;
 			remSize.*incAxis -= extra;
 			secPos = priPos;
 
-			if (const int rem = m_random() % 3; rem < 2)
+			if (const int rem = m_random.Get32() % 3; rem < 2)
 				priPos.*incAxis += extra >> rem;
 
-			if (const int rem = m_random() % 3; rem < 2)
+			if (const int rem = m_random.Get32() % 3; rem < 2)
 				secPos.*decAxis += (priSize.*decAxis - secSize.*decAxis) >> rem;
 		}
 
 		skip_double_room:
-		const Vec offset(m_random() % (remSize.x + 1), m_random() % (remSize.y + 1));
+		const Vec offset(m_random.Get32() % (remSize.x + 1), m_random.Get32() % (remSize.y + 1));
 
 		Room& room = m_rooms.emplace_back();
 		room.m_rects.emplace_back(priPos.x + offset.x, priPos.y + offset.y, priSize.x, priSize.y);
@@ -351,15 +356,15 @@ void Generator::GenerateRooms()
 		{
 			const Rect& rect = room.m_rects.front();
 
-			room.m_pos.x = rect.x + 1 + (m_random() % (rect.w - 2));
-			room.m_pos.y = rect.y + 1 + (m_random() % (rect.h - 2));
+			room.m_pos.x = rect.x + 1 + (m_random.Get32() % (rect.w - 2));
+			room.m_pos.y = rect.y + 1 + (m_random.Get32() % (rect.h - 2));
 		}
 		else
 		{
 			room.m_rects.emplace_back(secPos.x + offset.x, secPos.y + offset.y, secSize.x, secSize.y);
 			m_totalRoomCount++;
 
-			const bool randBool = m_random.GetBool();
+			const bool randBool = m_random.GetBit();
 			const Rect& priRect = room.m_rects.at(static_cast<size_t>(randBool));
 			const Rect& secRect = room.m_rects.at(static_cast<size_t>(!randBool));
 
@@ -371,8 +376,8 @@ void Generator::GenerateRooms()
 				const int flag1 = static_cast<int>(secRect.x > priRect.x);
 				const int flag2 = static_cast<int>(secRect.x + secRect.w < priRect.x + priRect.w);
 
-				room.m_pos.x += m_random() % (priRect.w - 2 - flag1 - flag2);
-				room.m_pos.y += m_random() % (priRect.h - 2);
+				room.m_pos.x += m_random.Get32() % (priRect.w - 2 - flag1 - flag2);
+				room.m_pos.y += m_random.Get32() % (priRect.h - 2);
 
 				if (room.m_pos.x >= secRect.x)
 				{
@@ -385,8 +390,8 @@ void Generator::GenerateRooms()
 				const int flag1 = static_cast<int>(secRect.y > priRect.y);
 				const int flag2 = static_cast<int>(secRect.y + secRect.h < priRect.y + priRect.h);
 
-				room.m_pos.x += m_random() % (priRect.w - 2);
-				room.m_pos.y += m_random() % (priRect.h - 2 - flag1 - flag2);
+				room.m_pos.x += m_random.Get32() % (priRect.w - 2);
+				room.m_pos.y += m_random.Get32() % (priRect.h - 2 - flag1 - flag2);
 
 				if (room.m_pos.y >= secRect.y)
 				{
@@ -454,11 +459,11 @@ void Generator::GenerateOutput()
 uint32_t Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 {
 	if (left <= m_input -> m_sparseAreaDepth)
-		btNode.m_flags |= static_cast<uint32_t>(m_random.GetFloat() < m_input -> m_sparseAreaProb) << Cell::Flag::SPARSE_AREA;
+		btNode.m_flags |= static_cast<uint32_t>(m_random.GetFP32() < m_input -> m_sparseAreaProb) << Cell::Flag::SPARSE_AREA;
 
 	if (left == m_deltaDepth)
 	{
-		if (m_deltaDepth > 0) m_targetDepth = m_random() % (m_deltaDepth + 1);
+		if (m_deltaDepth > 0) m_targetDepth = m_random.Get32() % (m_deltaDepth + 1);
 		else goto no_more;
 	}
 
@@ -473,7 +478,7 @@ uint32_t Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 		CreateSpaceNodes(space);
 		if (btNode.m_flags & (1 << Cell::Flag::SPARSE_AREA))
 		{
-			if (m_random.GetFloat() >= m_input -> m_sparseAreaDens)
+			if (m_random.GetFP32() >= m_input -> m_sparseAreaDens)
 				return 0;
 		}
 
@@ -490,8 +495,10 @@ uint32_t Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 	if (crrSpace.w < crrSpace.h) { xy = &Rect::y; wh = &Rect::h; }
 	else { xy = &Rect::x; wh = &Rect::w; }
 
+	const float c = m_random.GetFP32() * (m_input -> m_spaceSizeRandomness) + m_minSpaceRand;
+
 	const int totalSize = crrSpace.*wh;
-	const int randSize = static_cast<int>(totalSize * m_random(m_uniSpace));
+	const int randSize = static_cast<int>(totalSize * c);
 
 	if (randSize < m_minSpaceSize || totalSize - randSize < m_minSpaceSize)
 		goto no_more;

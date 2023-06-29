@@ -1,64 +1,71 @@
 #pragma once
-#include <random>
+#include <stdint.h>
 
 class Random
 {
-	public:
-	using engine_type = std::mt19937;
-	using result_type = engine_type::result_type;
-
-	private:
-	int m_bitCount = 0;
-	result_type m_bits = 0;
-	engine_type m_engine;
+	uint64_t m_state[4];
 
 	public:
-	Random() { Init(); }
-	Random(const result_type seed) { Init(seed); }
+	Random() { Seed(); }
+	Random(const uint64_t seed) { Seed(seed); }
 
-	bool GetBool();
-	float GetFloat();
-	double GetDouble();
+	void Seed(uint64_t seed = 0);
 
-	engine_type& GetEngine() { return m_engine; }
-	result_type operator()() { return m_engine(); }
-
-	template <typename Type>
-	auto operator()(Type&& distribution) { return distribution(m_engine); }
-
-	void Init(const result_type seed = engine_type::default_seed);
+	bool GetBit();
+	float GetFP32();
+	double GetFP64();
+	uint32_t Get32();
+	uint64_t Get64();
 };
 
-inline bool Random::GetBool()
+inline void Random::Seed(uint64_t seed)
 {
-	if (m_bitCount > 0)
+	for (uint64_t& state : m_state)
 	{
-		m_bits >>= 1;
-		m_bitCount--;
+		uint64_t z = (seed += 0x9e3779b97f4a7c15);
+		z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
+		z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
+		state = z ^ (z >> 31);
 	}
-	else
-	{
-		m_bits = m_engine();
-		m_bitCount = sizeof(result_type) * 8 - 1;
-	}
-
-	return static_cast<bool>(m_bits & 0b1);
 }
 
-inline float Random::GetFloat()
+inline bool Random::GetBit()
 {
-	static constexpr float invMax = 1.0f / static_cast<float>(engine_type::max());
-	return m_engine() * invMax;
+	const uint64_t r = Get64();
+	return (r >> 32) < (r & 0xFFFFFFFF);
 }
 
-inline double Random::GetDouble()
+inline float Random::GetFP32()
 {
-	static constexpr double invMax = 1.0 / static_cast<double>(engine_type::max());
-	return m_engine() * invMax;
+	union { uint32_t i; float f; } u{};
+	u.i = (Get32() >> 9) | 0x3F800000;
+	return u.f - 1.0f;
 }
 
-inline void Random::Init(const result_type seed)
+inline double Random::GetFP64()
 {
-	m_bitCount = 0;
-	m_engine.seed(seed);
+	union { uint64_t i; double d; } u{};
+	u.i = (Get64() >> 12) | 0x3FF0000000000000;
+	return u.d - 1.0;
+}
+
+inline uint32_t Random::Get32()
+{
+	return static_cast<uint32_t>(Get64());
+}
+
+inline uint64_t Random::Get64()
+{
+	const uint64_t result = m_state[0] + m_state[3];
+	const uint64_t t = m_state[1] << 17;
+
+	m_state[2] ^= m_state[0];
+	m_state[3] ^= m_state[1];
+	m_state[1] ^= m_state[2];
+	m_state[0] ^= m_state[3];
+
+	m_state[2] ^= t;
+	m_state[3] = (m_state[3] << 45) | (m_state[3] >> (64 - 45));
+
+	return result;
 }
