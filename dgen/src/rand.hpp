@@ -1,8 +1,10 @@
 #pragma once
 #include <stdint.h>
+#include <utility>
 
 class Random
 {
+	using uint32p_t = std::pair<uint32_t, uint32_t>;
 	uint64_t m_state[4];
 
 	public:
@@ -16,6 +18,7 @@ class Random
 	double GetFP64();
 	uint32_t Get32();
 	uint64_t Get64();
+	uint32p_t Get32P();
 };
 
 inline void Random::Seed(uint64_t seed)
@@ -31,8 +34,8 @@ inline void Random::Seed(uint64_t seed)
 
 inline bool Random::GetBit()
 {
-	const uint64_t r = Get64();
-	return (r >> 32) < (r & 0xFFFFFFFF);
+	const auto [a, b] = Get32P();
+	return a < b;
 }
 
 inline float Random::GetFP32()
@@ -68,4 +71,10 @@ inline uint64_t Random::Get64()
 	m_state[3] = (m_state[3] << 45) | (m_state[3] >> (64 - 45));
 
 	return result;
+}
+
+inline Random::uint32p_t Random::Get32P()
+{
+	const uint64_t r = Get64();
+	return uint32p_t(static_cast<uint32_t>(r >> 32), static_cast<uint32_t>(r & 0xFFFFFFFF));
 }

@@ -327,11 +327,10 @@ void Generator::GenerateRooms()
 			else { incAxis = &Vec::y; decAxis = &Vec::x; }
 
 			secSize.*decAxis = priSize.*decAxis >> 1;
-			if (secSize.*decAxis < roomSizeLimit) goto skip_double_room;
+			if (secSize.*decAxis < roomSizeLimit)
+				goto skip_double_room;
 
-			const float c = m_random.GetFP32() * diffRoomSize + minRoomSize;
-			const int extra = static_cast<int>(remSize.*incAxis * c);
-
+			const int extra = static_cast<int>(remSize.*incAxis * (m_random.GetFP32() * diffRoomSize + minRoomSize));
 			if (extra <= 0)
 				goto skip_double_room;
 
@@ -339,15 +338,20 @@ void Generator::GenerateRooms()
 			remSize.*incAxis -= extra;
 			secPos = priPos;
 
-			if (const int rem = m_random.Get32() % 3; rem < 2)
-				priPos.*incAxis += extra >> rem;
+			auto [c, d] = m_random.Get32P();
 
-			if (const int rem = m_random.Get32() % 3; rem < 2)
-				secPos.*decAxis += (priSize.*decAxis - secSize.*decAxis) >> rem;
+			if (c %= 3; c < 2)
+				priPos.*incAxis += extra >> c;
+
+			if (d %= 3; d < 2)
+				secPos.*decAxis += (priSize.*decAxis - secSize.*decAxis) >> d;
 		}
 
 		skip_double_room:
-		const Vec offset(m_random.Get32() % (remSize.x + 1), m_random.Get32() % (remSize.y + 1));
+		const auto [c, d] = m_random.Get32P();
+		const auto [e, f] = m_random.Get32P();
+
+		const Vec offset(c % (remSize.x + 1), d % (remSize.y + 1));
 
 		Room& room = m_rooms.emplace_back();
 		room.m_rects.emplace_back(priPos.x + offset.x, priPos.y + offset.y, priSize.x, priSize.y);
@@ -356,8 +360,8 @@ void Generator::GenerateRooms()
 		{
 			const Rect& rect = room.m_rects.front();
 
-			room.m_pos.x = rect.x + 1 + (m_random.Get32() % (rect.w - 2));
-			room.m_pos.y = rect.y + 1 + (m_random.Get32() % (rect.h - 2));
+			room.m_pos.x = rect.x + 1 + (e % (rect.w - 2));
+			room.m_pos.y = rect.y + 1 + (f % (rect.h - 2));
 		}
 		else
 		{
@@ -376,8 +380,8 @@ void Generator::GenerateRooms()
 				const int flag1 = static_cast<int>(secRect.x > priRect.x);
 				const int flag2 = static_cast<int>(secRect.x + secRect.w < priRect.x + priRect.w);
 
-				room.m_pos.x += m_random.Get32() % (priRect.w - 2 - flag1 - flag2);
-				room.m_pos.y += m_random.Get32() % (priRect.h - 2);
+				room.m_pos.x += e % (priRect.w - 2 - flag1 - flag2);
+				room.m_pos.y += f % (priRect.h - 2);
 
 				if (room.m_pos.x >= secRect.x)
 				{
@@ -390,8 +394,8 @@ void Generator::GenerateRooms()
 				const int flag1 = static_cast<int>(secRect.y > priRect.y);
 				const int flag2 = static_cast<int>(secRect.y + secRect.h < priRect.y + priRect.h);
 
-				room.m_pos.x += m_random.Get32() % (priRect.w - 2);
-				room.m_pos.y += m_random.Get32() % (priRect.h - 2 - flag1 - flag2);
+				room.m_pos.x += e % (priRect.w - 2);
+				room.m_pos.y += f % (priRect.h - 2 - flag1 - flag2);
 
 				if (room.m_pos.y >= secRect.y)
 				{
