@@ -76,5 +76,5 @@ inline uint64_t Random::Get64()
 inline Random::uint32p_t Random::Get32P()
 {
 	const uint64_t r = Get64();
-	return uint32p_t(static_cast<uint32_t>(r >> 32), static_cast<uint32_t>(r & 0xFFFFFFFF));
+	return uint32p_t(static_cast<uint32_t>(r >> 32), static_cast<uint32_t>(r));
 }

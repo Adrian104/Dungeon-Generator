@@ -53,7 +53,7 @@ namespace bt
 
 		Node(Node* parent, Type&& ref) : Type(std::move(ref)), m_parent(parent) {}
 		Node(Node* parent, const Type& ref) : Type(ref), m_parent(parent) {}
-		~Node() { delete m_right; delete m_left; }
+		~Node() = default;
 
 		Node(const Node& ref) = delete;
 		Node& operator=(const Node& ref) = delete;

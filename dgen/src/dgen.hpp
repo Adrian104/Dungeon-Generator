@@ -127,7 +127,9 @@ struct Generator
 	void OptimizeNodes();
 	void GenerateRooms();
 	void GenerateOutput();
+
 	uint32_t GenerateTree(bt::Node<Cell>& btNode, int left);
+	static void DeleteTree(bt::Node<Cell>* btNode);
 
 	Node& RegisterNode(int x, int y);
 	void CreateSpaceNodes(Rect& space);

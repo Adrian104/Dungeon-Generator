@@ -36,8 +36,13 @@ void Generator::Clear()
 	m_nodes.clear();
 	m_rooms.clear();
 
-	delete m_root;
-	m_root = nullptr;
+	if (m_root != nullptr)
+	{
+		DeleteTree(m_root);
+
+		delete m_root;
+		m_root = nullptr;
+	}
 }
 
 void Generator::Prepare()
@@ -507,8 +512,11 @@ uint32_t Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 	if (randSize < m_minSpaceSize || totalSize - randSize < m_minSpaceSize)
 		goto no_more;
 
-	btNode.m_left = new bt::Node<Cell>(&btNode, btNode);
-	btNode.m_right = new bt::Node<Cell>(&btNode, btNode);
+	btNode.m_left = static_cast<bt::Node<Cell>*>(operator new[](sizeof(bt::Node<Cell>) * 2));
+	btNode.m_right = btNode.m_left + 1;
+
+	new(btNode.m_left) bt::Node<Cell>(&btNode, btNode);
+	new(btNode.m_right) bt::Node<Cell>(&btNode, btNode);
 
 	btNode.m_left -> m_space.*wh = randSize;
 	btNode.m_right -> m_space.*xy += randSize;
@@ -522,6 +530,20 @@ uint32_t Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 	btNode.m_flags |= l & r;
 
 	return l | r;
+}
+
+void Generator::DeleteTree(bt::Node<Cell>* btNode)
+{
+	if (btNode -> m_left == nullptr)
+		return;
+
+	DeleteTree(btNode -> m_right);
+	btNode -> m_right -> ~Node<Cell>();
+
+	DeleteTree(btNode -> m_left);
+	btNode -> m_left -> ~Node<Cell>();
+
+	operator delete[](btNode -> m_left);
 }
 
 Node& Generator::RegisterNode(int x, int y)
