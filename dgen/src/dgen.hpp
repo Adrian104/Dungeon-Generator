@@ -106,8 +106,10 @@ struct Generator
 	int m_deltaDepth = 0;
 	int m_targetDepth = 0;
 	int m_minSpaceSize = 0;
-	int m_totalRoomCount = 0;
 	float m_minSpaceRand = 0;
+
+	int m_totalRoomCount = 0;
+	int m_partialPathCount = 0;
 
 	Random m_random;
 

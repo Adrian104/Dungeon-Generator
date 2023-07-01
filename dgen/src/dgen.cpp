@@ -66,6 +66,8 @@ void Generator::Prepare()
 
 	m_targetDepth = 0;
 	m_totalRoomCount = 0;
+	m_partialPathCount = 0;
+
 	m_deltaDepth = m_input -> m_maxDepth - m_input -> m_minDepth;
 }
 
@@ -257,8 +259,8 @@ void Generator::OptimizeNodes()
 				links[Dir::EAST] = &Node::sentinel;
 				links[Dir::WEST] = &Node::sentinel;
 
-				path &= ~0b1010;
-				if (path == 0) goto zero;
+				if (path &= ~0b1010; path == 0)
+					goto zero;
 			}
 
 			skip1:
@@ -276,11 +278,12 @@ void Generator::OptimizeNodes()
 				links[Dir::NORTH] = &Node::sentinel;
 				links[Dir::SOUTH] = &Node::sentinel;
 
-				path &= ~0b0101;
-				if (path == 0) goto zero;
+				if (path &= ~0b0101; path == 0)
+					goto zero;
 			}
 
 			skip2:
+			m_partialPathCount += ((path >> Dir::NORTH) & 1) + ((path >> Dir::EAST) & 1);
 			iter++;
 		}
 		else
@@ -417,50 +420,76 @@ void Generator::GenerateRooms()
 
 void Generator::GenerateOutput()
 {
-	m_output -> m_rooms.reserve(m_totalRoomCount);
-
-	int c = 0;
-	for (Room& room : m_rooms)
+	int ne = 0; int sw = 0;
+	for (const Room& room : m_rooms)
 	{
-		for (uint32_t path = uint32_t(room.m_path); path; path >>= 1) c += path & 1;
-		for (Rect& rect : room.m_rects) m_output -> m_rooms.push_back(rect);
+		ne += ((room.m_path >> Dir::NORTH) & 1) + ((room.m_path >> Dir::EAST) & 1);
+		sw += ((room.m_path >> Dir::SOUTH) & 1) + ((room.m_path >> Dir::WEST) & 1);
 	}
 
-	m_output -> m_entrances.reserve(c);
-	for (auto& [pos, node] : m_nodes)
-	{
-		if ((node.m_path & (1 << Dir::NORTH)) != 0) c += node.m_links[Dir::NORTH] -> ToRoom() == nullptr;
-		if ((node.m_path & (1 << Dir::EAST)) != 0) c += node.m_links[Dir::EAST] -> ToRoom() == nullptr;
-	}
+	m_output -> m_rooms.reserve(static_cast<size_t>(m_totalRoomCount));
+	m_output -> m_paths.reserve(static_cast<size_t>(ne + m_partialPathCount));
+	m_output -> m_entrances.reserve(static_cast<size_t>(ne + sw));
 
-	m_output -> m_paths.reserve(c);
 	for (Room& room : m_rooms)
 	{
-		c = 0;
-		for (uint32_t path = uint32_t(room.m_path); path; path >>= 1, c++)
+		for (const Rect& rect : room.m_rects)
+			m_output -> m_rooms.push_back(rect);
+
+		if (room.m_path & (1 << Dir::NORTH))
 		{
-			if (!static_cast<bool>(path & 1)) continue;
+			const int edg = room.m_edges[Dir::NORTH];
+			const Point ext = room.m_links[Dir::NORTH] -> m_pos;
 
-			const Point bPos = room.m_links[c] -> m_pos;
-			const Point ePos = static_cast<bool>(c & 1) ? Point(room.m_edges[c], bPos.y) : Point(bPos.x, room.m_edges[c]);
+			m_output -> m_entrances.emplace_back(ext.x, edg);
+			m_output -> m_paths.emplace_back(ext, Vec(0, edg - ext.y));
+		}
 
-			m_output -> m_entrances.push_back(ePos);
-			m_output -> m_paths.push_back(std::make_pair(ePos, Vec(bPos.x - ePos.x, bPos.y - ePos.y)));
+		if (room.m_path & (1 << Dir::EAST))
+		{
+			const int edg = room.m_edges[Dir::EAST];
+			const Point ext = room.m_links[Dir::EAST] -> m_pos;
+
+			m_output -> m_entrances.emplace_back(edg, ext.y);
+			m_output -> m_paths.emplace_back(ext, Vec(edg - ext.x, 0));
+		}
+
+		if (room.m_path & (1 << Dir::SOUTH))
+		{
+			const int edg = room.m_edges[Dir::SOUTH];
+			const Point ext = room.m_links[Dir::SOUTH] -> m_pos;
+
+			m_output -> m_entrances.emplace_back(ext.x, edg);
+			m_output -> m_paths.emplace_back(ext, Vec(0, edg - ext.y));
+
+			room.m_links[Dir::SOUTH] -> m_path &= ~(1 << Dir::NORTH);
+		}
+
+		if (room.m_path & (1 << Dir::WEST))
+		{
+			const int edg = room.m_edges[Dir::WEST];
+			const Point ext = room.m_links[Dir::WEST] -> m_pos;
+
+			m_output -> m_entrances.emplace_back(edg, ext.y);
+			m_output -> m_paths.emplace_back(ext, Vec(edg - ext.x, 0));
+
+			room.m_links[Dir::WEST] -> m_path &= ~(1 << Dir::EAST);
 		}
 	}
 
-	for (auto& [pos, node] : m_nodes)
+	for (const auto& [pos, node] : m_nodes)
 	{
-		if ((node.m_path & (1 << Dir::NORTH)) != 0)
+		const auto& [xCrr, yCrr] = pos;
+		if (node.m_path & (1 << Dir::NORTH))
 		{
-			Node* const nNode = node.m_links[Dir::NORTH];
-			if (nNode -> ToRoom() == nullptr) m_output -> m_paths.push_back(std::make_pair(node.m_pos, Vec(nNode -> m_pos.x - node.m_pos.x, nNode -> m_pos.y - node.m_pos.y)));
+			const auto [xAdj, yAdj] = node.m_links[Dir::NORTH] -> m_pos;
+			m_output -> m_paths.emplace_back(Point(xCrr, yCrr), Vec(xAdj - xCrr, yAdj - yCrr));
 		}
 
-		if ((node.m_path & (1 << Dir::EAST)) != 0)
+		if (node.m_path & (1 << Dir::EAST))
 		{
-			Node* const nNode = node.m_links[Dir::EAST];
-			if (nNode -> ToRoom() == nullptr) m_output -> m_paths.push_back(std::make_pair(node.m_pos, Vec(nNode -> m_pos.x - node.m_pos.x, nNode -> m_pos.y - node.m_pos.y)));
+			const auto [xAdj, yAdj] = node.m_links[Dir::EAST] -> m_pos;
+			m_output -> m_paths.emplace_back(Point(xCrr, yCrr), Vec(xAdj - xCrr, yAdj - yCrr));
 		}
 	}
 }
