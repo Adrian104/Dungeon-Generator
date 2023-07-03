@@ -62,13 +62,10 @@ struct Node
 	virtual Room* ToRoom() { return nullptr; }
 };
 
-struct Room : public Node
+struct Room final : public Node
 {
 	std::vector<Rect> m_rects;
 	int m_edges[4]{ std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() };
-
-	Room() = default;
-	Room(int x, int y) : Node(x, y) {}
 
 	void ComputeEdges();
 	Room* ToRoom() override { return this; }

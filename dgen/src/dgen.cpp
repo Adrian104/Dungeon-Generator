@@ -243,16 +243,23 @@ void Generator::OptimizeNodes()
 		uint8_t& path = iter -> second.m_path;
 		Node** links = iter -> second.m_links;
 
-		if (path != 0)
+		if (path == 0)
 		{
-			if ((path & maskEW) == 0b1010)
+			zero:
+			for (int i = 0; i < 4; i++)
+				links[i] -> m_links[i ^ 0b10] = &Node::sentinel;
+
+			iter = m_nodes.erase(iter);
+			continue;
+		}
+
+		if ((path & maskEW) == 0b1010)
+		{
+			Node* const east = links[Dir::EAST];
+			Node* const west = links[Dir::WEST];
+
+			if (east -> ToRoom() == nullptr || west -> ToRoom() == nullptr)
 			{
-				Node* const east = links[Dir::EAST];
-				Node* const west = links[Dir::WEST];
-
-				if (east -> ToRoom() != nullptr && west -> ToRoom() != nullptr)
-					goto skip1;
-
 				east -> m_links[Dir::WEST] = west;
 				west -> m_links[Dir::EAST] = east;
 
@@ -262,16 +269,15 @@ void Generator::OptimizeNodes()
 				if (path &= ~0b1010; path == 0)
 					goto zero;
 			}
+		}
 
-			skip1:
-			if ((path & maskNS) == 0b0101)
+		if ((path & maskNS) == 0b0101)
+		{
+			Node* const north = links[Dir::NORTH];
+			Node* const south = links[Dir::SOUTH];
+
+			if (north -> ToRoom() == nullptr || south -> ToRoom() == nullptr)
 			{
-				Node* const north = links[Dir::NORTH];
-				Node* const south = links[Dir::SOUTH];
-
-				if (north -> ToRoom() != nullptr && south -> ToRoom() != nullptr)
-					goto skip2;
-
 				north -> m_links[Dir::SOUTH] = south;
 				south -> m_links[Dir::NORTH] = north;
 
@@ -281,19 +287,10 @@ void Generator::OptimizeNodes()
 				if (path &= ~0b0101; path == 0)
 					goto zero;
 			}
-
-			skip2:
-			m_partialPathCount += ((path >> Dir::NORTH) & 1) + ((path >> Dir::EAST) & 1);
-			iter++;
 		}
-		else
-		{
-			zero:
-			for (int i = 0; i < 4; i++)
-				links[i] -> m_links[i ^ 0b10] = &Node::sentinel;
 
-			iter = m_nodes.erase(iter);
-		}
+		m_partialPathCount += ((path >> Dir::NORTH) & 1) + ((path >> Dir::EAST) & 1);
+		iter++;
 	}
 }
 
@@ -582,13 +579,12 @@ Node& Generator::RegisterNode(int x, int y)
 
 void Generator::CreateSpaceNodes(Rect& space)
 {
-	const int dist = m_spaceOffset - 1;
+	const int d1 = m_spaceOffset - 1;
 
 	const int xMin = space.x - m_spaceOffset;
 	const int yMin = space.y - m_spaceOffset;
-
-	const int xMax = space.x + space.w + dist;
-	const int yMax = space.y + space.h + dist;
+	const int xMax = space.x + space.w + d1;
+	const int yMax = space.y + space.h + d1;
 
 	RegisterNode(xMax, yMax).m_path |= (1 << Dir::NORTH) | (1 << Dir::WEST);
 	RegisterNode(xMin, yMax).m_path |= 1 << Dir::NORTH;
@@ -598,23 +594,27 @@ void Generator::CreateSpaceNodes(Rect& space)
 
 void Generator::CreateRoomNodes(Rect& space, Room& room)
 {
-	const int dist = m_spaceOffset - 1;
-	const Point iPoint = room.m_pos;
+	const auto& [xS, yS, wS, hS] = space;
+	const auto& [xR, yR] = room.m_pos;
+
+	const int d0 = m_spaceOffset;
+	const int d1 = m_spaceOffset - 1;
+
 	auto& [north, east, south, west] = room.m_links;
 
-	north = &RegisterNode(iPoint.x, space.y - m_spaceOffset);
+	north = &RegisterNode(xR, yS - d0);
 	north -> m_path |= 1 << Dir::WEST;
 	north -> m_links[Dir::SOUTH] = &room;
 
-	east = &RegisterNode(space.x + space.w + dist, iPoint.y);
+	east = &RegisterNode(xS + wS + d1, yR);
 	east -> m_path |= 1 << Dir::NORTH;
 	east -> m_links[Dir::WEST] = &room;
 
-	south = &RegisterNode(iPoint.x, space.y + space.h + dist);
+	south = &RegisterNode(xR, yS + hS + d1);
 	south -> m_path |= 1 << Dir::WEST;
 	south -> m_links[Dir::NORTH] = &room;
 
-	west = &RegisterNode(space.x - m_spaceOffset, iPoint.y);
+	west = &RegisterNode(xS - d0, yR);
 	west -> m_path |= 1 << Dir::NORTH;
 	west -> m_links[Dir::EAST] = &room;
 }
