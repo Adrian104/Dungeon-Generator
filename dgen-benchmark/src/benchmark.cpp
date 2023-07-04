@@ -65,8 +65,8 @@ void TimedGenerator::TimedGenerate(Probe& probe, const GenInput* input)
 	GenerateRooms();
 	probe.Measure("Generate Rooms");
 
-	LinkNodes();
-	probe.Measure("Link Nodes");
+	CreateNodes();
+	probe.Measure("Create Nodes");
 
 	FindPaths();
 	probe.Measure("Find Paths");

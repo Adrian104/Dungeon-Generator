@@ -62,7 +62,7 @@ void Application::Render()
 
 	if (m_debugView)
 	{
-		auto DrawLinks = [this, renderer](Node& node) -> void
+		auto DrawLinks = [this, renderer](const Node& node) -> void
 		{
 			SDL_FPoint p1 = { static_cast<float>(node.m_pos.x + 0.5f), static_cast<float>(node.m_pos.y + 0.5f) };
 			m_viewport.ToScreen(p1.x, p1.y, p1.x, p1.y);
@@ -79,11 +79,18 @@ void Application::Render()
 			}
 		};
 
-		auto DrawNode = [this, renderer](Node& node) -> void
+		auto DrawNode = [this, renderer](const Node& node) -> void
 		{
-			SDL_FRect rect = { static_cast<float>(node.m_pos.x), static_cast<float>(node.m_pos.y), 1, 1 };
-			m_viewport.RectToScreen(rect, rect);
-			SDL_RenderFillRectF(renderer, &rect);
+			bool notEmpty = false;
+			for (const auto& link : node.m_links)
+				notEmpty |= link != &Node::sentinel;
+
+			if (notEmpty)
+			{
+				SDL_FRect rect = { static_cast<float>(node.m_pos.x), static_cast<float>(node.m_pos.y), 1, 1 };
+				m_viewport.RectToScreen(rect, rect);
+				SDL_RenderFillRectF(renderer, &rect);
+			}
 		};
 
 		bt::Node<Cell>::defaultTraversal = bt::Traversal::PREORDER;
@@ -117,11 +124,11 @@ void Application::Render()
 		}
 
 		SDL_SetRenderDrawColor(renderer, 0x50, 0x50, 0x50, 0xFF);
-		for (auto& [pos, node] : m_generator.m_nodes) DrawLinks(node);
+		for (const Node& node : m_generator.m_nodes) DrawLinks(node);
 
 		SDL_SetRenderDrawColor(renderer, 0, 0xC0, 0, 0xFF);
-		for (Room& room : m_generator.m_rooms) DrawNode(room);
-		for (auto& [pos, node] : m_generator.m_nodes) DrawNode(node);
+		for (const Room& room : m_generator.m_rooms) DrawNode(room);
+		for (const Node& node : m_generator.m_nodes) DrawNode(node);
 	}
 	else
 	{

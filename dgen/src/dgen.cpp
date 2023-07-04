@@ -7,6 +7,17 @@
 
 Node Node::sentinel(std::numeric_limits<decltype(Node::m_status)>::max());
 
+Tag::Tag(int high, int low)
+	: m_pos((static_cast<uint64_t>(high) << 32) | static_cast<uint64_t>(low)) { m_data.m_index = emptyIndex; }
+
+Tag::Tag(int high, int low, uint8_t linkBits, uint8_t origin, uint64_t index)
+	: Tag(high, low)
+{
+	m_data.m_index = index;
+	m_data.m_origin = origin;
+	m_data.m_linkBits = linkBits;
+}
+
 void Room::ComputeEdges()
 {
 	for (const Rect& rect : m_rects)
@@ -33,6 +44,7 @@ void Room::ComputeEdges()
 
 void Generator::Clear()
 {
+	m_tags.clear();
 	m_nodes.clear();
 	m_rooms.clear();
 
@@ -69,51 +81,6 @@ void Generator::Prepare()
 	m_partialPathCount = 0;
 
 	m_deltaDepth = m_input -> m_maxDepth - m_input -> m_minDepth;
-}
-
-void Generator::LinkNodes()
-{
-	struct Entry
-	{
-		int m_x; int m_y; Node* m_node;
-		Entry(std::pair<int, int> pos, Node* node) : m_x(pos.first), m_y(pos.second), m_node(node) {}
-	};
-
-	if (m_nodes.empty())
-		return;
-
-	std::vector<Entry> cache;
-	cache.reserve(m_nodes.size());
-
-	Node* secondary = &(m_nodes.begin() -> second);
-	for (auto& [pos, node] : m_nodes)
-	{
-		Node* const primary = &node;
-		if (primary -> m_path & (1 << Dir::NORTH))
-		{
-			primary -> m_links[Dir::NORTH] = secondary;
-			secondary -> m_links[Dir::SOUTH] = primary;
-		}
-
-		cache.emplace_back(pos, primary);
-		secondary = primary;
-	}
-
-	auto cmp = [](const Entry& a, const Entry& b) -> bool { return a.m_y < b.m_y || (a.m_y == b.m_y && a.m_x < b.m_x); };
-	std::sort(cache.begin(), cache.end(), cmp);
-
-	for (Entry& entry : cache)
-	{
-		Node* const primary = entry.m_node;
-		if (primary -> m_path & (1 << Dir::WEST))
-		{
-			primary -> m_links[Dir::WEST] = secondary;
-			secondary -> m_links[Dir::EAST] = primary;
-		}
-
-		primary -> m_path = 0;
-		secondary = primary;
-	}
 }
 
 void Generator::FindPaths()
@@ -230,26 +197,122 @@ void Generator::FindPaths()
 	}
 }
 
+void Generator::CreateNodes()
+{
+	auto RadixSort = [](Tag* arr, Tag* temp, const size_t size) -> void
+	{
+		size_t count[256]{};
+		for (int bits = 0; bits < 64; bits += 8)
+		{
+			for (size_t i = 0; i < size; i++)
+				++count[static_cast<uint8_t>(arr[i].m_pos >> bits)];
+
+			for (size_t i = 1; i < 256; i++)
+				count[i] += count[i - 1];
+
+			for (size_t i = size - 1; i != std::numeric_limits<size_t>::max(); i--)
+				temp[--count[static_cast<uint8_t>(arr[i].m_pos >> bits)]] = arr[i];
+
+			for (size_t& c : count)
+				c = 0;
+
+			std::swap(arr, temp);
+		}
+	};
+
+	std::vector<Tag> temp(m_tags.size());
+	RadixSort(m_tags.data(), temp.data(), m_tags.size());
+
+	size_t count = 0;
+	uint64_t pos = std::numeric_limits<uint64_t>::max();
+
+	for (const Tag& tag : m_tags)
+	{
+		count += pos != tag.m_pos;
+		pos = tag.m_pos;
+	}
+
+	std::vector<Tag> revTags(count);
+	m_nodes.resize(count);
+
+	Node* node = m_nodes.data() - 1;
+	Tag* revTag = revTags.data() - 1;
+
+	Node* pri[2] = { &Node::sentinel, &Node::sentinel };
+	Node* sec[2] = { &Node::sentinel, &Node::sentinel };
+
+	pos = std::numeric_limits<uint64_t>::max();
+	for (const Tag& tag : m_tags)
+	{
+		const size_t diff = pos != tag.m_pos;
+
+		pos = tag.m_pos;
+		node += diff;
+		revTag += diff;
+
+		const uint64_t xPos = pos >> 32;
+
+		revTag -> m_pos = (pos << 32) | xPos;
+		revTag -> m_node = node;
+
+		node -> m_pos.x = static_cast<int>(xPos);
+		node -> m_pos.y = static_cast<int>(pos & 0xFFFFFFFF);
+		node -> m_path |= tag.m_data.m_linkBits;
+
+		pri[1] = node;
+		sec[1] = m_rooms.data() + tag.m_data.m_index;
+
+		const int exists = tag.m_data.m_index != Tag::emptyIndex;
+
+		pri[exists] -> m_links[tag.m_data.m_origin] = sec[exists];
+		sec[exists] -> m_links[tag.m_data.m_origin ^ 0b10] = pri[exists];
+	}
+
+	m_tags.clear();
+	for (Node& crr : m_nodes)
+	{
+		const int exists = (crr.m_path >> Dir::NORTH) & 1;
+
+		pri[1] = &crr;
+		pri[exists] -> m_links[Dir::NORTH] = sec[exists];
+		sec[exists] -> m_links[Dir::SOUTH] = pri[exists];
+		sec[1] = pri[1];
+	}
+
+	RadixSort(revTags.data(), temp.data(), revTags.size());
+	for (const Tag& tag : revTags)
+	{
+		Node* const crr = tag.m_node;
+		const int exists = (crr -> m_path >> Dir::WEST) & 1;
+
+		pri[1] = crr;
+		pri[exists] -> m_links[Dir::WEST] = sec[exists];
+		sec[exists] -> m_links[Dir::EAST] = pri[exists];
+		sec[1] = pri[1];
+
+		crr -> m_path = 0;
+	}
+}
+
 void Generator::OptimizeNodes()
 {
-	auto iter = m_nodes.begin();
-	const auto endIter = m_nodes.end();
-
 	const uint8_t maskEW = m_input -> m_generateFewerPaths ? 0b1010 : 0b1111;
 	const uint8_t maskNS = m_input -> m_generateFewerPaths ? 0b0101 : 0b1111;
 
-	while (iter != endIter)
+	for (Node& node : m_nodes)
 	{
-		uint8_t& path = iter -> second.m_path;
-		Node** links = iter -> second.m_links;
+		uint8_t& path = node.m_path;
+		Node** links = node.m_links;
 
 		if (path == 0)
 		{
 			zero:
 			for (int i = 0; i < 4; i++)
+			{
 				links[i] -> m_links[i ^ 0b10] = &Node::sentinel;
+				links[i] = &Node::sentinel;
+			}
 
-			iter = m_nodes.erase(iter);
 			continue;
 		}
 
@@ -290,7 +353,6 @@ void Generator::OptimizeNodes()
 		}
 
 		m_partialPathCount += ((path >> Dir::NORTH) & 1) + ((path >> Dir::EAST) & 1);
-		iter++;
 	}
 }
 
@@ -411,7 +473,7 @@ void Generator::GenerateRooms()
 		}
 
 		room.ComputeEdges();
-		CreateRoomNodes(btNode.m_space, room);
+		CreateRoomNodes(btNode, room);
 	}
 }
 
@@ -474,9 +536,9 @@ void Generator::GenerateOutput()
 		}
 	}
 
-	for (const auto& [pos, node] : m_nodes)
+	for (const Node& node : m_nodes)
 	{
-		const auto& [xCrr, yCrr] = pos;
+		const auto& [xCrr, yCrr] = node.m_pos;
 		if (node.m_path & (1 << Dir::NORTH))
 		{
 			const auto [xAdj, yAdj] = node.m_links[Dir::NORTH] -> m_pos;
@@ -572,11 +634,6 @@ void Generator::DeleteTree(bt::Node<Cell>* btNode)
 	operator delete[](btNode -> m_left);
 }
 
-Node& Generator::RegisterNode(int x, int y)
-{
-	return m_nodes.emplace(std::make_pair(x, y), Node(x, y)).first -> second;
-}
-
 void Generator::CreateSpaceNodes(Rect& space)
 {
 	const int d1 = m_spaceOffset - 1;
@@ -586,37 +643,26 @@ void Generator::CreateSpaceNodes(Rect& space)
 	const int xMax = space.x + space.w + d1;
 	const int yMax = space.y + space.h + d1;
 
-	RegisterNode(xMax, yMax).m_path |= (1 << Dir::NORTH) | (1 << Dir::WEST);
-	RegisterNode(xMin, yMax).m_path |= 1 << Dir::NORTH;
-	RegisterNode(xMax, yMin).m_path |= 1 << Dir::WEST;
-	RegisterNode(xMin, yMin);
+	m_tags.emplace_back(xMax, yMax).m_data.m_linkBits = (1ULL << Dir::NORTH) | (1ULL << Dir::WEST);
+	m_tags.emplace_back(xMin, yMax).m_data.m_linkBits = 1ULL << Dir::NORTH;
+	m_tags.emplace_back(xMax, yMin).m_data.m_linkBits = 1ULL << Dir::WEST;
+	m_tags.emplace_back(xMin, yMin);
 }
 
-void Generator::CreateRoomNodes(Rect& space, Room& room)
+void Generator::CreateRoomNodes(bt::Node<Cell>& btNode, Room& room)
 {
-	const auto& [xS, yS, wS, hS] = space;
+	const auto& [xS, yS, wS, hS] = btNode.m_space;
 	const auto& [xR, yR] = room.m_pos;
 
 	const int d0 = m_spaceOffset;
 	const int d1 = m_spaceOffset - 1;
 
-	auto& [north, east, south, west] = room.m_links;
+	const uint64_t index = static_cast<uint64_t>(btNode.m_roomOffset);
 
-	north = &RegisterNode(xR, yS - d0);
-	north -> m_path |= 1 << Dir::WEST;
-	north -> m_links[Dir::SOUTH] = &room;
-
-	east = &RegisterNode(xS + wS + d1, yR);
-	east -> m_path |= 1 << Dir::NORTH;
-	east -> m_links[Dir::WEST] = &room;
-
-	south = &RegisterNode(xR, yS + hS + d1);
-	south -> m_path |= 1 << Dir::WEST;
-	south -> m_links[Dir::NORTH] = &room;
-
-	west = &RegisterNode(xS - d0, yR);
-	west -> m_path |= 1 << Dir::NORTH;
-	west -> m_links[Dir::EAST] = &room;
+	m_tags.emplace_back(xR, yS - d0, 1 << Dir::WEST, Dir::SOUTH, index);
+	m_tags.emplace_back(xS + wS + d1, yR, 1 << Dir::NORTH, Dir::WEST, index);
+	m_tags.emplace_back(xR, yS + hS + d1, 1 << Dir::WEST, Dir::NORTH, index);
+	m_tags.emplace_back(xS - d0, yR, 1 << Dir::NORTH, Dir::EAST, index);
 }
 
 void Generator::Generate(const GenInput* input, GenOutput* output)
@@ -628,7 +674,7 @@ void Generator::Generate(const GenInput* input, GenOutput* output)
 	Prepare();
 	GenerateTree(*m_root, m_input -> m_maxDepth);
 	GenerateRooms();
-	LinkNodes();
+	CreateNodes();
 	FindPaths();
 	OptimizeNodes();
 	GenerateOutput();

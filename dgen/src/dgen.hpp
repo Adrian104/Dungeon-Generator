@@ -4,7 +4,6 @@
 #include "rand.hpp"
 
 #include <limits>
-#include <map>
 #include <vector>
 
 struct Point
@@ -56,10 +55,32 @@ struct Node
 	Node* m_links[4]{ &sentinel, &sentinel, &sentinel, &sentinel };
 
 	Node() = default;
-	Node(int x, int y) : m_pos(x, y) {}
 	Node(uint32_t status) : m_status(status) {}
 
 	virtual Room* ToRoom() { return nullptr; }
+};
+
+struct Tag
+{
+	static constexpr uint64_t emptyIndex = (1ULL << 58) - 1;
+	uint64_t m_pos = 0;
+
+	struct Data
+	{
+		uint64_t m_index : 58;
+		uint64_t m_origin : 2;
+		uint64_t m_linkBits : 4;
+	};
+
+	union
+	{
+		Data m_data{};
+		Node* m_node;
+	};
+
+	Tag() { m_data.m_index = emptyIndex; }
+	Tag(int high, int low);
+	Tag(int high, int low, uint8_t linkBits, uint8_t origin, uint64_t index);
 };
 
 struct Room final : public Node
@@ -113,16 +134,17 @@ struct Generator
 	GenOutput* m_output = nullptr;
 	const GenInput* m_input = nullptr;
 
+	std::vector<Tag> m_tags;
+	std::vector<Node> m_nodes;
 	std::vector<Room> m_rooms;
 	bt::Node<Cell>* m_root = nullptr;
-	std::map<std::pair<int, int>, Node> m_nodes;
 
 	static constexpr int roomSizeLimit = 4;
 
 	void Clear();
 	void Prepare();
-	void LinkNodes();
 	void FindPaths();
+	void CreateNodes();
 	void OptimizeNodes();
 	void GenerateRooms();
 	void GenerateOutput();
@@ -130,9 +152,8 @@ struct Generator
 	uint32_t GenerateTree(bt::Node<Cell>& btNode, int left);
 	static void DeleteTree(bt::Node<Cell>* btNode);
 
-	Node& RegisterNode(int x, int y);
 	void CreateSpaceNodes(Rect& space);
-	void CreateRoomNodes(Rect& space, Room& room);
+	void CreateRoomNodes(bt::Node<Cell>& btNode, Room& room);
 
 	Generator() = default;
 	~Generator() { Clear(); }
