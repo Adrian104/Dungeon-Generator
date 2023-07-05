@@ -12,7 +12,7 @@ class Animator
 	enum class DirMode { FORWARD, BACKWARD, TOGGLE, SWITCH, TOGGLE_OR_SWITCH, AUTO, KEEP };
 
 	private:
-	static constexpr auto zero = duration_type::zero();
+	static constexpr auto s_zero = duration_type::zero();
 
 	bool m_playing = false;
 	bool m_backward = false;
@@ -36,7 +36,7 @@ class Animator
 
 	bool IsPlaying() const { return m_playing; }
 	bool IsBackward() const { return m_backward; }
-	bool IsElapsedMin() const { return m_elapsed <= zero; }
+	bool IsElapsedMin() const { return m_elapsed <= s_zero; }
 	bool IsElapsedMax() const { return m_elapsed >= m_totalTime; }
 };
 
@@ -44,7 +44,7 @@ inline void Animator::Stop()
 {
 	m_playing = false;
 	m_backward = false;
-	m_elapsed = zero;
+	m_elapsed = s_zero;
 }
 
 inline void Animator::Pause()

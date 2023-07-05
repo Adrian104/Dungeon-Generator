@@ -6,12 +6,12 @@ namespace ini
 {
 	std::string Trim(const std::string& str)
 	{
-		static constexpr auto whitespaces = " \t\n\r\f\v";
+		static constexpr auto s_whitespaces = " \t\n\r\f\v";
 
-		const auto first = str.find_first_not_of(whitespaces);
+		const auto first = str.find_first_not_of(s_whitespaces);
 		if (first == std::string::npos) return "";
 
-		const auto last = str.find_last_not_of(whitespaces);
+		const auto last = str.find_last_not_of(s_whitespaces);
 		return str.substr(first, last - first + 1);
 	}
 

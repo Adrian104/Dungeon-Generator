@@ -30,7 +30,7 @@ inline const int g_menuInternalOffset = 20;
 inline const int g_menuExternalOffset = 35;
 
 inline const int g_warningMargin = 20;
-inline const float g_gridThresholdScale = 5.0f;
+inline const float g_gridThresholdScale = 8.0f;
 
 inline const auto g_menuAnimTime = std::chrono::milliseconds(350);
 inline const auto g_infoAnimTime = std::chrono::milliseconds(100);

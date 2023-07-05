@@ -5,7 +5,7 @@ void Animator::ToggleState()
 	switch (m_loopMode)
 	{
 	case LoopMode::ONLY_FORWARD:
-		m_elapsed = zero;
+		m_elapsed = s_zero;
 		[[fallthrough]];
 
 	case LoopMode::NO_LOOP:
@@ -37,9 +37,9 @@ void Animator::Update()
 	if (m_backward)
 	{
 		m_elapsed -= deltaTime;
-		if (m_elapsed <= zero)
+		if (m_elapsed <= s_zero)
 		{
-			m_elapsed = zero;
+			m_elapsed = s_zero;
 			ToggleState();
 		}
 	}
@@ -74,18 +74,18 @@ void Animator::Play(DirMode dirMode)
 		break;
 
 	case DirMode::SWITCH:
-		if (m_elapsed <= zero) m_backward = false;
+		if (m_elapsed <= s_zero) m_backward = false;
 		else if (m_elapsed >= m_totalTime) m_backward = true;
 		break;
 
 	case DirMode::TOGGLE_OR_SWITCH:
-		if (m_elapsed <= zero) m_backward = false;
+		if (m_elapsed <= s_zero) m_backward = false;
 		else if (m_elapsed >= m_totalTime) m_backward = true;
 		else m_backward = !m_backward;
 		break;
 
 	case DirMode::AUTO:
-		if (m_elapsed <= zero) m_backward = false;
+		if (m_elapsed <= s_zero) m_backward = false;
 		else if (m_elapsed >= m_totalTime) m_backward = true;
 		else if (m_playing) m_backward = !m_backward;
 		[[fallthrough]];

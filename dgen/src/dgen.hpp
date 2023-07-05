@@ -1,6 +1,6 @@
 #pragma once
 
-#include "btree.hpp"
+#include "bin_tree.hpp"
 #include "rand.hpp"
 
 #include <limits>
@@ -42,7 +42,7 @@ struct Cell
 
 struct Node
 {
-	static Node sentinel;
+	static Node s_sentinel;
 
 	int m_gCost = 0;
 	int m_hCost = 0;
@@ -52,7 +52,7 @@ struct Node
 	uint32_t m_status = 0;
 
 	Point m_pos{};
-	Node* m_links[4]{ &sentinel, &sentinel, &sentinel, &sentinel };
+	Node* m_links[4]{ &s_sentinel, &s_sentinel, &s_sentinel, &s_sentinel };
 
 	Node() = default;
 	Node(uint32_t status) : m_status(status) {}
@@ -62,7 +62,7 @@ struct Node
 
 struct Tag
 {
-	static constexpr uint64_t emptyIndex = (1ULL << 58) - 1;
+	static constexpr uint64_t s_emptyIndex = (1ULL << 58) - 1;
 	uint64_t m_pos = 0;
 
 	struct Data
@@ -78,9 +78,19 @@ struct Tag
 		Node* m_node;
 	};
 
-	Tag() { m_data.m_index = emptyIndex; }
+	Tag();
 	Tag(int high, int low);
 	Tag(int high, int low, uint8_t linkBits, uint8_t origin, uint64_t index);
+};
+
+struct RadixSort
+{
+	void* const m_memory;
+
+	RadixSort(const size_t maxSize);
+	~RadixSort();
+
+	void Sort(Tag* arr, const size_t size);
 };
 
 struct Room final : public Node
@@ -139,7 +149,7 @@ struct Generator
 	std::vector<Room> m_rooms;
 	bt::Node<Cell>* m_root = nullptr;
 
-	static constexpr int roomSizeLimit = 4;
+	static constexpr int s_roomSizeLimit = 4;
 
 	void Clear();
 	void Prepare();

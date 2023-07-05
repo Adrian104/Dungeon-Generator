@@ -15,14 +15,14 @@ class Widget
 	Application& m_app;
 
 	private:
-	static Application* appPointer;
+	static Application* s_app;
 
 	bool m_render = true;
 	Widget* m_next = nullptr;
 	Animator* m_animator = nullptr;
 
 	protected:
-	Widget() : m_app(*appPointer) {}
+	Widget() : m_app(*s_app) {}
 
 	public:
 	virtual ~Widget() { delete m_next; }
@@ -126,7 +126,7 @@ Type& Application::AccessWidget()
 		if (ptr != nullptr) return *ptr;
 	}
 
-	Widget::appPointer = this;
+	Widget::s_app = this;
 	Type* const ptr = new Type();
 
 	ptr -> m_animator = dynamic_cast<Animator*>(ptr);

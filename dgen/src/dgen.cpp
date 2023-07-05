@@ -5,10 +5,12 @@
 #include <cmath>
 #include <stdexcept>
 
-Node Node::sentinel(std::numeric_limits<decltype(Node::m_status)>::max());
+Node Node::s_sentinel(std::numeric_limits<decltype(Node::m_status)>::max());
+
+Tag::Tag() { m_data.m_index = s_emptyIndex; }
 
 Tag::Tag(int high, int low)
-	: m_pos((static_cast<uint64_t>(high) << 32) | static_cast<uint64_t>(low)) { m_data.m_index = emptyIndex; }
+	: m_pos((static_cast<uint64_t>(high) << 32) | static_cast<uint64_t>(low)) { m_data.m_index = s_emptyIndex; }
 
 Tag::Tag(int high, int low, uint8_t linkBits, uint8_t origin, uint64_t index)
 	: Tag(high, low)
@@ -16,6 +18,35 @@ Tag::Tag(int high, int low, uint8_t linkBits, uint8_t origin, uint64_t index)
 	m_data.m_index = index;
 	m_data.m_origin = origin;
 	m_data.m_linkBits = linkBits;
+}
+
+RadixSort::RadixSort(const size_t maxSize)
+	: m_memory(operator new[](sizeof(size_t) * 256 + sizeof(Tag) * maxSize)) {}
+
+RadixSort::~RadixSort() { operator delete[](m_memory); }
+
+void RadixSort::Sort(Tag* arr, const size_t size)
+{
+	size_t* const count = static_cast<size_t*>(m_memory);
+	Tag* temp = reinterpret_cast<Tag*>(count + 256);
+
+	for (int bits = 0; bits < 64; bits += 8)
+	{
+		for (size_t i = 0; i < 256; i++)
+			count[i] = 0;
+
+		for (size_t i = 0; i < size; i++)
+			++count[(arr[i].m_pos >> bits) & 0xFF];
+
+		size_t prev = *count;
+		for (size_t i = 1; i < 256; i++)
+			prev = (count[i] += prev);
+
+		for (size_t i = size - 1; i != std::numeric_limits<size_t>::max(); i--)
+			temp[--count[(arr[i].m_pos >> bits) & 0xFF]] = arr[i];
+
+		std::swap(arr, temp);
+	}
 }
 
 void Room::ComputeEdges()
@@ -68,7 +99,7 @@ void Generator::Prepare()
 	m_spaceOffset = m_input -> m_spaceInterdistance + 1;
 	m_spaceShrink = (m_spaceOffset << 1) - 1;
 
-	m_minSpaceSize = static_cast<int>(roomSizeLimit / m_input -> m_maxRoomSize) + m_spaceShrink;
+	m_minSpaceSize = static_cast<int>(s_roomSizeLimit / m_input -> m_maxRoomSize) + m_spaceShrink;
 	m_minSpaceRand = (1.0f - m_input -> m_spaceSizeRandomness) * 0.5f;
 
 	if (m_input -> m_width <= m_minSpaceSize || m_input -> m_height <= m_minSpaceSize)
@@ -88,7 +119,7 @@ void Generator::FindPaths()
 	uint32_t statusCounter = 1;
 	MinHeap<int, Node*> heap;
 
-	bt::Node<Cell>::defaultTraversal = bt::Traversal::POSTORDER;
+	bt::Node<Cell>::s_defaultTraversal = bt::Traversal::POSTORDER;
 	for (auto& btNode : *m_root)
 	{
 		if ((btNode.m_flags & (1 << Cell::Flag::CONNECT_ROOMS)) == 0)
@@ -199,29 +230,8 @@ void Generator::FindPaths()
 
 void Generator::CreateNodes()
 {
-	auto RadixSort = [](Tag* arr, Tag* temp, const size_t size) -> void
-	{
-		size_t count[256]{};
-		for (int bits = 0; bits < 64; bits += 8)
-		{
-			for (size_t i = 0; i < size; i++)
-				++count[static_cast<uint8_t>(arr[i].m_pos >> bits)];
-
-			for (size_t i = 1; i < 256; i++)
-				count[i] += count[i - 1];
-
-			for (size_t i = size - 1; i != std::numeric_limits<size_t>::max(); i--)
-				temp[--count[static_cast<uint8_t>(arr[i].m_pos >> bits)]] = arr[i];
-
-			for (size_t& c : count)
-				c = 0;
-
-			std::swap(arr, temp);
-		}
-	};
-
-	std::vector<Tag> temp(m_tags.size());
-	RadixSort(m_tags.data(), temp.data(), m_tags.size());
+	RadixSort rs(m_tags.size());
+	rs.Sort(m_tags.data(), m_tags.size());
 
 	size_t count = 0;
 	uint64_t pos = std::numeric_limits<uint64_t>::max();
@@ -238,8 +248,8 @@ void Generator::CreateNodes()
 	Node* node = m_nodes.data() - 1;
 	Tag* revTag = revTags.data() - 1;
 
-	Node* pri[2] = { &Node::sentinel, &Node::sentinel };
-	Node* sec[2] = { &Node::sentinel, &Node::sentinel };
+	Node* pri[2] = { &Node::s_sentinel, &Node::s_sentinel };
+	Node* sec[2] = { &Node::s_sentinel, &Node::s_sentinel };
 
 	pos = std::numeric_limits<uint64_t>::max();
 	for (const Tag& tag : m_tags)
@@ -262,7 +272,7 @@ void Generator::CreateNodes()
 		pri[1] = node;
 		sec[1] = m_rooms.data() + tag.m_data.m_index;
 
-		const int exists = tag.m_data.m_index != Tag::emptyIndex;
+		const int exists = tag.m_data.m_index != Tag::s_emptyIndex;
 
 		pri[exists] -> m_links[tag.m_data.m_origin] = sec[exists];
 		sec[exists] -> m_links[tag.m_data.m_origin ^ 0b10] = pri[exists];
@@ -279,7 +289,7 @@ void Generator::CreateNodes()
 		sec[1] = pri[1];
 	}
 
-	RadixSort(revTags.data(), temp.data(), revTags.size());
+	rs.Sort(revTags.data(), revTags.size());
 	for (const Tag& tag : revTags)
 	{
 		Node* const crr = tag.m_node;
@@ -309,8 +319,8 @@ void Generator::OptimizeNodes()
 			zero:
 			for (int i = 0; i < 4; i++)
 			{
-				links[i] -> m_links[i ^ 0b10] = &Node::sentinel;
-				links[i] = &Node::sentinel;
+				links[i] -> m_links[i ^ 0b10] = &Node::s_sentinel;
+				links[i] = &Node::s_sentinel;
 			}
 
 			continue;
@@ -326,8 +336,8 @@ void Generator::OptimizeNodes()
 				east -> m_links[Dir::WEST] = west;
 				west -> m_links[Dir::EAST] = east;
 
-				links[Dir::EAST] = &Node::sentinel;
-				links[Dir::WEST] = &Node::sentinel;
+				links[Dir::EAST] = &Node::s_sentinel;
+				links[Dir::WEST] = &Node::s_sentinel;
 
 				if (path &= ~0b1010; path == 0)
 					goto zero;
@@ -344,8 +354,8 @@ void Generator::OptimizeNodes()
 				north -> m_links[Dir::SOUTH] = south;
 				south -> m_links[Dir::NORTH] = north;
 
-				links[Dir::NORTH] = &Node::sentinel;
-				links[Dir::SOUTH] = &Node::sentinel;
+				links[Dir::NORTH] = &Node::s_sentinel;
+				links[Dir::SOUTH] = &Node::s_sentinel;
 
 				if (path &= ~0b0101; path == 0)
 					goto zero;
@@ -362,7 +372,7 @@ void Generator::GenerateRooms()
 	const float diffRoomSize = m_input -> m_maxRoomSize - m_input -> m_minRoomSize;
 
 	m_rooms.reserve(m_totalRoomCount);
-	bt::Node<Cell>::defaultTraversal = bt::Traversal::POSTORDER;
+	bt::Node<Cell>::s_defaultTraversal = bt::Traversal::POSTORDER;
 
 	for (auto& btNode : *m_root)
 	{
@@ -374,11 +384,11 @@ void Generator::GenerateRooms()
 
 		Vec priSize(static_cast<int>(btNode.m_space.w * a), static_cast<int>(btNode.m_space.h * b));
 
-		if (priSize.x < roomSizeLimit)
-			priSize.x = roomSizeLimit;
+		if (priSize.x < s_roomSizeLimit)
+			priSize.x = s_roomSizeLimit;
 
-		if (priSize.y < roomSizeLimit)
-			priSize.y = roomSizeLimit;
+		if (priSize.y < s_roomSizeLimit)
+			priSize.y = s_roomSizeLimit;
 
 		Vec priPos(btNode.m_space.x, btNode.m_space.y);
 		Vec remSize(btNode.m_space.w - priSize.x, btNode.m_space.h - priSize.y);
@@ -394,7 +404,7 @@ void Generator::GenerateRooms()
 			else { incAxis = &Vec::y; decAxis = &Vec::x; }
 
 			secSize.*decAxis = priSize.*decAxis >> 1;
-			if (secSize.*decAxis < roomSizeLimit)
+			if (secSize.*decAxis < s_roomSizeLimit)
 				goto skip_double_room;
 
 			const int extra = static_cast<int>(remSize.*incAxis * (m_random.GetFP32() * diffRoomSize + minRoomSize));

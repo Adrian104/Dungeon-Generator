@@ -155,7 +155,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\btree.hpp" />
+    <ClInclude Include="src\bin_tree.hpp" />
     <ClInclude Include="src\dgen.hpp" />
     <ClInclude Include="src\heap.hpp" />
     <ClInclude Include="src\rand.hpp" />

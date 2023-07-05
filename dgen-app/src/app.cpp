@@ -6,7 +6,7 @@
 #include <cmath>
 #include <stdexcept>
 
-Application* Widget::appPointer = nullptr;
+Application* Widget::s_app = nullptr;
 
 void Application::Draw()
 {
@@ -72,7 +72,7 @@ void Application::Render()
 			for (int i = m_input.m_seed & 0b10; i < end; i++)
 			{
 				Node* const node2 = node.m_links[i];
-				if (node2 == &Node::sentinel) continue;
+				if (node2 == &Node::s_sentinel) continue;
 
 				SDL_FPoint p2 = { static_cast<float>(node2 -> m_pos.x + 0.5f), static_cast<float>(node2 -> m_pos.y + 0.5f) };
 				m_viewport.ToScreen(p2.x, p2.y, p2.x, p2.y);
@@ -84,7 +84,7 @@ void Application::Render()
 		{
 			bool notEmpty = false;
 			for (const auto& link : node.m_links)
-				notEmpty |= link != &Node::sentinel;
+				notEmpty |= link != &Node::s_sentinel;
 
 			if (notEmpty)
 			{
@@ -94,7 +94,7 @@ void Application::Render()
 			}
 		};
 
-		bt::Node<Cell>::defaultTraversal = bt::Traversal::PREORDER;
+		bt::Node<Cell>::s_defaultTraversal = bt::Traversal::PREORDER;
 		for (auto& btNode : *m_generator.m_root)
 		{
 			if (btNode.m_left != nullptr || btNode.m_right != nullptr)

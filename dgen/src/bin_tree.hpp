@@ -45,7 +45,7 @@ namespace bt
 		};
 
 		public:
-		static Traversal defaultTraversal;
+		static Traversal s_defaultTraversal;
 
 		Node* m_parent;
 		Node* m_left = nullptr;
@@ -61,8 +61,8 @@ namespace bt
 		Node(Node&& ref) noexcept = delete;
 		Node& operator=(Node&& ref) noexcept = delete;
 
-		Iterator begin() { return Iterator(this, defaultTraversal); }
-		Iterator end() { return Iterator(nullptr, defaultTraversal); }
+		Iterator begin() { return Iterator(this, s_defaultTraversal); }
+		Iterator end() { return Iterator(nullptr, s_defaultTraversal); }
 	};
 
 	template <typename Type>
@@ -113,8 +113,8 @@ namespace bt
 		using scope = Node<Type>::Iterator;
 		using action = void (scope::*)();
 
-		static constexpr action actions[3] = { &scope::GoLeft, &scope::GoRight, &scope::GoUp };
-		(this ->* actions[m_state])();
+		static constexpr action s_actions[3] = { &scope::GoLeft, &scope::GoRight, &scope::GoUp };
+		(this ->* s_actions[m_state])();
 	}
 
 	template <typename Type>
@@ -138,5 +138,5 @@ namespace bt
 	}
 
 	template <typename Type>
-	Traversal Node<Type>::defaultTraversal = Traversal::PREORDER;
+	Traversal Node<Type>::s_defaultTraversal = Traversal::PREORDER;
 }
