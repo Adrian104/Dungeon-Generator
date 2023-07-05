@@ -94,6 +94,7 @@ class Application : protected AppManager
 	~Application() { Quit(true); }
 
 	friend class Menu;
+	friend class Info;
 	friend class Warning;
 	friend class Widget;
 };

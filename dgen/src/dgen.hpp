@@ -152,8 +152,8 @@ struct Generator
 	uint32_t GenerateTree(bt::Node<Cell>& btNode, int left);
 	static void DeleteTree(bt::Node<Cell>* btNode);
 
-	void CreateSpaceNodes(Rect& space);
-	void CreateRoomNodes(bt::Node<Cell>& btNode, Room& room);
+	void CreateSpaceTags(Rect& space);
+	void CreateRoomTags(bt::Node<Cell>& btNode, Room& room);
 
 	Generator() = default;
 	~Generator() { Clear(); }

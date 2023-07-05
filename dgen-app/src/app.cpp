@@ -1,5 +1,6 @@
 #include "app.hpp"
 #include "widgets/menu.hpp"
+#include "widgets/info.hpp"
 #include "widgets/warning.hpp"
 
 #include <cmath>
@@ -277,10 +278,21 @@ void Application::Generate()
 
 		m_generator.Generate(&m_input, &m_output);
 
+		const std::string seed = std::to_string(m_input.m_seed);
+		const std::string rooms = std::to_string(m_output.m_rooms.size());
+		const std::string paths = std::to_string(m_output.m_paths.size());
+		const std::string entrances = std::to_string(m_output.m_entrances.size());
+
+		AccessWidget<Info>().Set("seed: " + seed + ", rooms: " + rooms + ", paths: " + paths + ", entrances: " + entrances);
+
 		if (Warning* warning = GetWidget<Warning>(); warning != nullptr)
 			warning -> Set("");
 	}
-	catch (const std::exception& error) { AccessWidget<Warning>().Set(error.what()); }
+	catch (const std::exception& error)
+	{
+		AccessWidget<Info>().Set("seed: " + std::to_string(m_input.m_seed) + ", rooms: - , paths: - , entrances: - ");
+		AccessWidget<Warning>().Set(error.what());
+	}
 }
 
 void Application::LoadDefaults()

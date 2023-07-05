@@ -473,7 +473,7 @@ void Generator::GenerateRooms()
 		}
 
 		room.ComputeEdges();
-		CreateRoomNodes(btNode, room);
+		CreateRoomTags(btNode, room);
 	}
 }
 
@@ -572,7 +572,7 @@ uint32_t Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 		space.x += m_spaceOffset; space.y += m_spaceOffset;
 		space.w -= m_spaceShrink; space.h -= m_spaceShrink;
 
-		CreateSpaceNodes(space);
+		CreateSpaceTags(space);
 		if (btNode.m_flags & (1 << Cell::Flag::SPARSE_AREA))
 		{
 			if (m_random.GetFP32() >= m_input -> m_sparseAreaDens)
@@ -634,7 +634,7 @@ void Generator::DeleteTree(bt::Node<Cell>* btNode)
 	operator delete[](btNode -> m_left);
 }
 
-void Generator::CreateSpaceNodes(Rect& space)
+void Generator::CreateSpaceTags(Rect& space)
 {
 	const int d1 = m_spaceOffset - 1;
 
@@ -649,7 +649,7 @@ void Generator::CreateSpaceNodes(Rect& space)
 	m_tags.emplace_back(xMin, yMin);
 }
 
-void Generator::CreateRoomNodes(bt::Node<Cell>& btNode, Room& room)
+void Generator::CreateRoomTags(bt::Node<Cell>& btNode, Room& room)
 {
 	const auto& [xS, yS, wS, hS] = btNode.m_space;
 	const auto& [xR, yR] = room.m_pos;

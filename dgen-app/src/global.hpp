@@ -33,6 +33,7 @@ inline const int g_warningMargin = 20;
 inline const float g_gridThresholdScale = 5.0f;
 
 inline const auto g_menuAnimTime = std::chrono::milliseconds(350);
+inline const auto g_infoAnimTime = std::chrono::milliseconds(100);
 inline const auto g_warningAnimTime = std::chrono::milliseconds(500);
 
 inline const std::string g_title = "Dungeon Generator";
