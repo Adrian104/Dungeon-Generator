@@ -349,9 +349,10 @@ void Generator::GenerateRooms()
 	const float minRoomSize = m_input -> m_minRoomSize;
 	const float diffRoomSize = m_input -> m_maxRoomSize - m_input -> m_minRoomSize;
 
-	m_rooms.reserve(m_totalRoomCount);
-	bt::Node<Cell>::s_defaultTraversal = bt::Traversal::POSTORDER;
+	m_rooms.reserve(static_cast<size_t>(m_totalRoomCount));
+	m_output -> m_rooms.reserve(static_cast<size_t>(m_totalRoomCount) << 1);
 
+	bt::Node<Cell>::s_defaultTraversal = bt::Traversal::POSTORDER;
 	for (auto& btNode : *m_root)
 	{
 		if ((btNode.m_flags & (1 << Cell::Flag::GENERATE_ROOMS)) == 0)
@@ -407,14 +408,17 @@ void Generator::GenerateRooms()
 		const Vec offset(c % (remSize.x + 1), d % (remSize.y + 1));
 
 		Point pos[2]{};
-		Room& room = m_rooms.emplace_back();
+		Room& room = m_rooms.emplace_back(btNode);
 
-		room.m_rects.emplace_back(priPos.x + offset.x, priPos.y + offset.y, priSize.x, priSize.y);
+		room.m_rectBegin = m_output -> m_rooms.size();
+		m_output -> m_rooms.emplace_back(priPos.x + offset.x, priPos.y + offset.y, priSize.x, priSize.y);
+
+		room.m_rectEnd = m_output -> m_rooms.size();
 		room.m_pos = Point(priPos.x + offset.x, priPos.y + offset.y);
 
 		if (secPos.x == -1)
 		{
-			const Rect& rect = room.m_rects.front();
+			const Rect& rect = m_output -> m_rooms[room.m_rectBegin];
 
 			const auto [e, f] = m_random.Get32P();
 			const auto [g, h] = m_random.Get32P();
@@ -426,12 +430,12 @@ void Generator::GenerateRooms()
 		}
 		else
 		{
-			room.m_rects.emplace_back(secPos.x + offset.x, secPos.y + offset.y, secSize.x, secSize.y);
-			m_totalRoomCount++;
+			m_output -> m_rooms.emplace_back(secPos.x + offset.x, secPos.y + offset.y, secSize.x, secSize.y);
+			room.m_rectEnd = m_output -> m_rooms.size();
 
 			const bool randBool = m_random.GetBit();
-			const Rect& priRect = room.m_rects.at(static_cast<size_t>(randBool));
-			const Rect& secRect = room.m_rects.at(static_cast<size_t>(!randBool));
+			const Rect& priRect = m_output -> m_rooms[room.m_rectBegin + static_cast<size_t>(randBool)];
+			const Rect& secRect = m_output -> m_rooms[room.m_rectBegin + static_cast<size_t>(!randBool)];
 
 			auto CalculatePos = [this](const Rect& priRect, const Rect& secRect, Point& pos) -> void
 			{
@@ -481,8 +485,9 @@ void Generator::GenerateRooms()
 		ent[Dir::SOUTH] = Point(pos[1].x, 0);
 		ent[Dir::WEST] = Point(std::numeric_limits<int>::max(), pos[1].y);
 
-		for (const Rect& rect : room.m_rects)
+		for (size_t i = room.m_rectBegin; i < room.m_rectEnd; i++)
 		{
+			const Rect& rect = m_output -> m_rooms[i];
 			const int xPlusW = rect.x + rect.w;
 			const int yPlusH = rect.y + rect.h;
 
@@ -524,15 +529,12 @@ void Generator::GenerateOutput()
 		sw += ((room.m_path >> Dir::SOUTH) & 1) + ((room.m_path >> Dir::WEST) & 1);
 	}
 
-	m_output -> m_rooms.reserve(static_cast<size_t>(m_totalRoomCount));
+	m_output -> m_rooms.shrink_to_fit();
 	m_output -> m_paths.reserve(static_cast<size_t>(ne + m_partialPathCount));
 	m_output -> m_entrances.reserve(static_cast<size_t>(ne + sw));
 
 	for (Room& room : m_rooms)
 	{
-		for (const Rect& rect : room.m_rects)
-			m_output -> m_rooms.push_back(rect);
-
 		if (room.m_path & (1 << Dir::NORTH))
 		{
 			const Point ent = room.m_entrances[Dir::NORTH];

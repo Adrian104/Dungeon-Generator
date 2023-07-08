@@ -82,9 +82,11 @@ void Application::Render()
 		for (Room& room : m_generator.m_rooms)
 		{
 			SDL_SetRenderDrawColor(renderer, 0, 0xAA, 0xAA, 0xFF);
-			for (Rect& rect : room.m_rects)
+			for (size_t i = room.m_rectBegin; i < room.m_rectEnd; i++)
 			{
+				const Rect& rect = m_output.m_rooms[i];
 				SDL_FRect sdlRect;
+
 				m_viewport.RectToScreen(rect, sdlRect);
 				SDL_RenderDrawRectF(renderer, &sdlRect);
 			}

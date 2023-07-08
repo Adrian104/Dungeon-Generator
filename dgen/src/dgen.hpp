@@ -95,9 +95,12 @@ struct RadixSort
 
 struct Room final : public Node
 {
+	bt::Node<Cell>& m_btNode;
 	Point m_entrances[4]{};
-	std::vector<Rect> m_rects;
+	size_t m_rectBegin = 0;
+	size_t m_rectEnd = 0;
 
+	Room(bt::Node<Cell>& btNode) : m_btNode(btNode) {}
 	Room* ToRoom() override { return this; }
 };
 
