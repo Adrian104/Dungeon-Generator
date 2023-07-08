@@ -63,37 +63,6 @@ void Application::Render()
 
 	if (m_debugView)
 	{
-		auto DrawLinks = [this, renderer](const Node& node) -> void
-		{
-			SDL_FPoint p1 = { static_cast<float>(node.m_pos.x + 0.5f), static_cast<float>(node.m_pos.y + 0.5f) };
-			m_viewport.ToScreen(p1.x, p1.y, p1.x, p1.y);
-
-			const int end = (m_input.m_seed & 0b10) + 2;
-			for (int i = m_input.m_seed & 0b10; i < end; i++)
-			{
-				Node* const node2 = node.m_links[i];
-				if (node2 == &Node::s_sentinel) continue;
-
-				SDL_FPoint p2 = { static_cast<float>(node2 -> m_pos.x + 0.5f), static_cast<float>(node2 -> m_pos.y + 0.5f) };
-				m_viewport.ToScreen(p2.x, p2.y, p2.x, p2.y);
-				SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
-			}
-		};
-
-		auto DrawNode = [this, renderer](const Node& node) -> void
-		{
-			bool notEmpty = false;
-			for (const auto& link : node.m_links)
-				notEmpty |= link != &Node::s_sentinel;
-
-			if (notEmpty)
-			{
-				SDL_FRect rect = { static_cast<float>(node.m_pos.x), static_cast<float>(node.m_pos.y), 1, 1 };
-				m_viewport.RectToScreen(rect, rect);
-				SDL_RenderFillRectF(renderer, &rect);
-			}
-		};
-
 		bt::Node<Cell>::s_defaultTraversal = bt::Traversal::PREORDER;
 		for (auto& btNode : *m_generator.m_root)
 		{
@@ -120,16 +89,75 @@ void Application::Render()
 				SDL_RenderDrawRectF(renderer, &sdlRect);
 			}
 
-			SDL_SetRenderDrawColor(renderer, 0x50, 0x50, 0x50, 0xFF);
-			DrawLinks(room);
+			SDL_SetRenderDrawColor(renderer, 0x80, 0, 0x80, 0xFF);
+			for (int i = 0; i < 4; i++)
+			{
+				if (room.m_links[i] == &Node::s_sentinel)
+					continue;
+
+				SDL_FPoint p1{ room.m_entrances[i].x + 0.5f, room.m_entrances[i].y + 0.5f };
+				SDL_FPoint p2{ room.m_links[i] -> m_pos.x + 0.5f, room.m_links[i] -> m_pos.y + 0.5f };
+
+				m_viewport.ToScreen(p1.x, p1.y, p1.x, p1.y);
+				m_viewport.ToScreen(p2.x, p2.y, p2.x, p2.y);
+
+				SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
+			}
 		}
 
 		SDL_SetRenderDrawColor(renderer, 0x50, 0x50, 0x50, 0xFF);
-		for (const Node& node : m_generator.m_nodes) DrawLinks(node);
+		for (Node& node : m_generator.m_nodes)
+		{
+			SDL_FPoint p1 = { static_cast<float>(node.m_pos.x + 0.5f), static_cast<float>(node.m_pos.y + 0.5f) };
+			m_viewport.ToScreen(p1.x, p1.y, p1.x, p1.y);
+
+			const int end = (m_input.m_seed & 0b10) + 2;
+			for (int i = m_input.m_seed & 0b10; i < end; i++)
+			{
+				Node* const node2 = node.m_links[i];
+				if (node2 == &Node::s_sentinel || node2 -> ToRoom() != nullptr)
+					continue;
+
+				SDL_FPoint p2 = { static_cast<float>(node2 -> m_pos.x + 0.5f), static_cast<float>(node2 -> m_pos.y + 0.5f) };
+				m_viewport.ToScreen(p2.x, p2.y, p2.x, p2.y);
+				SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
+			}
+		}
+
+		for (Room& room : m_generator.m_rooms)
+		{
+			SDL_SetRenderDrawColor(renderer, 0, 0xC0, 0, 0xFF);
+			SDL_FRect rect = { static_cast<float>(room.m_pos.x), static_cast<float>(room.m_pos.y), 1, 1 };
+
+			m_viewport.RectToScreen(rect, rect);
+			SDL_RenderFillRectF(renderer, &rect);
+
+			SDL_SetRenderDrawColor(renderer, 0x80, 0, 0x80, 0xFF);
+			for (int i = 0; i < 4; i++)
+			{
+				rect.x = static_cast<float>(room.m_entrances[i].x);
+				rect.y = static_cast<float>(room.m_entrances[i].y);
+				rect.w = 1.0f; rect.h = 1.0f;
+
+				m_viewport.RectToScreen(rect, rect);
+				SDL_RenderFillRectF(renderer, &rect);
+			}
+		}
 
 		SDL_SetRenderDrawColor(renderer, 0, 0xC0, 0, 0xFF);
-		for (const Room& room : m_generator.m_rooms) DrawNode(room);
-		for (const Node& node : m_generator.m_nodes) DrawNode(node);
+		for (Node& node : m_generator.m_nodes)
+		{
+			bool notEmpty = false;
+			for (const auto& link : node.m_links)
+				notEmpty |= link != &Node::s_sentinel;
+
+			if (notEmpty)
+			{
+				SDL_FRect rect = { static_cast<float>(node.m_pos.x), static_cast<float>(node.m_pos.y), 1, 1 };
+				m_viewport.RectToScreen(rect, rect);
+				SDL_RenderFillRectF(renderer, &rect);
+			}
+		}
 	}
 	else
 	{
@@ -161,7 +189,7 @@ void Application::Render()
 
 		if (m_visEntrances)
 		{
-			SDL_SetRenderDrawColor(renderer, 0xFF, 0x60, 0, 0xFF);
+			SDL_SetRenderDrawColor(renderer, 0x80, 0, 0x80, 0xFF);
 			for (Point& entrance : m_output.m_entrances)
 			{
 				SDL_FRect rect = { static_cast<float>(entrance.x), static_cast<float>(entrance.y), 1, 1 };

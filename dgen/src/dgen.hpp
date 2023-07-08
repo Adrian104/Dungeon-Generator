@@ -95,10 +95,9 @@ struct RadixSort
 
 struct Room final : public Node
 {
+	Point m_entrances[4]{};
 	std::vector<Rect> m_rects;
-	int m_edges[4]{ std::numeric_limits<int>::max(), 0, 0, std::numeric_limits<int>::max() };
 
-	void ComputeEdges();
 	Room* ToRoom() override { return this; }
 };
 
@@ -161,9 +160,6 @@ struct Generator
 
 	uint32_t GenerateTree(bt::Node<Cell>& btNode, int left);
 	static void DeleteTree(bt::Node<Cell>* btNode);
-
-	void CreateSpaceTags(Rect& space);
-	void CreateRoomTags(bt::Node<Cell>& btNode, Room& room);
 
 	Generator() = default;
 	~Generator() { Clear(); }
