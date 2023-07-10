@@ -2,35 +2,6 @@
 #include <stdexcept>
 #include <utility>
 
-Text::Text(Text&& ref) noexcept
-	: m_width(std::exchange(ref.m_width, 0)), m_height(std::exchange(ref.m_height, 0)), m_texture(std::exchange(ref.m_texture, nullptr)) {}
-
-Text& Text::operator=(Text&& ref) noexcept
-{
-	if (&ref == this)
-		return *this;
-
-	Clear();
-
-	m_width = std::exchange(ref.m_width, 0);
-	m_height = std::exchange(ref.m_height, 0);
-	m_texture = std::exchange(ref.m_texture, nullptr);
-
-	return *this;
-}
-
-void Text::Clear()
-{
-	m_width = 0;
-	m_height = 0;
-
-	if (m_texture != nullptr)
-	{
-		SDL_DestroyTexture(m_texture);
-		m_texture = nullptr;
-	}
-}
-
 AppManager::AppManager()
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
@@ -128,20 +99,21 @@ SDL_Texture* AppManager::CreateTexture(int width, int height, bool blend) const
 	return texture;
 }
 
-Text AppManager::RenderText(const std::string& str, int id, int style, const SDL_Color& color) const
+SDL_Texture* AppManager::RenderText(const std::string& str, int id, int style, const SDL_Color& color) const
 {
 	TTF_Font* const font = m_fonts.at(id);
 	TTF_SetFontStyle(font, style);
 
 	SDL_Surface* const surface = TTF_RenderText_Blended(font, str.c_str(), color);
-	if (surface == nullptr) throw std::runtime_error(TTF_GetError());
 
-	Text text;
-	text.m_texture = SDL_CreateTextureFromSurface(m_renderer, surface);
+	if (surface == nullptr)
+		throw std::runtime_error(TTF_GetError());
 
+	SDL_Texture* const texture = SDL_CreateTextureFromSurface(m_renderer, surface);
 	SDL_FreeSurface(surface);
-	if (text.m_texture == nullptr) throw std::runtime_error(SDL_GetError());
 
-	SDL_QueryTexture(text.m_texture, nullptr, nullptr, &text.m_width, &text.m_height);
-	return text;
+	if (texture == nullptr)
+		throw std::runtime_error(SDL_GetError());
+
+	return texture;
 }

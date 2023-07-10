@@ -25,7 +25,7 @@ void Info::Set(const std::string& msg)
 	Clear();
 
 	SDL_Renderer* const renderer = m_app.GetRenderer();
-	Text text = m_app.RenderText(msg, 0);
+	Texture text(m_app.RenderText(msg, 0));
 
 	m_width = text.GetWidth();
 	m_height = text.GetHeight();
@@ -34,7 +34,7 @@ void Info::Set(const std::string& msg)
 	SDL_SetRenderTarget(renderer, m_renderOutput);
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
 	SDL_RenderClear(renderer);
-	SDL_RenderCopy(renderer, text.GetTexture(), nullptr, nullptr);
+	SDL_RenderCopy(renderer, text.Get(), nullptr, nullptr);
 }
 
 void Info::HandleEvent(SDL_Event& sdlEvent)

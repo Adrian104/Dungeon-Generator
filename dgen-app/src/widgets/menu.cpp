@@ -30,10 +30,10 @@ void Menu::Render()
 	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 	SDL_RenderFillRect(renderer, &rect);
 
-	Text text = m_app.RenderText(g_title, 0, TTF_STYLE_BOLD);
+	Texture text(m_app.RenderText(g_title, 0, TTF_STYLE_BOLD));
 
 	rect = { (g_menuWidth - text.GetWidth()) >> 1, g_menuTitleMargin, text.GetWidth(), text.GetHeight() };
-	SDL_RenderCopy(renderer, text.GetTexture(), nullptr, &rect);
+	SDL_RenderCopy(renderer, text.Get(), nullptr, &rect);
 
 	rect.x -= g_menuMargin;
 	rect.y -= g_menuMargin;
@@ -49,17 +49,17 @@ void Menu::Render()
 	{
 		const uint8_t color = mod == selected ? 0 : 0xFF;
 
-		text = m_app.RenderText(mod -> m_name, 0, TTF_STYLE_BOLD, { color, 0xFF, color, 0xFF });
+		text.Set(m_app.RenderText(mod -> m_name, 0, TTF_STYLE_BOLD, { color, 0xFF, color, 0xFF }));
 		rect = { (g_menuWidth - text.GetWidth()) >> 1, pos, text.GetWidth(), text.GetHeight() };
 		pos += g_menuInternalOffset;
 
-		SDL_RenderCopy(renderer, text.GetTexture(), nullptr, &rect);
+		SDL_RenderCopy(renderer, text.Get(), nullptr, &rect);
 
-		text = m_app.RenderText(mod -> GetValue(), 0);
+		text.Set(m_app.RenderText(mod -> GetValue(), 0));
 		rect = { (g_menuWidth - text.GetWidth()) >> 1, pos, text.GetWidth(), text.GetHeight() };
 		pos += g_menuExternalOffset;
 
-		SDL_RenderCopy(renderer, text.GetTexture(), nullptr, &rect);
+		SDL_RenderCopy(renderer, text.Get(), nullptr, &rect);
 	}
 }
 

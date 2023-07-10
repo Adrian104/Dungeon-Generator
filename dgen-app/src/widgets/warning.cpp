@@ -34,7 +34,7 @@ void Warning::Set(const std::string& msg)
 	Clear();
 
 	SDL_Renderer* const renderer = m_app.GetRenderer();
-	Text text = m_app.RenderText(msg, 0, TTF_STYLE_BOLD);
+	Texture text(m_app.RenderText(msg, 0, TTF_STYLE_BOLD));
 
 	m_width = text.GetWidth() + (g_warningMargin << 1);
 	m_height = text.GetHeight() + (g_warningMargin << 1);
@@ -48,5 +48,5 @@ void Warning::Set(const std::string& msg)
 	SDL_RenderDrawRect(renderer, nullptr);
 
 	const SDL_Rect dest = { g_warningMargin, g_warningMargin, text.GetWidth(), text.GetHeight() };
-	SDL_RenderCopy(renderer, text.GetTexture(), nullptr, &dest);
+	SDL_RenderCopy(renderer, text.Get(), nullptr, &dest);
 }

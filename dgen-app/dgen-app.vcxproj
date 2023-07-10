@@ -180,6 +180,7 @@
     <ClInclude Include="src\app.hpp" />
     <ClInclude Include="src\appmgr.hpp" />
     <ClInclude Include="src\global.hpp" />
+    <ClInclude Include="src\texture.hpp" />
     <ClInclude Include="src\vport.hpp" />
     <ClInclude Include="src\widgets\info.hpp" />
     <ClInclude Include="src\widgets\menu.hpp" />
