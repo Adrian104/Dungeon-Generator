@@ -44,8 +44,8 @@ struct Node
 {
 	static Node s_sentinel;
 
-	int m_gCost = 0;
-	int m_hCost = 0;
+	float m_gcost = 0;
+	float m_hcost = 0;
 
 	uint8_t m_path = 0;
 	uint8_t m_origin = 0;

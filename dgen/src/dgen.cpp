@@ -93,10 +93,10 @@ void Generator::Prepare()
 void Generator::FindPaths()
 {
 	uint32_t statusCounter = 1;
-	MinHeap<int, Node*> heap;
+	MinHeap<float, Node*> heap;
 
 	bt::Node<Cell>::s_defaultTraversal = bt::Traversal::POSTORDER;
-	const float gcostFactors[2] = { 1.0f, m_input -> m_pathCostFactor };
+	const float factors[2] = { 1.0f, m_input -> m_pathCostFactor };
 
 	for (auto& btNode : *m_root)
 	{
@@ -109,25 +109,17 @@ void Generator::FindPaths()
 		int rightIndex = btNode.m_right -> m_roomOffset;
 		const int rightCount = btNode.m_right -> m_roomCount;
 
-		switch (leftCount)
-		{
-		case 1: break;
-		case 2: leftIndex += static_cast<int>(m_random.GetBit()); break;
-		default: leftIndex += m_random.Get32() % leftCount;
-		}
+		if (leftCount > 1)
+			leftIndex += m_random.Get32() % leftCount;
 
-		switch (rightCount)
-		{
-		case 1: break;
-		case 2: rightIndex += static_cast<int>(m_random.GetBit()); break;
-		default: rightIndex += m_random.Get32() % rightCount;
-		}
+		if (rightCount > 1)
+			rightIndex += m_random.Get32() % rightCount;
 
 		Room* const start = m_rooms.data() + leftIndex;
 		Room* const stop = m_rooms.data() + rightIndex;
 
 		Node* crrNode = start;
-		start -> m_gCost = 0;
+		start -> m_gcost = 0;
 
 		do
 		{
@@ -154,9 +146,8 @@ void Generator::FindPaths()
 					p2 = crrRoom -> m_entrances[i];
 				}
 
-				const float factor = gcostFactors[(crrNode -> m_path >> i) & 1];
-				const int diff = std::abs(p1.x - p2.x) + std::abs(p1.y - p2.y);
-				const int newGCost = static_cast<int>(crrNode -> m_gCost + diff * factor);
+				const float diff = static_cast<float>(std::abs(p1.x - p2.x) + std::abs(p1.y - p2.y));
+				const float newGCost = crrNode -> m_gcost + diff * factors[(crrNode -> m_path >> i) & 1];
 
 				if (nNode -> m_status < statusCounter)
 				{
@@ -165,19 +156,19 @@ void Generator::FindPaths()
 
 					const float dist = std::sqrt(static_cast<float>(dx * dx + dy * dy));
 
-					nNode -> m_hCost = static_cast<int>(dist * m_input -> m_heuristicFactor);
+					nNode -> m_hcost = dist * m_input -> m_heuristicFactor;
 					nNode -> m_status = statusCounter;
 
 					goto add_to_heap;
 				}
 
-				if (newGCost < nNode -> m_gCost)
+				if (newGCost < nNode -> m_gcost)
 				{
 					add_to_heap:
 					nNode -> m_origin = i;
-					nNode -> m_gCost = newGCost;
+					nNode -> m_gcost = newGCost;
 
-					heap.Push(newGCost + nNode -> m_hCost, nNode);
+					heap.Push(newGCost + nNode -> m_hcost, nNode);
 				}
 			}
 
@@ -414,7 +405,7 @@ void Generator::GenerateRooms()
 		m_output -> m_rooms.emplace_back(priPos.x + offset.x, priPos.y + offset.y, priSize.x, priSize.y);
 
 		room.m_rectEnd = m_output -> m_rooms.size();
-		room.m_pos = Point(priPos.x + offset.x, priPos.y + offset.y);
+		room.m_pos = Point(priPos.x + offset.x + (priSize.x >> 1), priPos.y + offset.y + (priSize.y >> 1));
 
 		if (secPos.x == -1)
 		{
