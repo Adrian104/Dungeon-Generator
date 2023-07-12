@@ -1,4 +1,5 @@
 #include "menu.hpp"
+#include "input.hpp"
 
 Menu::Menu() : Animator(g_menuAnimTime)
 {
@@ -89,8 +90,11 @@ void Menu::HandleEvent(SDL_Event& sdlEvent)
 				m_selection = 0;
 			break;
 
-		case SDLK_RIGHT:
 		case SDLK_RETURN:
+			m_app.AccessWidget<Input>().Set(m_mods.at(m_selection));
+			break;
+
+		case SDLK_RIGHT:
 		case SDLK_EQUALS:
 			m_mods.at(m_selection) -> Increment();
 			m_app.ScheduleGeneration(Application::SeedMode::KEEP);

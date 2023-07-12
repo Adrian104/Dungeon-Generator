@@ -1,12 +1,14 @@
 #include "app.hpp"
 #include "widgets/menu.hpp"
 #include "widgets/info.hpp"
+#include "widgets/input.hpp"
 #include "widgets/warning.hpp"
 
 #include <cmath>
 #include <stdexcept>
 
 Application* Widget::s_app = nullptr;
+Widget* Widget::s_active = nullptr;
 
 void Application::Draw()
 {
@@ -222,6 +224,12 @@ bool Application::Update()
 		if (sdlEvent.type == SDL_QUIT)
 			return false;
 
+		if (Widget::s_active != nullptr)
+		{
+			Widget::s_active -> HandleEvent(sdlEvent);
+			goto next_event;
+		}
+
 		if (sdlEvent.type == SDL_KEYDOWN)
 		{
 			switch (sdlEvent.key.keysym.sym)
@@ -266,6 +274,7 @@ bool Application::Update()
 		for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
 			crr -> HandleEvent(sdlEvent);
 
+		next_event:
 		pending = SDL_PollEvent(&sdlEvent);
 	}
 

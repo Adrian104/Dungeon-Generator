@@ -13,7 +13,9 @@ struct Modifier
 	virtual void Increment() = 0;
 	virtual void Decrement() = 0;
 
+	virtual void Check() = 0;
 	virtual std::string GetValue() const = 0;
+	virtual void SetValue(const std::string& val) = 0;
 };
 
 struct FactorMod : public Modifier
@@ -26,7 +28,9 @@ struct FactorMod : public Modifier
 	void Increment() override { m_ref *= (1.0f + m_step); }
 	void Decrement() override { m_ref *= (1.0f - m_step); }
 
+	void Check() override { if (m_ref <= 0) m_ref = std::numeric_limits<float>::min(); }
 	std::string GetValue() const override { return std::to_string(m_ref); }
+	void SetValue(const std::string& val) override { m_ref = std::stof(val); }
 };
 
 struct PercentMod : public Modifier
@@ -39,7 +43,9 @@ struct PercentMod : public Modifier
 	void Increment() override { m_ref += m_step; if (m_ref > 1.0f) m_ref = 1.0f; }
 	void Decrement() override { m_ref -= m_step; if (m_ref < 0.0f) m_ref = 0.0f; }
 
+	void Check() override { if (m_ref < 0) m_ref = 0; else if (m_ref > 1.0f) m_ref = 1.0f; }
 	std::string GetValue() const override { return std::to_string(std::lround(m_ref * 100.0f)) + " %"; }
+	void SetValue(const std::string& val) override { m_ref = std::stof(val) / 100.0f; }
 };
 
 struct BoolMod : public Modifier
@@ -51,7 +57,9 @@ struct BoolMod : public Modifier
 	void Increment() override { m_ref = !m_ref; }
 	void Decrement() override { m_ref = !m_ref; }
 
+	void Check() override {}
 	std::string GetValue() const override { return m_ref ? "Enabled" : "Disabled"; }
+	void SetValue(const std::string& val) override { m_ref = val[0] == 't' || val[0] == 'e' || val[0] == '1'; }
 };
 
 struct IntMod : public Modifier
@@ -66,5 +74,7 @@ struct IntMod : public Modifier
 	void Increment() override { m_ref += m_ref < m_max; }
 	void Decrement() override { m_ref -= m_ref > m_min; }
 
+	void Check() override { if (m_ref < m_min) m_ref = m_min; else if (m_ref > m_max) m_ref = m_max; }
 	std::string GetValue() const override { return std::to_string(m_ref); }
+	void SetValue(const std::string& val) override { m_ref = std::stoi(val); }
 };

@@ -22,6 +22,8 @@ class Widget
 	Animator* m_animator = nullptr;
 
 	protected:
+	static Widget* s_active;
+
 	Widget() : m_app(*s_app) {}
 
 	public:
@@ -95,8 +97,9 @@ class Application : protected AppManager
 
 	friend class Menu;
 	friend class Info;
-	friend class Warning;
+	friend class Input;
 	friend class Widget;
+	friend class Warning;
 };
 
 inline void Widget::ScheduleRendering()

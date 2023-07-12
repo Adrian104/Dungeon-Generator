@@ -29,11 +29,17 @@ inline const int g_menuOutlineWidth = 3;
 inline const int g_menuInternalOffset = 20;
 inline const int g_menuExternalOffset = 35;
 
+inline const int g_inputWidth = 400;
+inline const int g_inputHeight = 100;
+inline const int g_inputXOffset1 = 15;
+inline const int g_inputXOffset2 = 170;
+
 inline const int g_warningMargin = 20;
 inline const float g_gridThresholdScale = 8.0f;
 
 inline const auto g_menuAnimTime = std::chrono::milliseconds(350);
 inline const auto g_infoAnimTime = std::chrono::milliseconds(100);
+inline const auto g_inputAnimTime = std::chrono::milliseconds(150);
 inline const auto g_warningAnimTime = std::chrono::milliseconds(500);
 
 inline const std::string g_title = "Dungeon Generator";
