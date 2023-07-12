@@ -114,6 +114,7 @@ struct GenInput
 	int m_spaceInterdistance;
 	int m_minDepth, m_maxDepth;
 
+	float m_pathCostFactor;
 	float m_doubleRoomProb;
 	float m_heuristicFactor;
 	float m_spaceSizeRandomness;

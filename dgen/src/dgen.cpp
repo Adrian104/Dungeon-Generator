@@ -96,6 +96,8 @@ void Generator::FindPaths()
 	MinHeap<int, Node*> heap;
 
 	bt::Node<Cell>::s_defaultTraversal = bt::Traversal::POSTORDER;
+	const float gcostFactors[2] = { 1.0f, m_input -> m_pathCostFactor };
+
 	for (auto& btNode : *m_root)
 	{
 		if ((btNode.m_flags & (1 << Cell::Flag::CONNECT_ROOMS)) == 0)
@@ -138,25 +140,23 @@ void Generator::FindPaths()
 				if (nNode -> m_status > statusCounter)
 					continue;
 
-				int newGCost = crrNode -> m_gCost;
-				if ((crrNode -> m_path & (1 << i)) == 0)
+				Point p1, p2;
+				if (crrRoom == nullptr)
 				{
-					Point p1, p2;
-					if (crrRoom == nullptr)
-					{
-						Room* const nRoom = nNode -> ToRoom();
+					Room* const nRoom = nNode -> ToRoom();
 
-						p1 = crrNode -> m_pos;
-						p2 = (nRoom != nullptr) ? nRoom -> m_entrances[i ^ 0b10] : nNode -> m_pos;
-					}
-					else
-					{
-						p1 = nNode -> m_pos;
-						p2 = crrRoom -> m_entrances[i];
-					}
-
-					newGCost += std::abs(p1.x - p2.x) + std::abs(p1.y - p2.y);
+					p1 = crrNode -> m_pos;
+					p2 = (nRoom != nullptr) ? nRoom -> m_entrances[i ^ 0b10] : nNode -> m_pos;
 				}
+				else
+				{
+					p1 = nNode -> m_pos;
+					p2 = crrRoom -> m_entrances[i];
+				}
+
+				const float factor = gcostFactors[(crrNode -> m_path >> i) & 1];
+				const int diff = std::abs(p1.x - p2.x) + std::abs(p1.y - p2.y);
+				const int newGCost = static_cast<int>(crrNode -> m_gCost + diff * factor);
 
 				if (nNode -> m_status < statusCounter)
 				{

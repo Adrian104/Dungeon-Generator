@@ -346,6 +346,7 @@ void Application::LoadDefaults()
 	m_input.m_maxDepth = g_maxDepth;
 	m_input.m_minRoomSize = g_minRoomSize;
 	m_input.m_maxRoomSize = g_maxRoomSize;
+	m_input.m_pathCostFactor = g_pathCostFactor;
 	m_input.m_sparseAreaDens = g_sparseAreaDens;
 	m_input.m_sparseAreaProb = g_sparseAreaProb;
 	m_input.m_sparseAreaDepth = g_sparseAreaDepth;
@@ -369,6 +370,7 @@ void Application::SetupWidgets()
 	menu.Add<PercentMod>("Heuristic", m_input.m_heuristicFactor);
 	menu.Add<PercentMod>("Minimum room size", m_input.m_minRoomSize);
 	menu.Add<PercentMod>("Maximum room size", m_input.m_maxRoomSize);
+	menu.Add<PercentMod>("Path cost factor", m_input.m_pathCostFactor);
 	menu.Add<PercentMod>("Space randomness", m_input.m_spaceSizeRandomness);
 	menu.Add<PercentMod>("Double room probability", m_input.m_doubleRoomProb);
 	menu.Add<IntMod>("Space interdistance", m_input.m_spaceInterdistance);

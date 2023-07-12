@@ -11,6 +11,7 @@ inline const int g_spaceInterdistance = 2;
 inline const float g_factor = 1.0f;
 inline const float g_minRoomSize = 0.25f;
 inline const float g_maxRoomSize = 0.75f;
+inline const float g_pathCostFactor = 0;
 inline const float g_sparseAreaDens = 0.5f;
 inline const float g_sparseAreaProb = 0.25f;
 inline const float g_doubleRoomProb = 0.25f;
