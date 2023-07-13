@@ -72,7 +72,7 @@ void Application::Render()
 				continue;
 
 			if (btNode.m_flags & (1 << Cell::Flag::SPARSE_AREA))
-				SDL_SetRenderDrawColor(renderer, 0x55, 0, 0, 0xFF);
+				SDL_SetRenderDrawColor(renderer, 0x50, 0x40, 0x40, 0xFF);
 			else
 				SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
 
