@@ -4,6 +4,8 @@
 
 inline const int g_minDepth = 9;
 inline const int g_maxDepth = 10;
+inline const int g_extraPathCount = 0;
+inline const int g_extraPathDepth = 0;
 inline const int g_sparseAreaDepth = 2;
 inline const int g_spaceInterdistance = 2;
 

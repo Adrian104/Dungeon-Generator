@@ -28,7 +28,7 @@ enum Dir { NORTH, EAST, SOUTH, WEST };
 
 struct Cell
 {
-	enum Flag : uint32_t { SPARSE_AREA, GENERATE_ROOMS, CONNECT_ROOMS };
+	enum Flag : uint32_t { RANDOM_PATH, SPARSE_AREA, GENERATE_ROOMS, CONNECT_ROOMS };
 
 	uint32_t m_flags = 0;
 	Rect m_space{};
@@ -109,6 +109,8 @@ struct GenInput
 	uint64_t m_seed;
 	bool m_generateFewerPaths;
 
+	int m_extraPathCount;
+	int m_extraPathDepth;
 	int m_sparseAreaDepth;
 	int m_width, m_height;
 	int m_spaceInterdistance;
@@ -137,6 +139,7 @@ struct Generator
 	int m_deltaDepth = 0;
 	int m_targetDepth = 0;
 	int m_minSpaceSize = 0;
+	int m_randPathDepth = 0;
 	float m_minSpaceRand = 0;
 
 	int m_totalRoomCount = 0;
@@ -164,6 +167,7 @@ struct Generator
 
 	uint32_t GenerateTree(bt::Node<Cell>& btNode, int left);
 	static void DeleteTree(bt::Node<Cell>* btNode);
+	static int GetNearestRoomTo(const Point point, bt::Node<Cell>* btNode);
 
 	Generator() = default;
 	~Generator() { Clear(); }

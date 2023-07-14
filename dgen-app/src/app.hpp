@@ -55,7 +55,6 @@ class Application : protected AppManager
 	float m_factor;
 	bool m_debugView = false;
 	bool m_fullscreen = false;
-	bool m_displayHelp = true;
 
 	GenInput m_input;
 	GenOutput m_output;

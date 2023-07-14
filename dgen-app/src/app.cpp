@@ -348,6 +348,8 @@ void Application::LoadDefaults()
 	m_input.m_minRoomSize = g_minRoomSize;
 	m_input.m_maxRoomSize = g_maxRoomSize;
 	m_input.m_pathCostFactor = g_pathCostFactor;
+	m_input.m_extraPathCount = g_extraPathCount;
+	m_input.m_extraPathDepth = g_extraPathDepth;
 	m_input.m_sparseAreaDens = g_sparseAreaDens;
 	m_input.m_sparseAreaProb = g_sparseAreaProb;
 	m_input.m_sparseAreaDepth = g_sparseAreaDepth;
@@ -363,9 +365,10 @@ void Application::LoadDefaults()
 
 void Application::SetupWidgets()
 {
-	if (m_displayHelp)
+	static bool s_displayHelp = true;
+	if (s_displayHelp)
 	{
-		m_displayHelp = false;
+		s_displayHelp = false;
 		Widget::s_active = &AccessWidget<Help>();
 	}
 
@@ -378,6 +381,8 @@ void Application::SetupWidgets()
 	menu.Add<PercentMod>("Minimum room size", m_input.m_minRoomSize);
 	menu.Add<PercentMod>("Maximum room size", m_input.m_maxRoomSize);
 	menu.Add<PercentMod>("Path cost factor", m_input.m_pathCostFactor);
+	menu.Add<IntMod>("Extra path count", m_input.m_extraPathCount);
+	menu.Add<IntMod>("Extra path depth", m_input.m_extraPathDepth);
 	menu.Add<PercentMod>("Space randomness", m_input.m_spaceSizeRandomness);
 	menu.Add<PercentMod>("Double room probability", m_input.m_doubleRoomProb);
 	menu.Add<IntMod>("Space interdistance", m_input.m_spaceInterdistance);

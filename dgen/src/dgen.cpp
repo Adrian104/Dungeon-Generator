@@ -88,6 +88,7 @@ void Generator::Prepare()
 	m_partialPathCount = 0;
 
 	m_deltaDepth = m_input -> m_maxDepth - m_input -> m_minDepth;
+	m_randPathDepth = m_input -> m_maxDepth - m_input -> m_extraPathDepth;
 }
 
 void Generator::FindPaths()
@@ -103,20 +104,40 @@ void Generator::FindPaths()
 		if ((btNode.m_flags & (1 << Cell::Flag::CONNECT_ROOMS)) == 0)
 			continue;
 
-		int leftIndex = btNode.m_left -> m_roomOffset;
-		const int leftCount = btNode.m_left -> m_roomCount;
+		int n = 1; int d = 2;
+		Room* start; Room* stop;
 
-		int rightIndex = btNode.m_right -> m_roomOffset;
-		const int rightCount = btNode.m_right -> m_roomCount;
+		if (btNode.m_flags & (1 << Cell::Flag::RANDOM_PATH))
+		{
+			int leftIndex = btNode.m_left -> m_roomOffset;
+			const int leftCount = btNode.m_left -> m_roomCount;
 
-		if (leftCount > 1)
-			leftIndex += m_random.Get32() % leftCount;
+			int rightIndex = btNode.m_right -> m_roomOffset;
+			const int rightCount = btNode.m_right -> m_roomCount;
 
-		if (rightCount > 1)
-			rightIndex += m_random.Get32() % rightCount;
+			if (leftCount > 1)
+				leftIndex += m_random.Get32() % leftCount;
 
-		Room* const start = m_rooms.data() + leftIndex;
-		Room* const stop = m_rooms.data() + rightIndex;
+			if (rightCount > 1)
+				rightIndex += m_random.Get32() % rightCount;
+
+			start = m_rooms.data() + leftIndex;
+			stop = m_rooms.data() + rightIndex;
+		}
+		else
+		{
+			n += m_input -> m_extraPathCount;
+			d += m_input -> m_extraPathCount;
+
+			next_path:
+			const auto [xL, yL, wL, hL] = btNode.m_left -> m_space;
+			const auto [xR, yR, wR, hR] = btNode.m_right -> m_space;
+
+			const Point center = xL + wL <= xR ? Point(xR, yR + n * hR / d) : Point(xR + n * wR / d, yR);
+
+			start = m_rooms.data() + GetNearestRoomTo(center, btNode.m_left);
+			stop = m_rooms.data() + GetNearestRoomTo(center, btNode.m_right);
+		}
 
 		Node* crrNode = start;
 		start -> m_gcost = 0;
@@ -194,6 +215,9 @@ void Generator::FindPaths()
 			crrNode -> m_path |= 1 << origin;
 
 		} while (crrNode != start);
+
+		if (--n > 0)
+			goto next_path;
 	}
 }
 
@@ -586,6 +610,8 @@ void Generator::GenerateOutput()
 
 uint32_t Generator::GenerateTree(bt::Node<Cell>& btNode, int left)
 {
+	btNode.m_flags |= static_cast<uint32_t>(left <= m_randPathDepth) << Cell::Flag::RANDOM_PATH;
+
 	if (left <= m_input -> m_sparseAreaDepth)
 		btNode.m_flags |= static_cast<uint32_t>(m_random.GetFP32() < m_input -> m_sparseAreaProb) << Cell::Flag::SPARSE_AREA;
 
@@ -674,6 +700,24 @@ void Generator::DeleteTree(bt::Node<Cell>* btNode)
 	btNode -> m_left -> ~Node<Cell>();
 
 	operator delete[](btNode -> m_left);
+}
+
+int Generator::GetNearestRoomTo(const Point point, bt::Node<Cell>* btNode)
+{
+	if (btNode -> m_left == nullptr)
+		return btNode -> m_roomOffset;
+
+	const auto [xL, yL, wL, hL] = btNode -> m_left -> m_space;
+	const auto [xR, yR, wR, hR] = btNode -> m_right -> m_space;
+
+	const int l = std::abs(xL + (wL >> 1) - point.x) + std::abs(yL + (hL >> 1) - point.y);
+	const int r = std::abs(xR + (wR >> 1) - point.x) + std::abs(yR + (hR >> 1) - point.y);
+
+	static constexpr int s_maxOffset = std::numeric_limits<int>::max();
+	bt::Node<Cell>* const nextNodes[2] = { btNode -> m_left, btNode -> m_right };
+
+	const int offset = GetNearestRoomTo(point, nextNodes[l > r]);
+	return offset != s_maxOffset ? offset : GetNearestRoomTo(point, nextNodes[l <= r]);
 }
 
 void Generator::Generate(const GenInput* input, GenOutput* output)

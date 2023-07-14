@@ -100,6 +100,8 @@ void Config::Load(ini::section_type& section, bool req)
 	ini::Get(section, "minRoomSize", m_minRoomSize, req);
 	ini::Get(section, "maxRoomSize", m_maxRoomSize, req);
 	ini::Get(section, "pathCostFactor", m_pathCostFactor, req);
+	ini::Get(section, "extraPathCount", m_extraPathCount, req);
+	ini::Get(section, "extraPathDepth", m_extraPathDepth, req);
 	ini::Get(section, "sparseAreaDens", m_sparseAreaDens, req);
 	ini::Get(section, "sparseAreaProb", m_sparseAreaProb, req);
 	ini::Get(section, "sparseAreaDepth", m_sparseAreaDepth, req);
