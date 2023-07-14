@@ -1,6 +1,5 @@
 #pragma once
 #include <chrono>
-#include <string>
 #include <utility>
 
 inline const int g_minDepth = 9;
@@ -30,6 +29,10 @@ inline const int g_menuOutlineWidth = 3;
 inline const int g_menuInternalOffset = 18;
 inline const int g_menuExternalOffset = 30;
 
+inline const int g_helpXOffset = 22;
+inline const int g_helpYOffset = 8;
+inline const int g_helpAnyKeyOffset = 36;
+
 inline const int g_inputWidth = 400;
 inline const int g_inputHeight = 100;
 inline const int g_inputXOffset1 = 15;
@@ -40,8 +43,22 @@ inline const float g_gridThresholdScale = 8.0f;
 
 inline const auto g_menuAnimTime = std::chrono::milliseconds(350);
 inline const auto g_infoAnimTime = std::chrono::milliseconds(100);
+inline const auto g_helpAnimTime = std::chrono::milliseconds(500);
 inline const auto g_inputAnimTime = std::chrono::milliseconds(150);
 inline const auto g_warningAnimTime = std::chrono::milliseconds(500);
 
-inline const std::string g_title = "Dungeon Generator";
-inline const std::pair<int, std::string> g_fonts[] = { std::pair<int, std::string>(16, "res/Lato-Regular.ttf") };
+inline const char* const g_title = "Dungeon Generator";
+inline const std::pair<int, const char*> g_fonts[] = { std::pair<int, const char*>(16, "res/Lato-Regular.ttf") };
+inline const std::pair<const char*, const char*> g_buttonDescriptions[] =
+{
+	std::pair<const char*, const char*>("G", "Generate map with random seed"),
+	std::pair<const char*, const char*>("N", "Generate map with next seed"),
+	std::pair<const char*, const char*>("I", "Toggle information window"),
+	std::pair<const char*, const char*>("D", "Toggle debug view"),
+	std::pair<const char*, const char*>("R", "Reset all settings"),
+	std::pair<const char*, const char*>("Tab", "Reset viewport"),
+	std::pair<const char*, const char*>("F11", "Toggle fullscreen"),
+	std::pair<const char*, const char*>("Enter", "Open input dialog"),
+	std::pair<const char*, const char*>("Arrows", "Select/modify variable"),
+	std::pair<const char*, const char*>("Esc", "Exit")
+};

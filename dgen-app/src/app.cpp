@@ -1,6 +1,7 @@
 #include "app.hpp"
 #include "widgets/menu.hpp"
 #include "widgets/info.hpp"
+#include "widgets/help.hpp"
 #include "widgets/input.hpp"
 #include "widgets/warning.hpp"
 
@@ -362,6 +363,12 @@ void Application::LoadDefaults()
 
 void Application::SetupWidgets()
 {
+	if (m_displayHelp)
+	{
+		m_displayHelp = false;
+		Widget::s_active = &AccessWidget<Help>();
+	}
+
 	Menu& menu = AccessWidget<Menu>();
 
 	menu.Add<FactorMod>("Size factor", m_factor);
