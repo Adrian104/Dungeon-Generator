@@ -4,19 +4,19 @@
 
 inline const int g_minDepth = 9;
 inline const int g_maxDepth = 10;
-inline const int g_extraPathCount = 0;
-inline const int g_extraPathDepth = 0;
+inline const int g_extraPathCount = 3;
+inline const int g_extraPathDepth = 2;
 inline const int g_sparseAreaDepth = 2;
-inline const int g_spaceInterdistance = 2;
+inline const int g_spaceInterdistance = 1;
 
 inline const float g_factor = 1.0f;
-inline const float g_minRoomSize = 0.25f;
+inline const float g_minRoomSize = 0.45f;
 inline const float g_maxRoomSize = 0.75f;
-inline const float g_pathCostFactor = 0;
-inline const float g_sparseAreaDens = 0.5f;
-inline const float g_sparseAreaProb = 0.25f;
-inline const float g_doubleRoomProb = 0.25f;
-inline const float g_heuristicFactor = 0.75f;
+inline const float g_pathCostFactor = 0.4f;
+inline const float g_sparseAreaDens = 0.4f;
+inline const float g_sparseAreaProb = 0.2f;
+inline const float g_doubleRoomProb = 0.35f;
+inline const float g_heuristicFactor = 0.4f;
 inline const float g_spaceSizeRandomness = 0.35f;
 
 inline const bool g_visRooms = true;
