@@ -59,20 +59,20 @@ void TimedGenerator::TimedGenerate(Probe& probe, const GenInput* input)
 	Prepare();
 	probe.Measure("Prepare");
 
-	GenerateTree(*m_root, m_input -> m_maxDepth);
+	GenerateTree(*m_rootNode, m_input -> m_maxDepth);
 	probe.Measure("Generate Tree");
 
 	GenerateRooms();
 	probe.Measure("Generate Rooms");
 
-	CreateNodes();
-	probe.Measure("Create Nodes");
+	CreateVertices();
+	probe.Measure("Create Vertices");
 
 	FindPaths();
 	probe.Measure("Find Paths");
 
-	OptimizeNodes();
-	probe.Measure("Optimize Nodes");
+	OptimizeVertices();
+	probe.Measure("Optimize Vertices");
 
 	GenerateOutput();
 	probe.Measure("Generate Output");

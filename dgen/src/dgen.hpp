@@ -40,9 +40,9 @@ struct Cell
 	Cell(int w, int h) : m_space(0, 0, w, h) {}
 };
 
-struct Node
+struct Vertex
 {
-	static Node s_sentinel;
+	static Vertex s_sentinel;
 
 	float m_gcost = 0;
 	float m_hcost = 0;
@@ -52,10 +52,10 @@ struct Node
 	uint32_t m_status = 0;
 
 	Point m_pos{};
-	Node* m_links[4]{ &s_sentinel, &s_sentinel, &s_sentinel, &s_sentinel };
+	Vertex* m_links[4]{ &s_sentinel, &s_sentinel, &s_sentinel, &s_sentinel };
 
-	Node() = default;
-	Node(uint32_t status) : m_status(status) {}
+	Vertex() = default;
+	Vertex(uint32_t status) : m_status(status) {}
 
 	virtual Room* ToRoom() { return nullptr; }
 };
@@ -75,7 +75,7 @@ struct Tag
 	union
 	{
 		Data m_data{};
-		Node* m_node;
+		Vertex* m_vertex;
 	};
 
 	Tag();
@@ -93,14 +93,14 @@ struct RadixSort
 	void Sort(Tag* arr, const size_t size);
 };
 
-struct Room final : public Node
+struct Room final : public Vertex
 {
-	bt::Node<Cell>& m_btNode;
+	Node<Cell>& m_node;
 	Point m_entrances[4]{};
 	size_t m_rectBegin = 0;
 	size_t m_rectEnd = 0;
 
-	Room(bt::Node<Cell>& btNode) : m_btNode(btNode) {}
+	Room(Node<Cell>& node) : m_node(node) {}
 	Room* ToRoom() override { return this; }
 };
 
@@ -151,23 +151,23 @@ struct Generator
 	const GenInput* m_input = nullptr;
 
 	std::vector<Tag> m_tags;
-	std::vector<Node> m_nodes;
 	std::vector<Room> m_rooms;
-	bt::Node<Cell>* m_root = nullptr;
+	std::vector<Vertex> m_vertices;
+	Node<Cell>* m_rootNode = nullptr;
 
 	static constexpr int s_roomSizeLimit = 4;
 
 	void Clear();
 	void Prepare();
 	void FindPaths();
-	void CreateNodes();
-	void OptimizeNodes();
+	void CreateVertices();
+	void OptimizeVertices();
 	void GenerateRooms();
 	void GenerateOutput();
 
-	uint32_t GenerateTree(bt::Node<Cell>& btNode, int left);
-	static void DeleteTree(bt::Node<Cell>* btNode);
-	static int GetNearestRoomTo(const Point point, bt::Node<Cell>* btNode);
+	uint32_t GenerateTree(Node<Cell>& node, int left);
+	static void DeleteTree(Node<Cell>* node);
+	static int GetNearestRoomTo(const Point point, Node<Cell>* node);
 
 	Generator() = default;
 	~Generator() { Clear(); }
