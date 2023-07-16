@@ -1,5 +1,5 @@
 #pragma once
-#include "dgen.hpp"
+#include "dgen_impl.hpp"
 #include "ini_utils.hpp"
 
 #include <chrono>
@@ -29,13 +29,13 @@ class Probe
 	friend class Trial;
 };
 
-class TimedGenerator : protected Generator
+class TimedGenerator : protected dg::impl::Generator
 {
 	public:
-	void TimedGenerate(Probe& probe, const GenInput* input);
+	void TimedGenerate(Probe& probe, const dg::Input* input);
 };
 
-class Config : public GenInput
+class Config : public dg::Input
 {
 	public:
 	int m_minIter;

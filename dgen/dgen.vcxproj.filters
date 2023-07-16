@@ -18,7 +18,7 @@
     <ClInclude Include="src\bin_tree.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="src\dgen.hpp">
+    <ClInclude Include="src\dgen_impl.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="src\heap.hpp">
@@ -27,9 +27,12 @@
     <ClInclude Include="src\rand.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
+    <ClInclude Include="include\dgen\dgen.hpp">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\dgen.cpp">
+    <ClCompile Include="src\dgen_impl.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
   </ItemGroup>

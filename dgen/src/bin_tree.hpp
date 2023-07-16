@@ -2,8 +2,8 @@
 #include <iterator>
 #include <utility>
 
-//namespace bt
-//{
+namespace dg::impl
+{
 	using state_type = unsigned int;
 	enum class Traversal : state_type { PREORDER, INORDER, POSTORDER };
 
@@ -139,4 +139,4 @@
 
 	template <typename Type>
 	Traversal Node<Type>::s_defaultTraversal = Traversal::PREORDER;
-//}
+}

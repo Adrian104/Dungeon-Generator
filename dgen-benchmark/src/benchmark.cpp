@@ -48,9 +48,9 @@ void Probe::ComputeHash(const void* data, size_t size)
 	}
 }
 
-void TimedGenerator::TimedGenerate(Probe& probe, const GenInput* input)
+void TimedGenerator::TimedGenerate(Probe& probe, const dg::Input* input)
 {
-	GenOutput output;
+	dg::Output output;
 
 	probe.Start();
 	m_input = input;

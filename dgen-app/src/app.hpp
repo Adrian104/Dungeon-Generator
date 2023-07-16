@@ -1,7 +1,7 @@
 #pragma once
 #include "anim.hpp"
 #include "appmgr.hpp"
-#include "dgen.hpp"
+#include "dgen_impl.hpp"
 #include "global.hpp"
 #include "vport.hpp"
 
@@ -56,9 +56,9 @@ class Application : protected AppManager
 	bool m_debugView = false;
 	bool m_fullscreen = false;
 
-	GenInput m_input;
-	GenOutput m_output;
-	Generator m_generator;
+	dg::Input m_input;
+	dg::Output m_output;
+	dg::impl::Generator m_generator;
 
 	Viewport m_viewport;
 	std::random_device m_randomDevice;

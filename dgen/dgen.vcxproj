@@ -155,13 +155,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\dgen\dgen.hpp" />
     <ClInclude Include="src\bin_tree.hpp" />
-    <ClInclude Include="src\dgen.hpp" />
+    <ClInclude Include="src\dgen_impl.hpp" />
     <ClInclude Include="src\heap.hpp" />
     <ClInclude Include="src\rand.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\dgen.cpp" />
+    <ClCompile Include="src\dgen_impl.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
