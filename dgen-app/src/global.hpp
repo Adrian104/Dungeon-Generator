@@ -2,6 +2,9 @@
 #include <chrono>
 #include <utility>
 
+extern unsigned char g_fontData[];
+extern unsigned int g_fontDataSize;
+
 inline const int g_minDepth = 9;
 inline const int g_maxDepth = 10;
 inline const int g_extraPathCount = 3;
@@ -50,7 +53,6 @@ inline const auto g_inputAnimTime = std::chrono::milliseconds(150);
 inline const auto g_warningAnimTime = std::chrono::milliseconds(500);
 
 inline const char* const g_title = "Dungeon Generator";
-inline const std::pair<int, const char*> g_fonts[] = { std::pair<int, const char*>(16, "res/Lato-Regular.ttf") };
 inline const std::pair<const char*, const char*> g_buttonDescriptions[] =
 {
 	std::pair<const char*, const char*>("G", "Generate map with random seed"),

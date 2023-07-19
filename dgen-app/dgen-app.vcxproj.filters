@@ -1,90 +1,90 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Pliki źródłowe">
+    <Filter Include="Source Files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Pliki nagłówkowe">
+    <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Pliki zasobów">
+    <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Font Include="res\Quicksand-Regular.ttf" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="src\anim.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\app.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\appmgr.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\main.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\vport.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\widgets\menu.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\widgets\warning.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\widgets\info.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\widgets\input.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\widgets\help.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="res\Lato-Regular.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\anim.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\app.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\appmgr.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\global.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\vport.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\widgets\mod.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\widgets\menu.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\widgets\warning.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\widgets\info.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\texture.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\widgets\input.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\widgets\help.hpp">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

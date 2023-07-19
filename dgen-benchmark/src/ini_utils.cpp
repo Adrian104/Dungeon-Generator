@@ -18,7 +18,11 @@ namespace ini
 	void Load(container_type& container, const std::string& path)
 	{
 		std::ifstream file(path);
-		if (!file.good()) return;
+		if (!file.good())
+		{
+			std::cerr << " Could not open '" << path << "' file\n";
+			return;
+		}
 
 		std::string line;
 		section_type* section = &(container[""]);

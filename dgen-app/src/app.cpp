@@ -411,11 +411,7 @@ void Application::Init(bool full)
 	Quit(full);
 
 	if (full)
-	{
-		int index = 0;
-		for (const auto& [size, path] : g_fonts)
-			LoadFont(index++, size, path);
-	}
+		LoadFont(0, 16, g_fontData, g_fontDataSize);
 
 	SDL_DisplayMode dm;
 	SDL_GetCurrentDisplayMode(0, &dm);
