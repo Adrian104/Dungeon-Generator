@@ -25,6 +25,9 @@ namespace dg::impl
 
 	inline void Random::Seed(uint64_t seed)
 	{
+		// Algorithm: SplitMix64
+		// Source: https://prng.di.unimi.it/splitmix64.c
+
 		for (uint64_t& state : m_state)
 		{
 			uint64_t z = (seed += 0x9e3779b97f4a7c15);
@@ -61,6 +64,9 @@ namespace dg::impl
 
 	inline uint64_t Random::Get64()
 	{
+		// Algorithm: xoshiro256+
+		// Source: https://prng.di.unimi.it/xoshiro256plus.c
+
 		const uint64_t result = m_state[0] + m_state[3];
 		const uint64_t t = m_state[1] << 17;
 

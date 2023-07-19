@@ -745,23 +745,23 @@ namespace dg
 		Input in{};
 
 		in.m_seed = 0;
-		in.m_generateFewerPaths = true;
-		in.m_extraPathCount = 2;
-		in.m_extraPathDepth = 2;
-		in.m_sparseAreaDepth = 1;
 		in.m_width = 800;
 		in.m_height = 800;
-		in.m_spaceInterdistance = 1;
 		in.m_minDepth = 7;
 		in.m_maxDepth = 8;
-		in.m_pathCostFactor = 0.4f;
-		in.m_doubleRoomProb = 0.35f;
-		in.m_heuristicFactor = 0.4f;
+		in.m_spaceInterdistance = 1;
 		in.m_spaceSizeRandomness = 0.35f;
-		in.m_minRoomSize = 0.45f;
-		in.m_maxRoomSize = 0.75f;
+		in.m_sparseAreaDepth = 1;
 		in.m_sparseAreaDens = 0.4f;
 		in.m_sparseAreaProb = 0.2f;
+		in.m_minRoomSize = 0.45f;
+		in.m_maxRoomSize = 0.75f;
+		in.m_doubleRoomProb = 0.35f;
+		in.m_heuristicFactor = 0.4f;
+		in.m_pathCostFactor = 0.4f;
+		in.m_extraPathCount = 2;
+		in.m_extraPathDepth = 2;
+		in.m_generateFewerPaths = true;
 
 		return in;
 	}
