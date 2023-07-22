@@ -1,4 +1,5 @@
-#pragma once
+// SPDX-FileCopyrightText: Copyright (c) 2023 Adrian Kulawik
+// SPDX-License-Identifier: MIT
 
 /**********************************************************
  * This file contains declarations of all public variables,
@@ -8,6 +9,8 @@
  * For implementation declarations and definitions, check
  * dgen_impl.hpp and dgen_impl.cpp files respectively.
  *********************************************************/
+
+#pragma once
 
 #include <cstdint>
 #include <utility>

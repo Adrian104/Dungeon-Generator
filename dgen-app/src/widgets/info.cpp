@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2023 Adrian Kulawik
+// SPDX-License-Identifier: MIT
+
 #include "info.hpp"
 
 void Info::Clear()

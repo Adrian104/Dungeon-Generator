@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2023 Adrian Kulawik
+// SPDX-License-Identifier: MIT
+
 #pragma once
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>

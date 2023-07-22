@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2023 Adrian Kulawik
+// SPDX-License-Identifier: MIT
+
 #include "vport.hpp"
 
 void Viewport::Move(int xMouse, int yMouse)

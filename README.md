@@ -1,5 +1,5 @@
 ![](https://github.com/Adrian104/Dungeon-Generator/blob/master/resources/logo.png)
-### Dungeon-Generator is a free BSP-based procedural 2D map generator, written in C++.
+### Dungeon-Generator is a free and open-source BSP-based procedural 2D map generator, written in C++.
 
 # Features
 * Various settings allow you to precisely customize the appearance of the dungeon.
@@ -9,24 +9,23 @@
 * And a lot more!
 
 # Example usage
-This library is very easy to use:
 ```C++
 #include <dgen/dgen.hpp>
 
 int main()
 {
-	dg::Input input = dg::GetExampleInput();
-	dg::Output output{};
+    dg::Input input = dg::GetExampleInput();
+    dg::Output output{};
 
-	// In reality, you should set input member variables to your liking
-	// and not depend on dg::GetExampleInput().
+    // In reality, you should set input member variables to your liking
+    // and not depend on dg::GetExampleInput().
 
-	dg::Generate(&input, &output);
+    dg::Generate(&input, &output);
 
-	// Geometry of a dungeon is now generated, it should be processed
-	// further (e.g., converting it to a tile map, postprocessing).
+    // Geometry of a dungeon is now generated, it should be processed
+    // further (e.g., converting it to a tile map, postprocessing).
 
-	return 0;
+    return 0;
 }
 ```
 

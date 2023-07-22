@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2023 Adrian Kulawik
+// SPDX-License-Identifier: MIT
+
 #include "app.hpp"
 #include "widgets/menu.hpp"
 #include "widgets/info.hpp"
