@@ -1,4 +1,7 @@
 ![](https://github.com/Adrian104/Dungeon-Generator/blob/master/resources/logo.png)
+---
+![](https://img.shields.io/github/license/Adrian104/Dungeon-Generator)
+![](https://img.shields.io/github/languages/top/Adrian104/Dungeon-Generator)
 ### Dungeon-Generator is a free and open-source BSP-based procedural 2D map generator, written in C++.
 
 # Features
