@@ -21,8 +21,8 @@ void Application::Draw()
 	SDL_SetRenderTarget(renderer, nullptr);
 	SDL_RenderCopy(renderer, m_renderOutput, nullptr, nullptr);
 
-	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
-		crr -> Draw();
+	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr->m_next)
+		crr->Draw();
 
 	SDL_RenderPresent(renderer);
 }
@@ -104,7 +104,7 @@ void Application::Render()
 					continue;
 
 				SDL_FPoint p1{ room.m_entrances[i].x + 0.5f, room.m_entrances[i].y + 0.5f };
-				SDL_FPoint p2{ room.m_links[i] -> m_pos.x + 0.5f, room.m_links[i] -> m_pos.y + 0.5f };
+				SDL_FPoint p2{ room.m_links[i]->m_pos.x + 0.5f, room.m_links[i]->m_pos.y + 0.5f };
 
 				m_viewport.ToScreen(p1.x, p1.y, p1.x, p1.y);
 				m_viewport.ToScreen(p2.x, p2.y, p2.x, p2.y);
@@ -123,10 +123,10 @@ void Application::Render()
 			for (int i = m_input.m_seed & 0b10; i < end; i++)
 			{
 				dg::impl::Vertex* const vertex2 = vertex.m_links[i];
-				if (vertex2 == &dg::impl::Vertex::s_sentinel || vertex2 -> ToRoom() != nullptr)
+				if (vertex2 == &dg::impl::Vertex::s_sentinel || vertex2->ToRoom() != nullptr)
 					continue;
 
-				SDL_FPoint p2 = { static_cast<float>(vertex2 -> m_pos.x + 0.5f), static_cast<float>(vertex2 -> m_pos.y + 0.5f) };
+				SDL_FPoint p2 = { static_cast<float>(vertex2->m_pos.x + 0.5f), static_cast<float>(vertex2->m_pos.y + 0.5f) };
 				m_viewport.ToScreen(p2.x, p2.y, p2.x, p2.y);
 				SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
 			}
@@ -210,12 +210,12 @@ void Application::Render()
 
 bool Application::Update()
 {
-	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
+	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr->m_next)
 	{
-		Animator* const animator = crr -> m_animator;
-		if (animator != nullptr && animator -> IsPlaying())
+		Animator* const animator = crr->m_animator;
+		if (animator != nullptr && animator->IsPlaying())
 		{
-			animator -> Update();
+			animator->Update();
 			Schedule(Task::DRAW);
 		}
 	}
@@ -230,7 +230,7 @@ bool Application::Update()
 
 		if (Widget::s_active != nullptr)
 		{
-			Widget::s_active -> HandleEvent(sdlEvent);
+			Widget::s_active->HandleEvent(sdlEvent);
 			goto next_event;
 		}
 
@@ -275,8 +275,8 @@ bool Application::Update()
 		if (m_viewport.Update(sdlEvent))
 			Schedule(Task::RENDER);
 
-		for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
-			crr -> HandleEvent(sdlEvent);
+		for (Widget* crr = m_widgetList; crr != nullptr; crr = crr->m_next)
+			crr->HandleEvent(sdlEvent);
 
 		next_event:
 		pending = SDL_PollEvent(&sdlEvent);
@@ -329,7 +329,7 @@ void Application::Generate()
 		AccessWidget<Info>().Set("seed: " + seed + ", rooms: " + rooms + ", paths: " + paths + ", entrances: " + entrances);
 
 		if (Warning* warning = GetWidget<Warning>(); warning != nullptr)
-			warning -> Set("");
+			warning->Set("");
 	}
 	catch (const std::exception& error)
 	{
@@ -363,7 +363,7 @@ void Application::LoadDefaults()
 	m_input.m_spaceSizeRandomness = g_spaceSizeRandomness;
 
 	if (Menu* menu = GetWidget<Menu>(); menu != nullptr)
-		menu -> ScheduleRendering();
+		menu->ScheduleRendering();
 }
 
 void Application::SetupWidgets()
@@ -399,12 +399,12 @@ void Application::SetupWidgets()
 
 void Application::RenderWidgets()
 {
-	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
+	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr->m_next)
 	{
-		if (crr -> m_render)
+		if (crr->m_render)
 		{
-			crr -> Render();
-			crr -> m_render = false;
+			crr->Render();
+			crr->m_render = false;
 		}
 	}
 }

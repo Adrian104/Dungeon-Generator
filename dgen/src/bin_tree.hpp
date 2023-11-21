@@ -15,14 +15,14 @@ namespace dg::impl
 	{
 		class Iterator
 		{
-			public:
+		public:
 			using iterator_category = std::forward_iterator_tag;
 			using difference_type = std::ptrdiff_t;
 			using value_type = Node<Type>;
 			using pointer = value_type*;
 			using reference = value_type&;
 
-			private:
+		private:
 			pointer m_crr;
 			state_type m_breakAt;
 			state_type m_state = 0;
@@ -32,7 +32,7 @@ namespace dg::impl
 			void GoRight();
 			void Advance();
 
-			public:
+		public:
 			int m_counter = 0;
 
 			Iterator(pointer tree, Traversal traversal);
@@ -47,7 +47,7 @@ namespace dg::impl
 			bool operator!=(const Iterator& iter) const { return m_crr != iter.m_crr; }
 		};
 
-		public:
+	public:
 		static Traversal s_defaultTraversal;
 
 		Node* m_parent;
@@ -71,10 +71,10 @@ namespace dg::impl
 	template <typename Type>
 	void Node<Type>::Iterator::GoUp()
 	{
-		pointer const parent = m_crr -> m_parent;
+		pointer const parent = m_crr->m_parent;
 		if (parent != nullptr)
 		{
-			m_state = (parent -> m_right == m_crr) + 1;
+			m_state = (parent->m_right == m_crr) + 1;
 			m_crr = parent;
 			m_counter--;
 		}
@@ -88,7 +88,7 @@ namespace dg::impl
 	template <typename Type>
 	void Node<Type>::Iterator::GoLeft()
 	{
-		pointer const left = m_crr -> m_left;
+		pointer const left = m_crr->m_left;
 		if (left != nullptr)
 		{
 			m_crr = left;
@@ -100,7 +100,7 @@ namespace dg::impl
 	template <typename Type>
 	void Node<Type>::Iterator::GoRight()
 	{
-		pointer const right = m_crr -> m_right;
+		pointer const right = m_crr->m_right;
 		if (right != nullptr)
 		{
 			m_crr = right;
@@ -117,7 +117,7 @@ namespace dg::impl
 		using action = void (scope::*)();
 
 		static constexpr action s_actions[3] = { &scope::GoLeft, &scope::GoRight, &scope::GoUp };
-		(this ->* s_actions[m_state])();
+		(this->*s_actions[m_state])();
 	}
 
 	template <typename Type>

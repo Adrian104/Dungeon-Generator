@@ -53,13 +53,13 @@ void Menu::Render()
 	{
 		const uint8_t color = mod == selected ? 0 : 0xFF;
 
-		text.Set(m_app.RenderText(mod -> m_name, 0, TTF_STYLE_BOLD, { color, 0xFF, color, 0xFF }));
+		text.Set(m_app.RenderText(mod->m_name, 0, TTF_STYLE_BOLD, { color, 0xFF, color, 0xFF }));
 		rect = { (g_menuWidth - text.GetWidth()) >> 1, pos, text.GetWidth(), text.GetHeight() };
 		pos += g_menuInternalOffset;
 
 		SDL_RenderCopy(renderer, text.Get(), nullptr, &rect);
 
-		text.Set(m_app.RenderText(mod -> GetValue(), 0));
+		text.Set(m_app.RenderText(mod->GetValue(), 0));
 		rect = { (g_menuWidth - text.GetWidth()) >> 1, pos, text.GetWidth(), text.GetHeight() };
 		pos += g_menuExternalOffset;
 
@@ -99,13 +99,13 @@ void Menu::HandleEvent(SDL_Event& sdlEvent)
 
 		case SDLK_RIGHT:
 		case SDLK_EQUALS:
-			m_mods.at(m_selection) -> Increment();
+			m_mods.at(m_selection)->Increment();
 			m_app.ScheduleGeneration(Application::SeedMode::KEEP);
 			break;
 
 		case SDLK_LEFT:
 		case SDLK_MINUS:
-			m_mods.at(m_selection) -> Decrement();
+			m_mods.at(m_selection)->Decrement();
 			m_app.ScheduleGeneration(Application::SeedMode::KEEP);
 			break;
 

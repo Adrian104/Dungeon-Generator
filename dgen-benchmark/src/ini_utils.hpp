@@ -47,11 +47,11 @@ namespace ini
 		while (true)
 		{
 			const auto iter = section.find(key);
-			if (iter != section.end() && iter -> second.size() > 0)
+			if (iter != section.end() && iter->second.size() > 0)
 			{
 				try
 				{
-					Type temp = Convert<Type>(iter -> second);
+					Type temp = Convert<Type>(iter->second);
 					if (check == nullptr || check(temp))
 					{
 						out = std::move(temp);
@@ -74,7 +74,7 @@ namespace ini
 		const auto iter = container.find(sectionName);
 
 		if (iter != container.end())
-			Get<Type>(iter -> second, key, out, req, check);
+			Get<Type>(iter->second, key, out, req, check);
 		else if (req)
 			Get<Type>(container[sectionName], key, out, req, check);
 	}

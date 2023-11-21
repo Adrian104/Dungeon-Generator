@@ -16,7 +16,7 @@ class Warning : public Widget, public Animator
 
 	void Clear();
 
-	public:
+public:
 	Warning() : Animator(g_warningAnimTime) {}
 	~Warning() { Clear(); }
 

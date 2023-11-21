@@ -13,7 +13,7 @@ class Input : public Widget, public Animator
 	Modifier* m_mod = nullptr;
 	SDL_Texture* m_renderOutput;
 
-	public:
+public:
 	Input();
 	~Input();
 

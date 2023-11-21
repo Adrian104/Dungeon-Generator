@@ -10,17 +10,17 @@ namespace dg::impl
 	template <typename KeyType, typename ObjType, bool maxHeap>
 	class Heap
 	{
-		public:
+	public:
 		using pair_type = std::pair<KeyType, ObjType>;
 
-		private:
+	private:
 		pair_type* m_data = nullptr;
 		size_t m_size = 0;
 		size_t m_capacity = 0;
 
 		void Reallocate();
 
-		public:
+	public:
 		Heap() = default;
 		~Heap() { Reset(); }
 
@@ -41,8 +41,8 @@ namespace dg::impl
 		size_t Size() const { return m_size; }
 		size_t Capacity() const { return m_capacity; }
 		pair_type* Data() const { return m_data; }
-		KeyType TopKey() const { return m_data -> first; }
-		ObjType& TopObject() const { return m_data -> second; }
+		KeyType TopKey() const { return m_data->first; }
+		ObjType& TopObject() const { return m_data->second; }
 	};
 
 	template <typename KeyType, typename ObjType>
@@ -63,7 +63,7 @@ namespace dg::impl
 			--newArr;
 
 			new(newArr) pair_type(std::move(*prevArr));
-			prevArr -> ~pair_type();
+			prevArr->~pair_type();
 		}
 
 		operator delete[](m_data);
@@ -141,7 +141,7 @@ namespace dg::impl
 		while (iter != m_data)
 		{
 			--iter;
-			iter -> ~pair_type();
+			iter->~pair_type();
 		}
 
 		m_size = 0;
@@ -188,7 +188,7 @@ namespace dg::impl
 		if (m_size < 2)
 		{
 			if (m_size > 0)
-				m_data -> ~pair_type();
+				m_data->~pair_type();
 
 			m_size = 0;
 			return;

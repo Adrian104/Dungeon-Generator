@@ -14,7 +14,7 @@ class Info : public Widget, public Animator
 
 	void Clear();
 
-	public:
+public:
 	Info() : Animator(g_infoAnimTime) {}
 	~Info() { Clear(); }
 

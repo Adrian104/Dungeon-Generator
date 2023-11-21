@@ -15,7 +15,7 @@ class Texture
 
 	void Query();
 
-	public:
+public:
 	Texture() = default;
 	Texture(SDL_Texture*&& texture);
 	~Texture();

@@ -62,7 +62,7 @@ void TimedGenerator::TimedGenerate(Probe& probe, const dg::Input* input)
 	Prepare();
 	probe.Measure("Prepare");
 
-	GenerateTree(*m_rootNode, m_input -> m_maxDepth);
+	GenerateTree(*m_rootNode, m_input->m_maxDepth);
 	probe.Measure("Generate Tree");
 
 	GenerateRooms();
@@ -257,7 +257,7 @@ void Benchmark::LoadConfig()
 		if (iter == container.end())
 			break;
 
-		ini::section_type& crrSection = iter -> second;
+		ini::section_type& crrSection = iter->second;
 		Trial& trial = m_trials.emplace_back(globalConfig, name);
 
 		trial.m_config.Load(crrSection, false);

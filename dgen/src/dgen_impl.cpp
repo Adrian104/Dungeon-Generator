@@ -71,29 +71,29 @@ namespace dg::impl
 
 	void Generator::Prepare()
 	{
-		if (m_input -> m_maxRoomSize <= 0)
+		if (m_input->m_maxRoomSize <= 0)
 			throw std::runtime_error("Variable 'maxRoomSize' is not a positive number");
 
 		*m_output = {};
-		m_random.Seed(m_input -> m_seed);
+		m_random.Seed(m_input->m_seed);
 
-		m_spaceOffset = m_input -> m_spaceInterdistance + 1;
+		m_spaceOffset = m_input->m_spaceInterdistance + 1;
 		m_spaceShrink = (m_spaceOffset << 1) - 1;
 
-		m_minSpaceSize = static_cast<int>(s_roomSizeLimit / m_input -> m_maxRoomSize) + m_spaceShrink;
-		m_minSpaceRand = (1.0f - m_input -> m_spaceSizeRandomness) * 0.5f;
+		m_minSpaceSize = static_cast<int>(s_roomSizeLimit / m_input->m_maxRoomSize) + m_spaceShrink;
+		m_minSpaceRand = (1.0f - m_input->m_spaceSizeRandomness) * 0.5f;
 
-		if (m_input -> m_width <= m_minSpaceSize || m_input -> m_height <= m_minSpaceSize)
+		if (m_input->m_width <= m_minSpaceSize || m_input->m_height <= m_minSpaceSize)
 			throw std::runtime_error("Root node is too small");
 
-		m_rootNode = new Node<Cell>(nullptr, Cell(m_input -> m_width - 1, m_input -> m_height - 1));
+		m_rootNode = new Node<Cell>(nullptr, Cell(m_input->m_width - 1, m_input->m_height - 1));
 
 		m_targetDepth = 0;
 		m_totalRoomCount = 0;
 		m_partialPathCount = 0;
 
-		m_deltaDepth = m_input -> m_maxDepth - m_input -> m_minDepth;
-		m_randPathDepth = m_input -> m_maxDepth - m_input -> m_extraPathDepth;
+		m_deltaDepth = m_input->m_maxDepth - m_input->m_minDepth;
+		m_randPathDepth = m_input->m_maxDepth - m_input->m_extraPathDepth;
 	}
 
 	void Generator::FindPaths()
@@ -102,7 +102,7 @@ namespace dg::impl
 		MinHeap<float, Vertex*> heap;
 
 		Node<Cell>::s_defaultTraversal = Traversal::POSTORDER;
-		const float factors[2] = { 1.0f, m_input -> m_pathCostFactor };
+		const float factors[2] = { 1.0f, m_input->m_pathCostFactor };
 
 		for (auto& node : *m_rootNode)
 		{
@@ -114,11 +114,11 @@ namespace dg::impl
 
 			if (node.m_flags & (1 << Cell::Flag::RANDOM_PATH))
 			{
-				int leftIndex = node.m_left -> m_roomOffset;
-				const int leftCount = node.m_left -> m_roomCount;
+				int leftIndex = node.m_left->m_roomOffset;
+				const int leftCount = node.m_left->m_roomCount;
 
-				int rightIndex = node.m_right -> m_roomOffset;
-				const int rightCount = node.m_right -> m_roomCount;
+				int rightIndex = node.m_right->m_roomOffset;
+				const int rightCount = node.m_right->m_roomCount;
 
 				if (leftCount > 1)
 					leftIndex += m_random.Get32() % leftCount;
@@ -131,12 +131,12 @@ namespace dg::impl
 			}
 			else
 			{
-				n += m_input -> m_extraPathCount;
-				d += m_input -> m_extraPathCount;
+				n += m_input->m_extraPathCount;
+				d += m_input->m_extraPathCount;
 
 				next_path:
-				const auto [xL, yL, wL, hL] = node.m_left -> m_space;
-				const auto [xR, yR, wR, hR] = node.m_right -> m_space;
+				const auto [xL, yL, wL, hL] = node.m_left->m_space;
+				const auto [xR, yR, wR, hR] = node.m_right->m_space;
 
 				const Point center = xL + wL <= xR ? Point(xR, yR + n * hR / d) : Point(xR + n * wR / d, yR);
 
@@ -145,56 +145,56 @@ namespace dg::impl
 			}
 
 			Vertex* vertex = start;
-			start -> m_gcost = 0;
+			start->m_gcost = 0;
 
 			do
 			{
-				vertex -> m_status = statusCounter + 1;
-				Room* const room = vertex -> ToRoom();
+				vertex->m_status = statusCounter + 1;
+				Room* const room = vertex->ToRoom();
 
 				for (int i = 0; i < 4; i++)
 				{
-					Vertex* const adjacent = vertex -> m_links[i];
-					if (adjacent -> m_status > statusCounter)
+					Vertex* const adjacent = vertex->m_links[i];
+					if (adjacent->m_status > statusCounter)
 						continue;
 
 					Point p1, p2;
 					if (room == nullptr)
 					{
-						Room* const adjRoom = adjacent -> ToRoom();
+						Room* const adjRoom = adjacent->ToRoom();
 
-						p1 = vertex -> m_pos;
-						p2 = (adjRoom != nullptr) ? adjRoom -> m_entrances[i ^ 0b10] : adjacent -> m_pos;
+						p1 = vertex->m_pos;
+						p2 = (adjRoom != nullptr) ? adjRoom->m_entrances[i ^ 0b10] : adjacent->m_pos;
 					}
 					else
 					{
-						p1 = adjacent -> m_pos;
-						p2 = room -> m_entrances[i];
+						p1 = adjacent->m_pos;
+						p2 = room->m_entrances[i];
 					}
 
 					const float diff = static_cast<float>(std::abs(p1.x - p2.x) + std::abs(p1.y - p2.y));
-					const float newGCost = vertex -> m_gcost + diff * factors[(vertex -> m_path >> i) & 1];
+					const float newGCost = vertex->m_gcost + diff * factors[(vertex->m_path >> i) & 1];
 
-					if (adjacent -> m_status < statusCounter)
+					if (adjacent->m_status < statusCounter)
 					{
-						const int dx = stop -> m_pos.x - adjacent -> m_pos.x;
-						const int dy = stop -> m_pos.y - adjacent -> m_pos.y;
+						const int dx = stop->m_pos.x - adjacent->m_pos.x;
+						const int dy = stop->m_pos.y - adjacent->m_pos.y;
 
 						const float dist = std::sqrt(static_cast<float>(dx * dx + dy * dy));
 
-						adjacent -> m_hcost = dist * m_input -> m_heuristicFactor;
-						adjacent -> m_status = statusCounter;
+						adjacent->m_hcost = dist * m_input->m_heuristicFactor;
+						adjacent->m_status = statusCounter;
 
 						goto add_to_heap;
 					}
 
-					if (newGCost < adjacent -> m_gcost)
+					if (newGCost < adjacent->m_gcost)
 					{
 						add_to_heap:
-						adjacent -> m_origin = i;
-						adjacent -> m_gcost = newGCost;
+						adjacent->m_origin = i;
+						adjacent->m_gcost = newGCost;
 
-						heap.Push(newGCost + adjacent -> m_hcost, adjacent);
+						heap.Push(newGCost + adjacent->m_hcost, adjacent);
 					}
 				}
 
@@ -203,7 +203,7 @@ namespace dg::impl
 					vertex = heap.TopObject();
 					heap.Pop();
 
-				} while (vertex -> m_status > statusCounter);
+				} while (vertex->m_status > statusCounter);
 
 			} while (vertex != stop);
 
@@ -212,12 +212,12 @@ namespace dg::impl
 
 			do
 			{
-				const uint8_t origin = vertex -> m_origin;
+				const uint8_t origin = vertex->m_origin;
 				const uint8_t realOrigin = origin ^ 0b10;
 
-				vertex -> m_path |= 1 << realOrigin;
-				vertex = vertex -> m_links[realOrigin];
-				vertex -> m_path |= 1 << origin;
+				vertex->m_path |= 1 << realOrigin;
+				vertex = vertex->m_links[realOrigin];
+				vertex->m_path |= 1 << origin;
 
 			} while (vertex != start);
 
@@ -260,20 +260,20 @@ namespace dg::impl
 
 			const uint64_t xPos = pos >> 32;
 
-			revTag -> m_pos = (pos << 32) | xPos;
-			revTag -> m_vertex = vertex;
+			revTag->m_pos = (pos << 32) | xPos;
+			revTag->m_vertex = vertex;
 
-			vertex -> m_pos.x = static_cast<int>(xPos);
-			vertex -> m_pos.y = static_cast<int>(pos & 0xFFFFFFFF);
-			vertex -> m_path |= tag.m_data.m_linkBits;
+			vertex->m_pos.x = static_cast<int>(xPos);
+			vertex->m_pos.y = static_cast<int>(pos & 0xFFFFFFFF);
+			vertex->m_path |= tag.m_data.m_linkBits;
 
 			pri[1] = vertex;
 			sec[1] = m_rooms.data() + tag.m_data.m_index;
 
 			const int exists = tag.m_data.m_index != Tag::s_emptyIndex;
 
-			pri[exists] -> m_links[tag.m_data.m_origin] = sec[exists];
-			sec[exists] -> m_links[tag.m_data.m_origin ^ 0b10] = pri[exists];
+			pri[exists]->m_links[tag.m_data.m_origin] = sec[exists];
+			sec[exists]->m_links[tag.m_data.m_origin ^ 0b10] = pri[exists];
 		}
 
 		m_tags.clear();
@@ -282,8 +282,8 @@ namespace dg::impl
 			const int exists = (crr.m_path >> Dir::NORTH) & 1;
 
 			pri[1] = &crr;
-			pri[exists] -> m_links[Dir::NORTH] = sec[exists];
-			sec[exists] -> m_links[Dir::SOUTH] = pri[exists];
+			pri[exists]->m_links[Dir::NORTH] = sec[exists];
+			sec[exists]->m_links[Dir::SOUTH] = pri[exists];
 			sec[1] = pri[1];
 		}
 
@@ -291,21 +291,21 @@ namespace dg::impl
 		for (const Tag& tag : revTags)
 		{
 			Vertex* const crr = tag.m_vertex;
-			const int exists = (crr -> m_path >> Dir::WEST) & 1;
+			const int exists = (crr->m_path >> Dir::WEST) & 1;
 
 			pri[1] = crr;
-			pri[exists] -> m_links[Dir::WEST] = sec[exists];
-			sec[exists] -> m_links[Dir::EAST] = pri[exists];
+			pri[exists]->m_links[Dir::WEST] = sec[exists];
+			sec[exists]->m_links[Dir::EAST] = pri[exists];
 			sec[1] = pri[1];
 
-			crr -> m_path = 0;
+			crr->m_path = 0;
 		}
 	}
 
 	void Generator::OptimizeVertices()
 	{
-		const uint8_t maskEW = m_input -> m_generateFewerPaths ? 0b1010 : 0b1111;
-		const uint8_t maskNS = m_input -> m_generateFewerPaths ? 0b0101 : 0b1111;
+		const uint8_t maskEW = m_input->m_generateFewerPaths ? 0b1010 : 0b1111;
+		const uint8_t maskNS = m_input->m_generateFewerPaths ? 0b0101 : 0b1111;
 
 		for (Vertex& vertex : m_vertices)
 		{
@@ -317,7 +317,7 @@ namespace dg::impl
 				zero:
 				for (int i = 0; i < 4; i++)
 				{
-					links[i] -> m_links[i ^ 0b10] = &Vertex::s_sentinel;
+					links[i]->m_links[i ^ 0b10] = &Vertex::s_sentinel;
 					links[i] = &Vertex::s_sentinel;
 				}
 
@@ -329,10 +329,10 @@ namespace dg::impl
 				Vertex* const east = links[Dir::EAST];
 				Vertex* const west = links[Dir::WEST];
 
-				if (east -> ToRoom() == nullptr || west -> ToRoom() == nullptr)
+				if (east->ToRoom() == nullptr || west->ToRoom() == nullptr)
 				{
-					east -> m_links[Dir::WEST] = west;
-					west -> m_links[Dir::EAST] = east;
+					east->m_links[Dir::WEST] = west;
+					west->m_links[Dir::EAST] = east;
 
 					links[Dir::EAST] = &Vertex::s_sentinel;
 					links[Dir::WEST] = &Vertex::s_sentinel;
@@ -347,10 +347,10 @@ namespace dg::impl
 				Vertex* const north = links[Dir::NORTH];
 				Vertex* const south = links[Dir::SOUTH];
 
-				if (north -> ToRoom() == nullptr || south -> ToRoom() == nullptr)
+				if (north->ToRoom() == nullptr || south->ToRoom() == nullptr)
 				{
-					north -> m_links[Dir::SOUTH] = south;
-					south -> m_links[Dir::NORTH] = north;
+					north->m_links[Dir::SOUTH] = south;
+					south->m_links[Dir::NORTH] = north;
 
 					links[Dir::NORTH] = &Vertex::s_sentinel;
 					links[Dir::SOUTH] = &Vertex::s_sentinel;
@@ -366,11 +366,11 @@ namespace dg::impl
 
 	void Generator::GenerateRooms()
 	{
-		const float minRoomSize = m_input -> m_minRoomSize;
-		const float diffRoomSize = m_input -> m_maxRoomSize - m_input -> m_minRoomSize;
+		const float minRoomSize = m_input->m_minRoomSize;
+		const float diffRoomSize = m_input->m_maxRoomSize - m_input->m_minRoomSize;
 
 		m_rooms.reserve(static_cast<size_t>(m_totalRoomCount));
-		m_output -> m_rooms.reserve(static_cast<size_t>(m_totalRoomCount) << 1);
+		m_output->m_rooms.reserve(static_cast<size_t>(m_totalRoomCount) << 1);
 
 		Node<Cell>::s_defaultTraversal = Traversal::POSTORDER;
 		for (auto& node : *m_rootNode)
@@ -395,9 +395,9 @@ namespace dg::impl
 			Vec secPos(-1, 0);
 			Vec secSize(0, 0);
 
-			if (m_random.GetFP32() < m_input -> m_doubleRoomProb)
+			if (m_random.GetFP32() < m_input->m_doubleRoomProb)
 			{
-				int Vec::*incAxis; int Vec::*decAxis;
+				int Vec::* incAxis; int Vec::* decAxis;
 
 				if (remSize.x > remSize.y) { incAxis = &Vec::x; decAxis = &Vec::y; }
 				else { incAxis = &Vec::y; decAxis = &Vec::x; }
@@ -430,15 +430,15 @@ namespace dg::impl
 			Point pos[2]{};
 			Room& room = m_rooms.emplace_back(node);
 
-			room.m_rectBegin = m_output -> m_rooms.size();
-			m_output -> m_rooms.emplace_back(priPos.x + offset.x, priPos.y + offset.y, priSize.x, priSize.y);
+			room.m_rectBegin = m_output->m_rooms.size();
+			m_output->m_rooms.emplace_back(priPos.x + offset.x, priPos.y + offset.y, priSize.x, priSize.y);
 
-			room.m_rectEnd = m_output -> m_rooms.size();
+			room.m_rectEnd = m_output->m_rooms.size();
 			room.m_pos = Point(priPos.x + offset.x + (priSize.x >> 1), priPos.y + offset.y + (priSize.y >> 1));
 
 			if (secPos.x == -1)
 			{
-				const Rect& rect = m_output -> m_rooms[room.m_rectBegin];
+				const Rect& rect = m_output->m_rooms[room.m_rectBegin];
 
 				const auto [e, f] = m_random.Get32P();
 				const auto [g, h] = m_random.Get32P();
@@ -450,12 +450,12 @@ namespace dg::impl
 			}
 			else
 			{
-				m_output -> m_rooms.emplace_back(secPos.x + offset.x, secPos.y + offset.y, secSize.x, secSize.y);
-				room.m_rectEnd = m_output -> m_rooms.size();
+				m_output->m_rooms.emplace_back(secPos.x + offset.x, secPos.y + offset.y, secSize.x, secSize.y);
+				room.m_rectEnd = m_output->m_rooms.size();
 
 				const bool randBool = m_random.GetBit();
-				const Rect& priRect = m_output -> m_rooms[room.m_rectBegin + static_cast<size_t>(randBool)];
-				const Rect& secRect = m_output -> m_rooms[room.m_rectBegin + static_cast<size_t>(!randBool)];
+				const Rect& priRect = m_output->m_rooms[room.m_rectBegin + static_cast<size_t>(randBool)];
+				const Rect& secRect = m_output->m_rooms[room.m_rectBegin + static_cast<size_t>(!randBool)];
 
 				auto CalculatePos = [this](const Rect& priRect, const Rect& secRect, Point& pos) -> void
 				{
@@ -507,7 +507,7 @@ namespace dg::impl
 
 			for (size_t i = room.m_rectBegin; i < room.m_rectEnd; i++)
 			{
-				const Rect& rect = m_output -> m_rooms[i];
+				const Rect& rect = m_output->m_rooms[i];
 				const int xPlusW = rect.x + rect.w;
 				const int yPlusH = rect.y + rect.h;
 
@@ -549,50 +549,50 @@ namespace dg::impl
 			sw += ((room.m_path >> Dir::SOUTH) & 1) + ((room.m_path >> Dir::WEST) & 1);
 		}
 
-		m_output -> m_rooms.shrink_to_fit();
-		m_output -> m_paths.reserve(static_cast<size_t>(ne + m_partialPathCount));
-		m_output -> m_entrances.reserve(static_cast<size_t>(ne + sw));
+		m_output->m_rooms.shrink_to_fit();
+		m_output->m_paths.reserve(static_cast<size_t>(ne + m_partialPathCount));
+		m_output->m_entrances.reserve(static_cast<size_t>(ne + sw));
 
 		for (Room& room : m_rooms)
 		{
 			if (room.m_path & (1 << Dir::NORTH))
 			{
 				const Point ent = room.m_entrances[Dir::NORTH];
-				const Point ext = room.m_links[Dir::NORTH] -> m_pos;
+				const Point ext = room.m_links[Dir::NORTH]->m_pos;
 
-				m_output -> m_entrances.emplace_back(ent);
-				m_output -> m_paths.emplace_back(ext, Vec(0, ent.y - ext.y));
+				m_output->m_entrances.emplace_back(ent);
+				m_output->m_paths.emplace_back(ext, Vec(0, ent.y - ext.y));
 			}
 
 			if (room.m_path & (1 << Dir::EAST))
 			{
 				const Point ent = room.m_entrances[Dir::EAST];
-				const Point ext = room.m_links[Dir::EAST] -> m_pos;
+				const Point ext = room.m_links[Dir::EAST]->m_pos;
 
-				m_output -> m_entrances.emplace_back(ent);
-				m_output -> m_paths.emplace_back(ext, Vec(ent.x - ext.x, 0));
+				m_output->m_entrances.emplace_back(ent);
+				m_output->m_paths.emplace_back(ext, Vec(ent.x - ext.x, 0));
 			}
 
 			if (room.m_path & (1 << Dir::SOUTH))
 			{
 				const Point ent = room.m_entrances[Dir::SOUTH];
-				const Point ext = room.m_links[Dir::SOUTH] -> m_pos;
+				const Point ext = room.m_links[Dir::SOUTH]->m_pos;
 
-				m_output -> m_entrances.emplace_back(ent);
-				m_output -> m_paths.emplace_back(ext, Vec(0, ent.y - ext.y));
+				m_output->m_entrances.emplace_back(ent);
+				m_output->m_paths.emplace_back(ext, Vec(0, ent.y - ext.y));
 
-				room.m_links[Dir::SOUTH] -> m_path &= ~(1 << Dir::NORTH);
+				room.m_links[Dir::SOUTH]->m_path &= ~(1 << Dir::NORTH);
 			}
 
 			if (room.m_path & (1 << Dir::WEST))
 			{
 				const Point ent = room.m_entrances[Dir::WEST];
-				const Point ext = room.m_links[Dir::WEST] -> m_pos;
+				const Point ext = room.m_links[Dir::WEST]->m_pos;
 
-				m_output -> m_entrances.emplace_back(ent);
-				m_output -> m_paths.emplace_back(ext, Vec(ent.x - ext.x, 0));
+				m_output->m_entrances.emplace_back(ent);
+				m_output->m_paths.emplace_back(ext, Vec(ent.x - ext.x, 0));
 
-				room.m_links[Dir::WEST] -> m_path &= ~(1 << Dir::EAST);
+				room.m_links[Dir::WEST]->m_path &= ~(1 << Dir::EAST);
 			}
 		}
 
@@ -601,14 +601,14 @@ namespace dg::impl
 			const auto& [xCrr, yCrr] = vertex.m_pos;
 			if (vertex.m_path & (1 << Dir::NORTH))
 			{
-				const auto [xAdj, yAdj] = vertex.m_links[Dir::NORTH] -> m_pos;
-				m_output -> m_paths.emplace_back(Point(xCrr, yCrr), Vec(xAdj - xCrr, yAdj - yCrr));
+				const auto [xAdj, yAdj] = vertex.m_links[Dir::NORTH]->m_pos;
+				m_output->m_paths.emplace_back(Point(xCrr, yCrr), Vec(xAdj - xCrr, yAdj - yCrr));
 			}
 
 			if (vertex.m_path & (1 << Dir::EAST))
 			{
-				const auto [xAdj, yAdj] = vertex.m_links[Dir::EAST] -> m_pos;
-				m_output -> m_paths.emplace_back(Point(xCrr, yCrr), Vec(xAdj - xCrr, yAdj - yCrr));
+				const auto [xAdj, yAdj] = vertex.m_links[Dir::EAST]->m_pos;
+				m_output->m_paths.emplace_back(Point(xCrr, yCrr), Vec(xAdj - xCrr, yAdj - yCrr));
 			}
 		}
 	}
@@ -617,8 +617,8 @@ namespace dg::impl
 	{
 		node.m_flags |= static_cast<uint32_t>(left <= m_randPathDepth) << Cell::Flag::RANDOM_PATH;
 
-		if (left <= m_input -> m_sparseAreaDepth)
-			node.m_flags |= static_cast<uint32_t>(m_random.GetFP32() < m_input -> m_sparseAreaProb) << Cell::Flag::SPARSE_AREA;
+		if (left <= m_input->m_sparseAreaDepth)
+			node.m_flags |= static_cast<uint32_t>(m_random.GetFP32() < m_input->m_sparseAreaProb) << Cell::Flag::SPARSE_AREA;
 
 		if (left == m_deltaDepth)
 		{
@@ -648,7 +648,7 @@ namespace dg::impl
 
 			if (node.m_flags & (1 << Cell::Flag::SPARSE_AREA))
 			{
-				if (m_random.GetFP32() >= m_input -> m_sparseAreaDens)
+				if (m_random.GetFP32() >= m_input->m_sparseAreaDens)
 					return 0;
 			}
 
@@ -659,13 +659,13 @@ namespace dg::impl
 			return 1 << Cell::Flag::CONNECT_ROOMS;
 		}
 
-		int Rect::*xy; int Rect::*wh;
+		int Rect::* xy; int Rect::* wh;
 		Rect& crrSpace = node.m_space;
 
 		if (crrSpace.w < crrSpace.h) { xy = &Rect::y; wh = &Rect::h; }
 		else { xy = &Rect::x; wh = &Rect::w; }
 
-		const float c = m_random.GetFP32() * (m_input -> m_spaceSizeRandomness) + m_minSpaceRand;
+		const float c = m_random.GetFP32() * (m_input->m_spaceSizeRandomness) + m_minSpaceRand;
 
 		const int totalSize = crrSpace.*wh;
 		const int randSize = static_cast<int>(totalSize * c);
@@ -679,15 +679,15 @@ namespace dg::impl
 		new(node.m_left) Node<Cell>(&node, node);
 		new(node.m_right) Node<Cell>(&node, node);
 
-		node.m_left -> m_space.*wh = randSize;
-		node.m_right -> m_space.*xy += randSize;
-		node.m_right -> m_space.*wh -= randSize;
+		node.m_left->m_space.*wh = randSize;
+		node.m_right->m_space.*xy += randSize;
+		node.m_right->m_space.*wh -= randSize;
 
 		const uint32_t l = GenerateTree(*node.m_left, --left);
 		const uint32_t r = GenerateTree(*node.m_right, left);
 
-		node.m_roomOffset = std::min(node.m_left -> m_roomOffset, node.m_right -> m_roomOffset);
-		node.m_roomCount = node.m_left -> m_roomCount + node.m_right -> m_roomCount;
+		node.m_roomOffset = std::min(node.m_left->m_roomOffset, node.m_right->m_roomOffset);
+		node.m_roomCount = node.m_left->m_roomCount + node.m_right->m_roomCount;
 		node.m_flags |= l & r;
 
 		return l | r;
@@ -695,31 +695,31 @@ namespace dg::impl
 
 	void Generator::DeleteTree(Node<Cell>* node)
 	{
-		if (node -> m_left == nullptr)
+		if (node->m_left == nullptr)
 			return;
 
-		DeleteTree(node -> m_right);
-		node -> m_right -> ~Node<Cell>();
+		DeleteTree(node->m_right);
+		node->m_right->~Node<Cell>();
 
-		DeleteTree(node -> m_left);
-		node -> m_left -> ~Node<Cell>();
+		DeleteTree(node->m_left);
+		node->m_left->~Node<Cell>();
 
-		operator delete[](node -> m_left);
+		operator delete[](node->m_left);
 	}
 
 	int Generator::GetNearestRoomTo(const Point point, Node<Cell>* node)
 	{
-		if (node -> m_left == nullptr)
-			return node -> m_roomOffset;
+		if (node->m_left == nullptr)
+			return node->m_roomOffset;
 
-		const auto [xL, yL, wL, hL] = node -> m_left -> m_space;
-		const auto [xR, yR, wR, hR] = node -> m_right -> m_space;
+		const auto [xL, yL, wL, hL] = node->m_left->m_space;
+		const auto [xR, yR, wR, hR] = node->m_right->m_space;
 
 		const int l = std::abs(xL + (wL >> 1) - point.x) + std::abs(yL + (hL >> 1) - point.y);
 		const int r = std::abs(xR + (wR >> 1) - point.x) + std::abs(yR + (hR >> 1) - point.y);
 
 		static constexpr int s_maxOffset = std::numeric_limits<int>::max();
-		Node<Cell>* const nextNodes[2] = { node -> m_left, node -> m_right };
+		Node<Cell>* const nextNodes[2] = { node->m_left, node->m_right };
 
 		const int offset = GetNearestRoomTo(point, nextNodes[l > r]);
 		return offset != s_maxOffset ? offset : GetNearestRoomTo(point, nextNodes[l <= r]);
@@ -732,7 +732,7 @@ namespace dg::impl
 
 		Clear();
 		Prepare();
-		GenerateTree(*m_rootNode, m_input -> m_maxDepth);
+		GenerateTree(*m_rootNode, m_input->m_maxDepth);
 		GenerateRooms();
 		CreateVertices();
 		FindPaths();

@@ -7,12 +7,12 @@
 template <typename Type>
 class ViewportBase
 {
-	protected:
+protected:
 	Type m_scale = 1;
 	Type m_xOffset = 0;
 	Type m_yOffset = 0;
 
-	public:
+public:
 	Type GetScale() const { return m_scale; }
 	Type GetXOffset() const { return m_xOffset; }
 	Type GetYOffset() const { return m_yOffset; }
@@ -38,7 +38,7 @@ class Viewport : public ViewportBase<float>
 	void Move(int xMouse, int yMouse);
 	void Scale(int xMouse, int yMouse, float factor);
 
-	public:
+public:
 	void Reset();
 	bool Update(SDL_Event& sdlEvent);
 

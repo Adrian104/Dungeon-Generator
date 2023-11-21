@@ -12,7 +12,7 @@ class Menu : public Widget, public Animator
 	SDL_Texture* m_renderOutput;
 	std::vector<Modifier*> m_mods;
 
-	public:
+public:
 	Menu();
 	~Menu();
 

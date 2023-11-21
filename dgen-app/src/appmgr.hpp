@@ -17,7 +17,7 @@ class AppManager
 	SDL_Renderer* m_renderer = nullptr;
 	std::map<int, TTF_Font*> m_fonts;
 
-	public:
+public:
 	AppManager();
 	~AppManager();
 

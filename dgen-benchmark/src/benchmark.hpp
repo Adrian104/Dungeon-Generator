@@ -24,7 +24,7 @@ class Probe
 	time_type m_startTimePoint;
 	time_vec_type m_timePoints;
 
-	public:
+public:
 	void Start();
 	void Measure(const char* name);
 	void ComputeHash(const void* data, size_t size);
@@ -34,13 +34,13 @@ class Probe
 
 class TimedGenerator : protected dg::impl::Generator
 {
-	public:
+public:
 	void TimedGenerate(Probe& probe, const dg::Input* input);
 };
 
 class Config : public dg::Input
 {
-	public:
+public:
 	int m_minIter;
 	int m_minTime;
 	int m_minWarmupIter;
@@ -68,7 +68,7 @@ class Trial
 	duration_type m_sumDuration = duration_type::zero();
 	duration_type m_minDuration = duration_type::max();
 
-	public:
+public:
 	Trial(const Config& config, const std::string& name) : m_config(config), m_name(name) {}
 	void Interpret(const Probe& probe, std::vector<const char*>& columns, bool measure);
 
@@ -87,6 +87,6 @@ class Benchmark
 	void LoadConfig();
 	void SaveSummary() const;
 
-	public:
+public:
 	void Run();
 };

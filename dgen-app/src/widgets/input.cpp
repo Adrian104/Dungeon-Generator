@@ -55,7 +55,7 @@ void Input::Render()
 	SDL_Rect dest = { g_inputXOffset1, offset, text.GetWidth(), text.GetHeight() };
 	SDL_RenderCopy(renderer, text.Get(), nullptr, &dest);
 
-	text.Set(m_app.RenderText(m_mod -> m_name, 0, TTF_STYLE_NORMAL));
+	text.Set(m_app.RenderText(m_mod->m_name, 0, TTF_STYLE_NORMAL));
 	dest = { g_inputXOffset2, offset, text.GetWidth(), text.GetHeight() };
 	SDL_RenderCopy(renderer, text.Get(), nullptr, &dest);
 
@@ -63,7 +63,7 @@ void Input::Render()
 	dest = { g_inputXOffset1, offset += step, text.GetWidth(), text.GetHeight() };
 	SDL_RenderCopy(renderer, text.Get(), nullptr, &dest);
 
-	text.Set(m_app.RenderText(m_mod -> GetValue(), 0, TTF_STYLE_NORMAL));
+	text.Set(m_app.RenderText(m_mod->GetValue(), 0, TTF_STYLE_NORMAL));
 	dest = { g_inputXOffset2, offset, text.GetWidth(), text.GetHeight() };
 	SDL_RenderCopy(renderer, text.Get(), nullptr, &dest);
 
@@ -88,7 +88,7 @@ void Input::HandleEvent(SDL_Event& sdlEvent)
 		{
 		case SDLK_RETURN:
 			if (m_input.empty()) break;
-			try { m_mod -> SetValue(m_input); m_mod -> Check(); }
+			try { m_mod->SetValue(m_input); m_mod->Check(); }
 			catch (...) { m_invalid = true; break; }
 
 			m_app.AccessWidget<Menu>().ScheduleRendering();

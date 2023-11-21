@@ -14,22 +14,22 @@ class Application;
 
 class Widget
 {
-	protected:
+protected:
 	Application& m_app;
 
-	private:
+private:
 	static Application* s_app;
 
 	bool m_render = true;
 	Widget* m_next = nullptr;
 	Animator* m_animator = nullptr;
 
-	protected:
+protected:
 	static Widget* s_active;
 
 	Widget() : m_app(*s_app) {}
 
-	public:
+public:
 	virtual ~Widget() { delete m_next; }
 
 	virtual void Draw() {}
@@ -92,7 +92,7 @@ class Application : protected AppManager
 	void Schedule(Task task);
 	void ScheduleGeneration(SeedMode seedMode);
 
-	public:
+public:
 	void Run();
 
 	Application() { LoadDefaults(); }
@@ -115,7 +115,7 @@ inline void Widget::ScheduleRendering()
 template <typename Type>
 Type* Application::GetWidget() const
 {
-	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
+	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr->m_next)
 	{
 		Type* const ptr = dynamic_cast<Type*>(crr);
 		if (ptr != nullptr) return ptr;
@@ -127,7 +127,7 @@ Type* Application::GetWidget() const
 template <typename Type>
 Type& Application::AccessWidget()
 {
-	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr -> m_next)
+	for (Widget* crr = m_widgetList; crr != nullptr; crr = crr->m_next)
 	{
 		Type* const ptr = dynamic_cast<Type*>(crr);
 		if (ptr != nullptr) return *ptr;
@@ -136,8 +136,8 @@ Type& Application::AccessWidget()
 	Widget::s_app = this;
 	Type* const ptr = new Type();
 
-	ptr -> m_animator = dynamic_cast<Animator*>(ptr);
-	ptr -> m_next = m_widgetList;
+	ptr->m_animator = dynamic_cast<Animator*>(ptr);
+	ptr->m_next = m_widgetList;
 
 	m_widgetList = ptr;
 	return *ptr;

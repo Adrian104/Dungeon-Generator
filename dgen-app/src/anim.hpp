@@ -6,7 +6,7 @@
 
 class Animator
 {
-	public:
+public:
 	using clock_type = std::chrono::steady_clock;
 	using duration_type = clock_type::duration;
 	using time_type = clock_type::time_point;
@@ -14,7 +14,7 @@ class Animator
 	enum class LoopMode { ONLY_FORWARD, NO_LOOP, LOOP, BOUNCE_BACK };
 	enum class DirMode { FORWARD, BACKWARD, TOGGLE, SWITCH, TOGGLE_OR_SWITCH, AUTO, KEEP };
 
-	private:
+private:
 	static constexpr auto s_zero = duration_type::zero();
 
 	bool m_playing = false;
@@ -24,7 +24,7 @@ class Animator
 
 	void ToggleState();
 
-	public:
+public:
 	duration_type m_totalTime;
 	LoopMode m_loopMode;
 

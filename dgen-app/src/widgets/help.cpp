@@ -79,7 +79,7 @@ void Help::Render()
 		yPos += std::max(a.GetHeight(), b.GetHeight());
 	}
 
-	dest = { (m_app.GetWidth() - pressText.GetWidth()) >> 1, yPos += g_helpAnyKeyOffset, pressText.GetWidth(), pressText.GetHeight()};
+	dest = { (m_app.GetWidth() - pressText.GetWidth()) >> 1, yPos += g_helpAnyKeyOffset, pressText.GetWidth(), pressText.GetHeight() };
 	SDL_RenderCopy(renderer, pressText.Get(), nullptr, &dest);
 }
 

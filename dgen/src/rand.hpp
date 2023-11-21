@@ -12,7 +12,7 @@ namespace dg::impl
 		using uint32p_t = std::pair<uint32_t, uint32_t>;
 		uint64_t m_state[4];
 
-		public:
+	public:
 		Random() { Seed(); }
 		Random(const uint64_t seed) { Seed(seed); }
 

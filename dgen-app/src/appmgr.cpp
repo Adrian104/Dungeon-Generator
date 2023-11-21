@@ -38,7 +38,7 @@ void AppManager::UnloadFont(int id)
 	const auto iter = m_fonts.find(id);
 	if (iter == m_fonts.end()) return;
 
-	TTF_CloseFont(iter -> second);
+	TTF_CloseFont(iter->second);
 	m_fonts.erase(iter);
 }
 

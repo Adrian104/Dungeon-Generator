@@ -8,7 +8,7 @@ class Help : public Widget, public Animator
 {
 	SDL_Texture* m_renderOutput;
 
-	public:
+public:
 	Help();
 	~Help();
 
