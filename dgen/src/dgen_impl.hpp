@@ -121,13 +121,13 @@ namespace dg::impl
 
 		void Clear();
 		void Prepare();
-		void FindPaths();
-		void CreateVertices();
-		void OptimizeVertices();
+		uint32_t GenerateTree(Node<Cell>& node, int left);
 		void GenerateRooms();
+		void CreateVertices();
+		void FindPaths();
+		void OptimizeVertices();
 		void GenerateOutput();
 
-		uint32_t GenerateTree(Node<Cell>& node, int left);
 		static void DeleteTree(Node<Cell>* node);
 		static int GetNearestRoomTo(const Point point, Node<Cell>* node);
 

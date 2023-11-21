@@ -96,272 +96,84 @@ namespace dg::impl
 		m_randPathDepth = m_input->m_maxDepth - m_input->m_extraPathDepth;
 	}
 
-	void Generator::FindPaths()
+	uint32_t Generator::GenerateTree(Node<Cell>& node, int left)
 	{
-		uint32_t statusCounter = 1;
-		MinHeap<float, Vertex*> heap;
+		node.m_flags |= static_cast<uint32_t>(left <= m_randPathDepth) << Cell::Flag::RANDOM_PATH;
 
-		Node<Cell>::s_defaultTraversal = Traversal::POSTORDER;
-		const float factors[2] = { 1.0f, m_input->m_pathCostFactor };
+		if (left <= m_input->m_sparseAreaDepth)
+			node.m_flags |= static_cast<uint32_t>(m_random.GetFP32() < m_input->m_sparseAreaProb) << Cell::Flag::SPARSE_AREA;
 
-		for (auto& node : *m_rootNode)
+		if (left == m_deltaDepth)
 		{
-			if ((node.m_flags & (1 << Cell::Flag::CONNECT_ROOMS)) == 0)
-				continue;
+			if (m_deltaDepth > 0) m_targetDepth = m_random.Get32() % (m_deltaDepth + 1);
+			else goto no_more;
+		}
 
-			int n = 1; int d = 2;
-			Room* start; Room* stop;
+		if (left <= m_targetDepth)
+		{
+			no_more:
+			Rect& space = node.m_space;
 
-			if (node.m_flags & (1 << Cell::Flag::RANDOM_PATH))
+			space.x += m_spaceOffset; space.y += m_spaceOffset;
+			space.w -= m_spaceShrink; space.h -= m_spaceShrink;
+
+			const int d1 = m_spaceOffset - 1;
+
+			const int xMin = space.x - m_spaceOffset;
+			const int yMin = space.y - m_spaceOffset;
+			const int xMax = space.x + space.w + d1;
+			const int yMax = space.y + space.h + d1;
+
+			m_tags.emplace_back(xMax, yMax).m_data.m_linkBits = (1ULL << Dir::NORTH) | (1ULL << Dir::WEST);
+			m_tags.emplace_back(xMin, yMax).m_data.m_linkBits = 1ULL << Dir::NORTH;
+			m_tags.emplace_back(xMax, yMin).m_data.m_linkBits = 1ULL << Dir::WEST;
+			m_tags.emplace_back(xMin, yMin);
+
+			if (node.m_flags & (1 << Cell::Flag::SPARSE_AREA))
 			{
-				int leftIndex = node.m_left->m_roomOffset;
-				const int leftCount = node.m_left->m_roomCount;
-
-				int rightIndex = node.m_right->m_roomOffset;
-				const int rightCount = node.m_right->m_roomCount;
-
-				if (leftCount > 1)
-					leftIndex += m_random.Get32() % leftCount;
-
-				if (rightCount > 1)
-					rightIndex += m_random.Get32() % rightCount;
-
-				start = m_rooms.data() + leftIndex;
-				stop = m_rooms.data() + rightIndex;
-			}
-			else
-			{
-				n += m_input->m_extraPathCount;
-				d += m_input->m_extraPathCount;
-
-				next_path:
-				const auto [xL, yL, wL, hL] = node.m_left->m_space;
-				const auto [xR, yR, wR, hR] = node.m_right->m_space;
-
-				const Point center = xL + wL <= xR ? Point(xR, yR + n * hR / d) : Point(xR + n * wR / d, yR);
-
-				start = m_rooms.data() + GetNearestRoomTo(center, node.m_left);
-				stop = m_rooms.data() + GetNearestRoomTo(center, node.m_right);
+				if (m_random.GetFP32() >= m_input->m_sparseAreaDens)
+					return 0;
 			}
 
-			Vertex* vertex = start;
-			start->m_gcost = 0;
+			node.m_flags |= 1 << Cell::Flag::GENERATE_ROOMS;
+			node.m_roomOffset = m_totalRoomCount++;
+			node.m_roomCount = 1;
 
-			do
-			{
-				vertex->m_status = statusCounter + 1;
-				Room* const room = vertex->ToRoom();
-
-				for (int i = 0; i < 4; i++)
-				{
-					Vertex* const adjacent = vertex->m_links[i];
-					if (adjacent->m_status > statusCounter)
-						continue;
-
-					Point p1, p2;
-					if (room == nullptr)
-					{
-						Room* const adjRoom = adjacent->ToRoom();
-
-						p1 = vertex->m_pos;
-						p2 = (adjRoom != nullptr) ? adjRoom->m_entrances[i ^ 0b10] : adjacent->m_pos;
-					}
-					else
-					{
-						p1 = adjacent->m_pos;
-						p2 = room->m_entrances[i];
-					}
-
-					const float diff = static_cast<float>(std::abs(p1.x - p2.x) + std::abs(p1.y - p2.y));
-					const float newGCost = vertex->m_gcost + diff * factors[(vertex->m_path >> i) & 1];
-
-					if (adjacent->m_status < statusCounter)
-					{
-						const int dx = stop->m_pos.x - adjacent->m_pos.x;
-						const int dy = stop->m_pos.y - adjacent->m_pos.y;
-
-						const float dist = std::sqrt(static_cast<float>(dx * dx + dy * dy));
-
-						adjacent->m_hcost = dist * m_input->m_heuristicFactor;
-						adjacent->m_status = statusCounter;
-
-						goto add_to_heap;
-					}
-
-					if (newGCost < adjacent->m_gcost)
-					{
-						add_to_heap:
-						adjacent->m_origin = i;
-						adjacent->m_gcost = newGCost;
-
-						heap.Push(newGCost + adjacent->m_hcost, adjacent);
-					}
-				}
-
-				do
-				{
-					vertex = heap.TopObject();
-					heap.Pop();
-
-				} while (vertex->m_status > statusCounter);
-
-			} while (vertex != stop);
-
-			statusCounter += 2;
-			heap.Clear();
-
-			do
-			{
-				const uint8_t origin = vertex->m_origin;
-				const uint8_t realOrigin = origin ^ 0b10;
-
-				vertex->m_path |= 1 << realOrigin;
-				vertex = vertex->m_links[realOrigin];
-				vertex->m_path |= 1 << origin;
-
-			} while (vertex != start);
-
-			if (--n > 0)
-				goto next_path;
-		}
-	}
-
-	void Generator::CreateVertices()
-	{
-		RadixSort rs(m_tags.size());
-		rs.Sort(m_tags.data(), m_tags.size());
-
-		size_t count = 0;
-		uint64_t pos = std::numeric_limits<uint64_t>::max();
-
-		for (const Tag& tag : m_tags)
-		{
-			count += pos != tag.m_pos;
-			pos = tag.m_pos;
+			return 1 << Cell::Flag::CONNECT_ROOMS;
 		}
 
-		std::vector<Tag> revTags(count);
-		m_vertices.resize(count);
+		int Rect::* xy; int Rect::* wh;
+		Rect& crrSpace = node.m_space;
 
-		Tag* revTag = revTags.data() - 1;
-		Vertex* vertex = m_vertices.data() - 1;
+		if (crrSpace.w < crrSpace.h) { xy = &Rect::y; wh = &Rect::h; }
+		else { xy = &Rect::x; wh = &Rect::w; }
 
-		Vertex* pri[2] = { &Vertex::s_sentinel, &Vertex::s_sentinel };
-		Vertex* sec[2] = { &Vertex::s_sentinel, &Vertex::s_sentinel };
+		const float c = m_random.GetFP32() * (m_input->m_spaceSizeRandomness) + m_minSpaceRand;
 
-		pos = std::numeric_limits<uint64_t>::max();
-		for (const Tag& tag : m_tags)
-		{
-			const size_t diff = pos != tag.m_pos;
+		const int totalSize = crrSpace.*wh;
+		const int randSize = static_cast<int>(totalSize * c);
 
-			pos = tag.m_pos;
-			vertex += diff;
-			revTag += diff;
+		if (randSize < m_minSpaceSize || totalSize - randSize < m_minSpaceSize)
+			goto no_more;
 
-			const uint64_t xPos = pos >> 32;
+		node.m_left = static_cast<Node<Cell>*>(operator new[](sizeof(Node<Cell>) * 2));
+		node.m_right = node.m_left + 1;
 
-			revTag->m_pos = (pos << 32) | xPos;
-			revTag->m_vertex = vertex;
+		new(node.m_left) Node<Cell>(&node, node);
+		new(node.m_right) Node<Cell>(&node, node);
 
-			vertex->m_pos.x = static_cast<int>(xPos);
-			vertex->m_pos.y = static_cast<int>(pos & 0xFFFFFFFF);
-			vertex->m_path |= tag.m_data.m_linkBits;
+		node.m_left->m_space.*wh = randSize;
+		node.m_right->m_space.*xy += randSize;
+		node.m_right->m_space.*wh -= randSize;
 
-			pri[1] = vertex;
-			sec[1] = m_rooms.data() + tag.m_data.m_index;
+		const uint32_t l = GenerateTree(*node.m_left, --left);
+		const uint32_t r = GenerateTree(*node.m_right, left);
 
-			const int exists = tag.m_data.m_index != Tag::s_emptyIndex;
+		node.m_roomOffset = std::min(node.m_left->m_roomOffset, node.m_right->m_roomOffset);
+		node.m_roomCount = node.m_left->m_roomCount + node.m_right->m_roomCount;
+		node.m_flags |= l & r;
 
-			pri[exists]->m_links[tag.m_data.m_origin] = sec[exists];
-			sec[exists]->m_links[tag.m_data.m_origin ^ 0b10] = pri[exists];
-		}
-
-		m_tags.clear();
-		for (Vertex& crr : m_vertices)
-		{
-			const int exists = (crr.m_path >> Dir::NORTH) & 1;
-
-			pri[1] = &crr;
-			pri[exists]->m_links[Dir::NORTH] = sec[exists];
-			sec[exists]->m_links[Dir::SOUTH] = pri[exists];
-			sec[1] = pri[1];
-		}
-
-		rs.Sort(revTags.data(), revTags.size());
-		for (const Tag& tag : revTags)
-		{
-			Vertex* const crr = tag.m_vertex;
-			const int exists = (crr->m_path >> Dir::WEST) & 1;
-
-			pri[1] = crr;
-			pri[exists]->m_links[Dir::WEST] = sec[exists];
-			sec[exists]->m_links[Dir::EAST] = pri[exists];
-			sec[1] = pri[1];
-
-			crr->m_path = 0;
-		}
-	}
-
-	void Generator::OptimizeVertices()
-	{
-		const uint8_t maskEW = m_input->m_generateFewerPaths ? 0b1010 : 0b1111;
-		const uint8_t maskNS = m_input->m_generateFewerPaths ? 0b0101 : 0b1111;
-
-		for (Vertex& vertex : m_vertices)
-		{
-			uint8_t& path = vertex.m_path;
-			Vertex** links = vertex.m_links;
-
-			if (path == 0)
-			{
-				zero:
-				for (int i = 0; i < 4; i++)
-				{
-					links[i]->m_links[i ^ 0b10] = &Vertex::s_sentinel;
-					links[i] = &Vertex::s_sentinel;
-				}
-
-				continue;
-			}
-
-			if ((path & maskEW) == 0b1010)
-			{
-				Vertex* const east = links[Dir::EAST];
-				Vertex* const west = links[Dir::WEST];
-
-				if (east->ToRoom() == nullptr || west->ToRoom() == nullptr)
-				{
-					east->m_links[Dir::WEST] = west;
-					west->m_links[Dir::EAST] = east;
-
-					links[Dir::EAST] = &Vertex::s_sentinel;
-					links[Dir::WEST] = &Vertex::s_sentinel;
-
-					if (path &= ~0b1010; path == 0)
-						goto zero;
-				}
-			}
-
-			if ((path & maskNS) == 0b0101)
-			{
-				Vertex* const north = links[Dir::NORTH];
-				Vertex* const south = links[Dir::SOUTH];
-
-				if (north->ToRoom() == nullptr || south->ToRoom() == nullptr)
-				{
-					north->m_links[Dir::SOUTH] = south;
-					south->m_links[Dir::NORTH] = north;
-
-					links[Dir::NORTH] = &Vertex::s_sentinel;
-					links[Dir::SOUTH] = &Vertex::s_sentinel;
-
-					if (path &= ~0b0101; path == 0)
-						goto zero;
-				}
-			}
-
-			m_partialPathCount += ((path >> Dir::NORTH) & 1) + ((path >> Dir::EAST) & 1);
-		}
+		return l | r;
 	}
 
 	void Generator::GenerateRooms()
@@ -540,6 +352,274 @@ namespace dg::impl
 		}
 	}
 
+	void Generator::CreateVertices()
+	{
+		RadixSort rs(m_tags.size());
+		rs.Sort(m_tags.data(), m_tags.size());
+
+		size_t count = 0;
+		uint64_t pos = std::numeric_limits<uint64_t>::max();
+
+		for (const Tag& tag : m_tags)
+		{
+			count += pos != tag.m_pos;
+			pos = tag.m_pos;
+		}
+
+		std::vector<Tag> revTags(count);
+		m_vertices.resize(count);
+
+		Tag* revTag = revTags.data() - 1;
+		Vertex* vertex = m_vertices.data() - 1;
+
+		Vertex* pri[2] = { &Vertex::s_sentinel, &Vertex::s_sentinel };
+		Vertex* sec[2] = { &Vertex::s_sentinel, &Vertex::s_sentinel };
+
+		pos = std::numeric_limits<uint64_t>::max();
+		for (const Tag& tag : m_tags)
+		{
+			const size_t diff = pos != tag.m_pos;
+
+			pos = tag.m_pos;
+			vertex += diff;
+			revTag += diff;
+
+			const uint64_t xPos = pos >> 32;
+
+			revTag->m_pos = (pos << 32) | xPos;
+			revTag->m_vertex = vertex;
+
+			vertex->m_pos.x = static_cast<int>(xPos);
+			vertex->m_pos.y = static_cast<int>(pos & 0xFFFFFFFF);
+			vertex->m_path |= tag.m_data.m_linkBits;
+
+			pri[1] = vertex;
+			sec[1] = m_rooms.data() + tag.m_data.m_index;
+
+			const int exists = tag.m_data.m_index != Tag::s_emptyIndex;
+
+			pri[exists]->m_links[tag.m_data.m_origin] = sec[exists];
+			sec[exists]->m_links[tag.m_data.m_origin ^ 0b10] = pri[exists];
+		}
+
+		m_tags.clear();
+		for (Vertex& crr : m_vertices)
+		{
+			const int exists = (crr.m_path >> Dir::NORTH) & 1;
+
+			pri[1] = &crr;
+			pri[exists]->m_links[Dir::NORTH] = sec[exists];
+			sec[exists]->m_links[Dir::SOUTH] = pri[exists];
+			sec[1] = pri[1];
+		}
+
+		rs.Sort(revTags.data(), revTags.size());
+		for (const Tag& tag : revTags)
+		{
+			Vertex* const crr = tag.m_vertex;
+			const int exists = (crr->m_path >> Dir::WEST) & 1;
+
+			pri[1] = crr;
+			pri[exists]->m_links[Dir::WEST] = sec[exists];
+			sec[exists]->m_links[Dir::EAST] = pri[exists];
+			sec[1] = pri[1];
+
+			crr->m_path = 0;
+		}
+	}
+
+	void Generator::FindPaths()
+	{
+		uint32_t statusCounter = 1;
+		MinHeap<float, Vertex*> heap;
+
+		Node<Cell>::s_defaultTraversal = Traversal::POSTORDER;
+		const float factors[2] = { 1.0f, m_input->m_pathCostFactor };
+
+		for (auto& node : *m_rootNode)
+		{
+			if ((node.m_flags & (1 << Cell::Flag::CONNECT_ROOMS)) == 0)
+				continue;
+
+			int n = 1; int d = 2;
+			Room* start; Room* stop;
+
+			if (node.m_flags & (1 << Cell::Flag::RANDOM_PATH))
+			{
+				int leftIndex = node.m_left->m_roomOffset;
+				const int leftCount = node.m_left->m_roomCount;
+
+				int rightIndex = node.m_right->m_roomOffset;
+				const int rightCount = node.m_right->m_roomCount;
+
+				if (leftCount > 1)
+					leftIndex += m_random.Get32() % leftCount;
+
+				if (rightCount > 1)
+					rightIndex += m_random.Get32() % rightCount;
+
+				start = m_rooms.data() + leftIndex;
+				stop = m_rooms.data() + rightIndex;
+			}
+			else
+			{
+				n += m_input->m_extraPathCount;
+				d += m_input->m_extraPathCount;
+
+				next_path:
+				const auto [xL, yL, wL, hL] = node.m_left->m_space;
+				const auto [xR, yR, wR, hR] = node.m_right->m_space;
+
+				const Point center = xL + wL <= xR ? Point(xR, yR + n * hR / d) : Point(xR + n * wR / d, yR);
+
+				start = m_rooms.data() + GetNearestRoomTo(center, node.m_left);
+				stop = m_rooms.data() + GetNearestRoomTo(center, node.m_right);
+			}
+
+			Vertex* vertex = start;
+			start->m_gcost = 0;
+
+			do
+			{
+				vertex->m_status = statusCounter + 1;
+				Room* const room = vertex->ToRoom();
+
+				for (int i = 0; i < 4; i++)
+				{
+					Vertex* const adjacent = vertex->m_links[i];
+					if (adjacent->m_status > statusCounter)
+						continue;
+
+					Point p1, p2;
+					if (room == nullptr)
+					{
+						Room* const adjRoom = adjacent->ToRoom();
+
+						p1 = vertex->m_pos;
+						p2 = (adjRoom != nullptr) ? adjRoom->m_entrances[i ^ 0b10] : adjacent->m_pos;
+					}
+					else
+					{
+						p1 = adjacent->m_pos;
+						p2 = room->m_entrances[i];
+					}
+
+					const float diff = static_cast<float>(std::abs(p1.x - p2.x) + std::abs(p1.y - p2.y));
+					const float newGCost = vertex->m_gcost + diff * factors[(vertex->m_path >> i) & 1];
+
+					if (adjacent->m_status < statusCounter)
+					{
+						const int dx = stop->m_pos.x - adjacent->m_pos.x;
+						const int dy = stop->m_pos.y - adjacent->m_pos.y;
+
+						const float dist = std::sqrt(static_cast<float>(dx * dx + dy * dy));
+
+						adjacent->m_hcost = dist * m_input->m_heuristicFactor;
+						adjacent->m_status = statusCounter;
+
+						goto add_to_heap;
+					}
+
+					if (newGCost < adjacent->m_gcost)
+					{
+						add_to_heap:
+						adjacent->m_origin = i;
+						adjacent->m_gcost = newGCost;
+
+						heap.Push(newGCost + adjacent->m_hcost, adjacent);
+					}
+				}
+
+				do
+				{
+					vertex = heap.TopObject();
+					heap.Pop();
+
+				} while (vertex->m_status > statusCounter);
+
+			} while (vertex != stop);
+
+			statusCounter += 2;
+			heap.Clear();
+
+			do
+			{
+				const uint8_t origin = vertex->m_origin;
+				const uint8_t realOrigin = origin ^ 0b10;
+
+				vertex->m_path |= 1 << realOrigin;
+				vertex = vertex->m_links[realOrigin];
+				vertex->m_path |= 1 << origin;
+
+			} while (vertex != start);
+
+			if (--n > 0)
+				goto next_path;
+		}
+	}
+
+	void Generator::OptimizeVertices()
+	{
+		const uint8_t maskEW = m_input->m_generateFewerPaths ? 0b1010 : 0b1111;
+		const uint8_t maskNS = m_input->m_generateFewerPaths ? 0b0101 : 0b1111;
+
+		for (Vertex& vertex : m_vertices)
+		{
+			uint8_t& path = vertex.m_path;
+			Vertex** links = vertex.m_links;
+
+			if (path == 0)
+			{
+				zero:
+				for (int i = 0; i < 4; i++)
+				{
+					links[i]->m_links[i ^ 0b10] = &Vertex::s_sentinel;
+					links[i] = &Vertex::s_sentinel;
+				}
+
+				continue;
+			}
+
+			if ((path & maskEW) == 0b1010)
+			{
+				Vertex* const east = links[Dir::EAST];
+				Vertex* const west = links[Dir::WEST];
+
+				if (east->ToRoom() == nullptr || west->ToRoom() == nullptr)
+				{
+					east->m_links[Dir::WEST] = west;
+					west->m_links[Dir::EAST] = east;
+
+					links[Dir::EAST] = &Vertex::s_sentinel;
+					links[Dir::WEST] = &Vertex::s_sentinel;
+
+					if (path &= ~0b1010; path == 0)
+						goto zero;
+				}
+			}
+
+			if ((path & maskNS) == 0b0101)
+			{
+				Vertex* const north = links[Dir::NORTH];
+				Vertex* const south = links[Dir::SOUTH];
+
+				if (north->ToRoom() == nullptr || south->ToRoom() == nullptr)
+				{
+					north->m_links[Dir::SOUTH] = south;
+					south->m_links[Dir::NORTH] = north;
+
+					links[Dir::NORTH] = &Vertex::s_sentinel;
+					links[Dir::SOUTH] = &Vertex::s_sentinel;
+
+					if (path &= ~0b0101; path == 0)
+						goto zero;
+				}
+			}
+
+			m_partialPathCount += ((path >> Dir::NORTH) & 1) + ((path >> Dir::EAST) & 1);
+		}
+	}
+
 	void Generator::GenerateOutput()
 	{
 		int ne = 0; int sw = 0;
@@ -611,86 +691,6 @@ namespace dg::impl
 				m_output->m_paths.emplace_back(Point(xCrr, yCrr), Vec(xAdj - xCrr, yAdj - yCrr));
 			}
 		}
-	}
-
-	uint32_t Generator::GenerateTree(Node<Cell>& node, int left)
-	{
-		node.m_flags |= static_cast<uint32_t>(left <= m_randPathDepth) << Cell::Flag::RANDOM_PATH;
-
-		if (left <= m_input->m_sparseAreaDepth)
-			node.m_flags |= static_cast<uint32_t>(m_random.GetFP32() < m_input->m_sparseAreaProb) << Cell::Flag::SPARSE_AREA;
-
-		if (left == m_deltaDepth)
-		{
-			if (m_deltaDepth > 0) m_targetDepth = m_random.Get32() % (m_deltaDepth + 1);
-			else goto no_more;
-		}
-
-		if (left <= m_targetDepth)
-		{
-			no_more:
-			Rect& space = node.m_space;
-
-			space.x += m_spaceOffset; space.y += m_spaceOffset;
-			space.w -= m_spaceShrink; space.h -= m_spaceShrink;
-
-			const int d1 = m_spaceOffset - 1;
-
-			const int xMin = space.x - m_spaceOffset;
-			const int yMin = space.y - m_spaceOffset;
-			const int xMax = space.x + space.w + d1;
-			const int yMax = space.y + space.h + d1;
-
-			m_tags.emplace_back(xMax, yMax).m_data.m_linkBits = (1ULL << Dir::NORTH) | (1ULL << Dir::WEST);
-			m_tags.emplace_back(xMin, yMax).m_data.m_linkBits = 1ULL << Dir::NORTH;
-			m_tags.emplace_back(xMax, yMin).m_data.m_linkBits = 1ULL << Dir::WEST;
-			m_tags.emplace_back(xMin, yMin);
-
-			if (node.m_flags & (1 << Cell::Flag::SPARSE_AREA))
-			{
-				if (m_random.GetFP32() >= m_input->m_sparseAreaDens)
-					return 0;
-			}
-
-			node.m_flags |= 1 << Cell::Flag::GENERATE_ROOMS;
-			node.m_roomOffset = m_totalRoomCount++;
-			node.m_roomCount = 1;
-
-			return 1 << Cell::Flag::CONNECT_ROOMS;
-		}
-
-		int Rect::* xy; int Rect::* wh;
-		Rect& crrSpace = node.m_space;
-
-		if (crrSpace.w < crrSpace.h) { xy = &Rect::y; wh = &Rect::h; }
-		else { xy = &Rect::x; wh = &Rect::w; }
-
-		const float c = m_random.GetFP32() * (m_input->m_spaceSizeRandomness) + m_minSpaceRand;
-
-		const int totalSize = crrSpace.*wh;
-		const int randSize = static_cast<int>(totalSize * c);
-
-		if (randSize < m_minSpaceSize || totalSize - randSize < m_minSpaceSize)
-			goto no_more;
-
-		node.m_left = static_cast<Node<Cell>*>(operator new[](sizeof(Node<Cell>) * 2));
-		node.m_right = node.m_left + 1;
-
-		new(node.m_left) Node<Cell>(&node, node);
-		new(node.m_right) Node<Cell>(&node, node);
-
-		node.m_left->m_space.*wh = randSize;
-		node.m_right->m_space.*xy += randSize;
-		node.m_right->m_space.*wh -= randSize;
-
-		const uint32_t l = GenerateTree(*node.m_left, --left);
-		const uint32_t r = GenerateTree(*node.m_right, left);
-
-		node.m_roomOffset = std::min(node.m_left->m_roomOffset, node.m_right->m_roomOffset);
-		node.m_roomCount = node.m_left->m_roomCount + node.m_right->m_roomCount;
-		node.m_flags |= l & r;
-
-		return l | r;
 	}
 
 	void Generator::DeleteTree(Node<Cell>* node)
