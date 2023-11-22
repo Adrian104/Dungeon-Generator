@@ -142,15 +142,13 @@ namespace dg::impl
 			return 1 << Cell::Flag::CONNECT_ROOMS;
 		}
 
-		int Rect::* xy; int Rect::* wh;
-		Rect& crrSpace = node.m_space;
+		static constexpr std::pair<int Rect::*, int Rect::*> xw = std::make_pair(&Rect::x, &Rect::w);
+		static constexpr std::pair<int Rect::*, int Rect::*> yh = std::make_pair(&Rect::y, &Rect::h);
 
-		if (crrSpace.w < crrSpace.h) { xy = &Rect::y; wh = &Rect::h; }
-		else { xy = &Rect::x; wh = &Rect::w; }
-
+		const auto& [xy, wh] = node.m_space.w >= node.m_space.h ? xw : yh;
 		const float c = m_random.GetFP32() * (m_input->m_spaceSizeRandomness) + m_minSpaceRand;
 
-		const int totalSize = crrSpace.*wh;
+		const int totalSize = node.m_space.*wh;
 		const int randSize = static_cast<int>(totalSize * c);
 
 		if (randSize < m_minSpaceSize || totalSize - randSize < m_minSpaceSize)
@@ -209,10 +207,10 @@ namespace dg::impl
 
 			if (m_random.GetFP32() < m_input->m_doubleRoomProb)
 			{
-				int Vec::* incAxis; int Vec::* decAxis;
+				static constexpr std::pair<int Vec::*, int Vec::*> xy = std::make_pair(&Vec::x, &Vec::y);
+				static constexpr std::pair<int Vec::*, int Vec::*> yx = std::make_pair(&Vec::y, &Vec::x);
 
-				if (remSize.x > remSize.y) { incAxis = &Vec::x; decAxis = &Vec::y; }
-				else { incAxis = &Vec::y; decAxis = &Vec::x; }
+				const auto& [incAxis, decAxis] = remSize.x > remSize.y ? xy : yx;
 
 				secSize.*decAxis = priSize.*decAxis >> 1;
 				if (secSize.*decAxis < s_roomSizeLimit)
