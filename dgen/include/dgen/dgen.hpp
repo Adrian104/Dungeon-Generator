@@ -54,7 +54,7 @@ namespace dg
 		/// @brief Positive integer. Describes maximum number of BSP divisions.
 		int m_maxDepth;
 
-		/// @brief Non-negative integer. Use values higher than zero if paths will be wide.
+		/// @brief Non-negative integer. Set this to zero, unless you want to produce wide paths later.
 		int m_spaceInterdistance;
 
 		/// @brief Value in range [0, 1]. The smaller the value, the more evenly distributed rooms are.
@@ -87,10 +87,10 @@ namespace dg
 		/// @brief Non-negative integer. The higher the value, the more paths are found down to the depth of @ref m_extraPathDepth
 		int m_extraPathCount;
 
-		/// @brief Non-negative integer. Indicates level to which generate extra paths (it will use a different algorithm).
+		/// @brief Non-negative integer. Indicates level to which generate extra paths.
 		int m_extraPathDepth;
 
-		/// @brief If true, generator may produce fewer, but overlapping paths.
+		/// @brief If true, generator may produce fewer paths without altering the effective geometry.
 		bool m_generateFewerPaths;
 	};
 

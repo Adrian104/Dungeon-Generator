@@ -45,12 +45,12 @@ in memory. This method is known as BSP, which produces binary-tree structure. In
 addition, leaf cells create `Tag` objects at the corners of them.
 2. In some cells, `Room` objects are placed. Here `Tag` objects are also placed,
 but this time, on the room entrance axes, in between cells.
-3. Algorithm creates `Node` objects based on `Tag` objects. Multiple tags are
-combined into one `Node` and all resulting nodes are linked together with
+3. Algorithm creates `Vertex` objects based on `Tag` objects. Multiple tags are
+combined into one `Vertex` and all resulting vertices are linked together with
 pointers. To do this step, algorithm sorts `Tag` objects beforehand, based on their positions.
 4. Previously created BSP-tree is traversed postorder, recursively connecting 
 `Room` objects by searching path between them, using A* algorithm.
-5. At this point, special method optimizes `Node` objects, based on created paths.
+5. At this point, special method optimizes `Vertex` objects, based on created paths.
 6. Generator produces output data.
 
 # What is included in this repository?
@@ -95,7 +95,7 @@ Otherwise, only `dgen` target will be created.
 Compiled executables are located in `build/bin` directory.
 
 # Images
-### Example geometry produced by dgen library:
+### The following image shows a visual representation of what `dgen` library can produce:
 ![](https://github.com/Adrian104/Dungeon-Generator/blob/master/resources/geometry.png)
-### Later it can be transformed into a tile map:
+### You will probably want to convert it into a tile map. It may look like this:
 ![](https://github.com/Adrian104/Dungeon-Generator/blob/master/resources/map.png)
