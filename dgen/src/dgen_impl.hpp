@@ -46,6 +46,7 @@ namespace dg::impl
 		Vertex() = default;
 		Vertex(uint32_t status) : m_status(status) {}
 
+		void Unlink();
 		virtual Room* ToRoom() { return nullptr; }
 	};
 

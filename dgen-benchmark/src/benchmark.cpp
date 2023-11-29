@@ -126,10 +126,7 @@ void Trial::Interpret(const Probe& probe, std::vector<const char*>& columns, boo
 
 	const size_t size = columns.size();
 	if (probe.m_timePoints.size() != size)
-	{
-		unsteady:
 		throw std::runtime_error("Unsteady measurement");
-	}
 
 	if (m_durations.empty())
 		m_durations.resize(size);
@@ -142,7 +139,8 @@ void Trial::Interpret(const Probe& probe, std::vector<const char*>& columns, boo
 		for (size_t i = 0; i < size; i++)
 		{
 			const auto& [time, name] = probe.m_timePoints.at(i);
-			if (name != columns.at(i)) goto unsteady;
+			if (name != columns.at(i))
+				throw std::runtime_error("Unsteady measurement");
 
 			diff = time - prevTime;
 			m_durations[i].m_sum += diff;

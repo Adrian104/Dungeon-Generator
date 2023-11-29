@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
+#include <algorithm>
 #include <utility>
 #include <stddef.h>
 
@@ -167,18 +168,8 @@ namespace dg::impl
 	template <typename KeyType, typename ObjType, bool maxHeap>
 	void Heap<KeyType, ObjType, maxHeap>::Reserve(size_t newCapacity)
 	{
-		if (newCapacity < m_size)
-		{
-			m_capacity = m_size;
-			goto run_reallocate;
-		}
-
-		m_capacity = newCapacity;
-		if (newCapacity > 0)
-		{
-			run_reallocate:
-			Reallocate();
-		}
+		m_capacity = std::max(newCapacity, m_size);
+		if (m_capacity > 0) Reallocate();
 		else Reset();
 	}
 

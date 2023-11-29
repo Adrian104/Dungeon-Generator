@@ -231,7 +231,8 @@ bool Application::Update()
 		if (Widget::s_active != nullptr)
 		{
 			Widget::s_active->HandleEvent(sdlEvent);
-			goto next_event;
+			pending = SDL_PollEvent(&sdlEvent);
+			continue;
 		}
 
 		if (sdlEvent.type == SDL_KEYDOWN)
@@ -278,7 +279,6 @@ bool Application::Update()
 		for (Widget* crr = m_widgetList; crr != nullptr; crr = crr->m_next)
 			crr->HandleEvent(sdlEvent);
 
-		next_event:
 		pending = SDL_PollEvent(&sdlEvent);
 	}
 

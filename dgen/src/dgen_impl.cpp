@@ -12,6 +12,15 @@ namespace dg::impl
 {
 	Vertex Vertex::s_sentinel(std::numeric_limits<decltype(Vertex::m_status)>::max());
 
+	void Vertex::Unlink()
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			m_links[i]->m_links[i ^ 0b10] = &Vertex::s_sentinel;
+			m_links[i] = &Vertex::s_sentinel;
+		}
+	}
+
 	Tag::Tag() { m_data.m_index = s_emptyIndex; }
 
 	Tag::Tag(int high, int low)
@@ -514,13 +523,13 @@ namespace dg::impl
 
 						adjacent->m_hcost = dist * m_input->m_heuristicFactor;
 						adjacent->m_status = statusCounter;
+						adjacent->m_origin = i;
+						adjacent->m_gcost = newGCost;
 
-						goto add_to_heap;
+						heap.Push(newGCost + adjacent->m_hcost, adjacent);
 					}
-
-					if (newGCost < adjacent->m_gcost)
+					else if (newGCost < adjacent->m_gcost)
 					{
-						add_to_heap:
 						adjacent->m_origin = i;
 						adjacent->m_gcost = newGCost;
 
@@ -568,13 +577,7 @@ namespace dg::impl
 
 			if (path == 0)
 			{
-				zero:
-				for (int i = 0; i < 4; i++)
-				{
-					links[i]->m_links[i ^ 0b10] = &Vertex::s_sentinel;
-					links[i] = &Vertex::s_sentinel;
-				}
-
+				vertex.Unlink();
 				continue;
 			}
 
@@ -592,7 +595,10 @@ namespace dg::impl
 					links[Dir::WEST] = &Vertex::s_sentinel;
 
 					if (path &= ~0b1010; path == 0)
-						goto zero;
+					{
+						vertex.Unlink();
+						continue;
+					}
 				}
 			}
 
@@ -610,7 +616,10 @@ namespace dg::impl
 					links[Dir::SOUTH] = &Vertex::s_sentinel;
 
 					if (path &= ~0b0101; path == 0)
-						goto zero;
+					{
+						vertex.Unlink();
+						continue;
+					}
 				}
 			}
 

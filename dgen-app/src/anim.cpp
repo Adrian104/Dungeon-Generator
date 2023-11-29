@@ -60,11 +60,10 @@ void Animator::Update()
 void Animator::Play(DirMode dirMode)
 {
 	if (m_loopMode == LoopMode::ONLY_FORWARD)
-		goto forward;
-
-	switch (dirMode)
+		m_backward = false;
+	else switch (dirMode)
 	{
-	case DirMode::FORWARD: forward:
+	case DirMode::FORWARD:
 		m_backward = false;
 		break;
 
