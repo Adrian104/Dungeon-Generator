@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 #include "dgen_impl.hpp"
-#include "heap.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -68,6 +67,7 @@ namespace dg::impl
 		m_tags.clear();
 		m_rooms.clear();
 		m_vertices.clear();
+		m_vertexHeap.Clear();
 
 		if (m_rootNode != nullptr)
 		{
@@ -98,6 +98,7 @@ namespace dg::impl
 		m_rootNode = new Node<Cell>(nullptr, Cell(m_input->m_width - 1, m_input->m_height - 1));
 
 		m_targetDepth = 0;
+		m_statusCounter = 1;
 		m_totalRoomCount = 0;
 		m_partialPathCount = 0;
 
@@ -112,44 +113,11 @@ namespace dg::impl
 		if (left <= m_input->m_sparseAreaDepth)
 			node.m_flags |= static_cast<uint32_t>(m_random.GetFP32() < m_input->m_sparseAreaProb) << Cell::Flag::SPARSE_AREA;
 
-		if (left == m_deltaDepth)
-		{
-			if (m_deltaDepth > 0) m_targetDepth = m_random.Get32() % (m_deltaDepth + 1);
-			else goto no_more;
-		}
+		if (left == m_deltaDepth && m_deltaDepth > 0)
+			m_targetDepth = m_random.Get32() % (m_deltaDepth + 1);
 
 		if (left <= m_targetDepth)
-		{
-			no_more:
-			Rect& space = node.m_space;
-
-			space.x += m_spaceOffset; space.y += m_spaceOffset;
-			space.w -= m_spaceShrink; space.h -= m_spaceShrink;
-
-			const int d1 = m_spaceOffset - 1;
-
-			const int xMin = space.x - m_spaceOffset;
-			const int yMin = space.y - m_spaceOffset;
-			const int xMax = space.x + space.w + d1;
-			const int yMax = space.y + space.h + d1;
-
-			m_tags.emplace_back(xMax, yMax).m_data.m_linkBits = (1ULL << Dir::NORTH) | (1ULL << Dir::WEST);
-			m_tags.emplace_back(xMin, yMax).m_data.m_linkBits = 1ULL << Dir::NORTH;
-			m_tags.emplace_back(xMax, yMin).m_data.m_linkBits = 1ULL << Dir::WEST;
-			m_tags.emplace_back(xMin, yMin);
-
-			if (node.m_flags & (1 << Cell::Flag::SPARSE_AREA))
-			{
-				if (m_random.GetFP32() >= m_input->m_sparseAreaDens)
-					return 0;
-			}
-
-			node.m_flags |= 1 << Cell::Flag::GENERATE_ROOMS;
-			node.m_roomOffset = m_totalRoomCount++;
-			node.m_roomCount = 1;
-
-			return 1 << Cell::Flag::CONNECT_ROOMS;
-		}
+			return SetupLeafCell(node);
 
 		static constexpr std::pair<int Rect::*, int Rect::*> xw = std::make_pair(&Rect::x, &Rect::w);
 		static constexpr std::pair<int Rect::*, int Rect::*> yh = std::make_pair(&Rect::y, &Rect::h);
@@ -161,7 +129,7 @@ namespace dg::impl
 		const int randSize = static_cast<int>(totalSize * c);
 
 		if (randSize < m_minSpaceSize || totalSize - randSize < m_minSpaceSize)
-			goto no_more;
+			return SetupLeafCell(node);
 
 		node.m_left = static_cast<Node<Cell>*>(operator new[](sizeof(Node<Cell>) * 2));
 		node.m_right = node.m_left + 1;
@@ -181,6 +149,38 @@ namespace dg::impl
 		node.m_flags |= l & r;
 
 		return l | r;
+	}
+
+	uint32_t Generator::SetupLeafCell(Node<Cell>& node)
+	{
+		Rect& space = node.m_space;
+
+		space.x += m_spaceOffset; space.y += m_spaceOffset;
+		space.w -= m_spaceShrink; space.h -= m_spaceShrink;
+
+		const int d1 = m_spaceOffset - 1;
+
+		const int xMin = space.x - m_spaceOffset;
+		const int yMin = space.y - m_spaceOffset;
+		const int xMax = space.x + space.w + d1;
+		const int yMax = space.y + space.h + d1;
+
+		m_tags.emplace_back(xMax, yMax).m_data.m_linkBits = (1ULL << Dir::NORTH) | (1ULL << Dir::WEST);
+		m_tags.emplace_back(xMin, yMax).m_data.m_linkBits = 1ULL << Dir::NORTH;
+		m_tags.emplace_back(xMax, yMin).m_data.m_linkBits = 1ULL << Dir::WEST;
+		m_tags.emplace_back(xMin, yMin);
+
+		if (node.m_flags & (1 << Cell::Flag::SPARSE_AREA))
+		{
+			if (m_random.GetFP32() >= m_input->m_sparseAreaDens)
+				return 0;
+		}
+
+		node.m_flags |= 1 << Cell::Flag::GENERATE_ROOMS;
+		node.m_roomOffset = m_totalRoomCount++;
+		node.m_roomCount = 1;
+
+		return 1 << Cell::Flag::CONNECT_ROOMS;
 	}
 
 	void Generator::GenerateRooms()
@@ -220,29 +220,28 @@ namespace dg::impl
 				static constexpr std::pair<int Vec::*, int Vec::*> yx = std::make_pair(&Vec::y, &Vec::x);
 
 				const auto& [incAxis, decAxis] = remSize.x > remSize.y ? xy : yx;
-
 				secSize.*decAxis = priSize.*decAxis >> 1;
-				if (secSize.*decAxis < s_roomSizeLimit)
-					goto skip_double_room;
 
-				const int extra = static_cast<int>(remSize.*incAxis * (m_random.GetFP32() * diffRoomSize + minRoomSize));
-				if (extra <= 0)
-					goto skip_double_room;
+				if (secSize.*decAxis >= s_roomSizeLimit)
+				{
+					const int extra = static_cast<int>(remSize.*incAxis * (m_random.GetFP32() * diffRoomSize + minRoomSize));
+					if (extra > 0)
+					{
+						secSize.*incAxis = priSize.*incAxis + extra;
+						remSize.*incAxis -= extra;
+						secPos = priPos;
 
-				secSize.*incAxis = priSize.*incAxis + extra;
-				remSize.*incAxis -= extra;
-				secPos = priPos;
+						auto [c, d] = m_random.Get32P();
 
-				auto [c, d] = m_random.Get32P();
+						if (c %= 3; c < 2)
+							priPos.*incAxis += extra >> c;
 
-				if (c %= 3; c < 2)
-					priPos.*incAxis += extra >> c;
-
-				if (d %= 3; d < 2)
-					secPos.*decAxis += (priSize.*decAxis - secSize.*decAxis) >> d;
+						if (d %= 3; d < 2)
+							secPos.*decAxis += (priSize.*decAxis - secSize.*decAxis) >> d;
+					}
+				}
 			}
 
-			skip_double_room:
 			const auto [c, d] = m_random.Get32P();
 			const Vec offset(c % (remSize.x + 1), d % (remSize.y + 1));
 
@@ -437,19 +436,11 @@ namespace dg::impl
 
 	void Generator::FindPaths()
 	{
-		uint32_t statusCounter = 1;
-		MinHeap<float, Vertex*> heap;
-
 		Node<Cell>::s_defaultTraversal = Traversal::POSTORDER;
-		const float factors[2] = { 1.0f, m_input->m_pathCostFactor };
-
 		for (auto& node : *m_rootNode)
 		{
 			if ((node.m_flags & (1 << Cell::Flag::CONNECT_ROOMS)) == 0)
 				continue;
-
-			int n = 1; int d = 2;
-			Room* start; Room* stop;
 
 			if (node.m_flags & (1 << Cell::Flag::RANDOM_PATH))
 			{
@@ -465,104 +456,108 @@ namespace dg::impl
 				if (rightCount > 1)
 					rightIndex += m_random.Get32() % rightCount;
 
-				start = m_rooms.data() + leftIndex;
-				stop = m_rooms.data() + rightIndex;
+				FindPath(m_rooms.data() + leftIndex, m_rooms.data() + rightIndex);
 			}
 			else
 			{
-				n += m_input->m_extraPathCount;
-				d += m_input->m_extraPathCount;
+				int n = m_input->m_extraPathCount + 1;
+				const int d = m_input->m_extraPathCount + 2;
 
-				next_path:
 				const auto [xL, yL, wL, hL] = node.m_left->m_space;
 				const auto [xR, yR, wR, hR] = node.m_right->m_space;
 
-				const Point center = xL + wL <= xR ? Point(xR, yR + n * hR / d) : Point(xR + n * wR / d, yR);
-
-				start = m_rooms.data() + GetNearestRoomTo(center, node.m_left);
-				stop = m_rooms.data() + GetNearestRoomTo(center, node.m_right);
-			}
-
-			Vertex* vertex = start;
-			start->m_gcost = 0;
-
-			do
-			{
-				vertex->m_status = statusCounter + 1;
-				Room* const room = vertex->ToRoom();
-
-				for (int i = 0; i < 4; i++)
-				{
-					Vertex* const adjacent = vertex->m_links[i];
-					if (adjacent->m_status > statusCounter)
-						continue;
-
-					Point p1, p2;
-					if (room == nullptr)
-					{
-						Room* const adjRoom = adjacent->ToRoom();
-
-						p1 = vertex->m_pos;
-						p2 = (adjRoom != nullptr) ? adjRoom->m_entrances[i ^ 0b10] : adjacent->m_pos;
-					}
-					else
-					{
-						p1 = adjacent->m_pos;
-						p2 = room->m_entrances[i];
-					}
-
-					const float diff = static_cast<float>(std::abs(p1.x - p2.x) + std::abs(p1.y - p2.y));
-					const float newGCost = vertex->m_gcost + diff * factors[(vertex->m_path >> i) & 1];
-
-					if (adjacent->m_status < statusCounter)
-					{
-						const int dx = stop->m_pos.x - adjacent->m_pos.x;
-						const int dy = stop->m_pos.y - adjacent->m_pos.y;
-
-						const float dist = std::sqrt(static_cast<float>(dx * dx + dy * dy));
-
-						adjacent->m_hcost = dist * m_input->m_heuristicFactor;
-						adjacent->m_status = statusCounter;
-						adjacent->m_origin = i;
-						adjacent->m_gcost = newGCost;
-
-						heap.Push(newGCost + adjacent->m_hcost, adjacent);
-					}
-					else if (newGCost < adjacent->m_gcost)
-					{
-						adjacent->m_origin = i;
-						adjacent->m_gcost = newGCost;
-
-						heap.Push(newGCost + adjacent->m_hcost, adjacent);
-					}
-				}
-
 				do
 				{
-					vertex = heap.TopObject();
-					heap.Pop();
+					const Point center = xL + wL <= xR ? Point(xR, yR + n * hR / d) : Point(xR + n * wR / d, yR);
+					const int leftIndex = GetNearestRoomTo(center, node.m_left);
+					const int rightIndex = GetNearestRoomTo(center, node.m_right);
 
-				} while (vertex->m_status > statusCounter);
+					FindPath(m_rooms.data() + leftIndex, m_rooms.data() + rightIndex);
 
-			} while (vertex != stop);
+				} while (--n > 0);
+			}
+		}
+	}
 
-			statusCounter += 2;
-			heap.Clear();
+	void Generator::FindPath(Room* const start, Room* const stop)
+	{
+		const float factors[2] = { 1.0f, m_input->m_pathCostFactor };
+		Vertex* vertex = start;
+		start->m_gcost = 0;
+
+		do
+		{
+			vertex->m_status = m_statusCounter + 1;
+			Room* const room = vertex->ToRoom();
+
+			for (int i = 0; i < 4; i++)
+			{
+				Vertex* const adjacent = vertex->m_links[i];
+				if (adjacent->m_status > m_statusCounter)
+					continue;
+
+				Point p1, p2;
+				if (room == nullptr)
+				{
+					Room* const adjRoom = adjacent->ToRoom();
+
+					p1 = vertex->m_pos;
+					p2 = (adjRoom != nullptr) ? adjRoom->m_entrances[i ^ 0b10] : adjacent->m_pos;
+				}
+				else
+				{
+					p1 = adjacent->m_pos;
+					p2 = room->m_entrances[i];
+				}
+
+				const float diff = static_cast<float>(std::abs(p1.x - p2.x) + std::abs(p1.y - p2.y));
+				const float newGCost = vertex->m_gcost + diff * factors[(vertex->m_path >> i) & 1];
+
+				if (adjacent->m_status < m_statusCounter)
+				{
+					const int dx = stop->m_pos.x - adjacent->m_pos.x;
+					const int dy = stop->m_pos.y - adjacent->m_pos.y;
+
+					const float dist = std::sqrt(static_cast<float>(dx * dx + dy * dy));
+
+					adjacent->m_hcost = dist * m_input->m_heuristicFactor;
+					adjacent->m_status = m_statusCounter;
+					adjacent->m_origin = i;
+					adjacent->m_gcost = newGCost;
+
+					m_vertexHeap.Push(newGCost + adjacent->m_hcost, adjacent);
+				}
+				else if (newGCost < adjacent->m_gcost)
+				{
+					adjacent->m_origin = i;
+					adjacent->m_gcost = newGCost;
+
+					m_vertexHeap.Push(newGCost + adjacent->m_hcost, adjacent);
+				}
+			}
 
 			do
 			{
-				const uint8_t origin = vertex->m_origin;
-				const uint8_t realOrigin = origin ^ 0b10;
+				vertex = m_vertexHeap.TopObject();
+				m_vertexHeap.Pop();
 
-				vertex->m_path |= 1 << realOrigin;
-				vertex = vertex->m_links[realOrigin];
-				vertex->m_path |= 1 << origin;
+			} while (vertex->m_status > m_statusCounter);
 
-			} while (vertex != start);
+		} while (vertex != stop);
 
-			if (--n > 0)
-				goto next_path;
-		}
+		m_statusCounter += 2;
+		m_vertexHeap.Clear();
+
+		do
+		{
+			const uint8_t origin = vertex->m_origin;
+			const uint8_t realOrigin = origin ^ 0b10;
+
+			vertex->m_path |= 1 << realOrigin;
+			vertex = vertex->m_links[realOrigin];
+			vertex->m_path |= 1 << origin;
+
+		} while (vertex != start);
 	}
 
 	void Generator::OptimizeVertices()

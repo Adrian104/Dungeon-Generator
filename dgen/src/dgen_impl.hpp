@@ -5,6 +5,7 @@
 
 #include "../include/dgen/dgen.hpp"
 #include "bin_tree.hpp"
+#include "heap.hpp"
 #include "rand.hpp"
 
 #include <limits>
@@ -108,24 +109,28 @@ namespace dg::impl
 		int m_totalRoomCount = 0;
 		int m_partialPathCount = 0;
 
-		Random m_random;
-
 		Output* m_output = nullptr;
 		const Input* m_input = nullptr;
 
 		std::vector<Tag> m_tags;
 		std::vector<Room> m_rooms;
 		std::vector<Vertex> m_vertices;
+
+		Random m_random;
+		uint32_t m_statusCounter = 1;
 		Node<Cell>* m_rootNode = nullptr;
+		MinHeap<float, Vertex*> m_vertexHeap;
 
 		static constexpr int s_roomSizeLimit = 4;
 
 		void Clear();
 		void Prepare();
 		uint32_t GenerateTree(Node<Cell>& node, int left);
+		uint32_t SetupLeafCell(Node<Cell>& node);
 		void GenerateRooms();
 		void CreateVertices();
 		void FindPaths();
+		void FindPath(Room* const start, Room* const stop);
 		void OptimizeVertices();
 		void GenerateOutput();
 
