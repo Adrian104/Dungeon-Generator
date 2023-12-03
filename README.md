@@ -97,5 +97,7 @@ Compiled executables are located in `build/bin` directory.
 # Images
 ### The following image shows a visual representation of what `dgen` library can produce:
 ![](https://github.com/Adrian104/Dungeon-Generator/blob/master/resources/geometry.png)
-### You will probably want to convert it into a tile map. It may look like this:
+### This geometry can be easily transformed into a tile map¹. For example:
 ![](https://github.com/Adrian104/Dungeon-Generator/blob/master/resources/map.png)
+
+¹Currently, the `dgen` library itself doesn't have this implemented yet.
