@@ -46,6 +46,7 @@ namespace dg::impl
 
 		Vertex() = default;
 		Vertex(uint32_t status) : m_status(status) {}
+		virtual ~Vertex() {}
 
 		void Unlink();
 		virtual Room* ToRoom() { return nullptr; }
@@ -81,7 +82,7 @@ namespace dg::impl
 		RadixSort(const size_t maxSize);
 		~RadixSort();
 
-		void Sort(Tag* arr, const size_t size);
+		void Sort(Tag* arr, const size_t size) const;
 	};
 
 	struct Room final : public Vertex
@@ -126,7 +127,7 @@ namespace dg::impl
 		void Clear();
 		void Prepare();
 		uint32_t GenerateTree(Node<Cell>& node, int left);
-		uint32_t SetupLeafCell(Node<Cell>& node);
+		uint32_t MakeLeafCell(Node<Cell>& node);
 		void GenerateRooms();
 		void CreateVertices();
 		void FindPaths();

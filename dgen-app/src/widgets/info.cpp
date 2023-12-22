@@ -19,7 +19,7 @@ void Info::Draw()
 
 	const SDL_Rect dest = { m_app.GetWidth() - m_width, 0, m_width, m_height };
 
-	SDL_SetTextureAlphaMod(m_renderOutput, 0xFF - static_cast<int>(0xFF * GetPhase()));
+	SDL_SetTextureAlphaMod(m_renderOutput, static_cast<Uint8>(0xFF - static_cast<int>(0xFF * GetPhase())));
 	SDL_RenderCopy(m_app.GetRenderer(), m_renderOutput, nullptr, &dest);
 }
 

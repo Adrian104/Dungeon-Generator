@@ -141,10 +141,10 @@ void Application::Render()
 			SDL_RenderFillRectF(renderer, &rect);
 
 			SDL_SetRenderDrawColor(renderer, 0x80, 0, 0x80, 0xFF);
-			for (int i = 0; i < 4; i++)
+			for (dg::Point& point : room.m_entrances)
 			{
-				rect.x = static_cast<float>(room.m_entrances[i].x);
-				rect.y = static_cast<float>(room.m_entrances[i].y);
+				rect.x = static_cast<float>(point.x);
+				rect.y = static_cast<float>(point.y);
 				rect.w = 1.0f; rect.h = 1.0f;
 
 				m_viewport.RectToScreen(rect, rect);

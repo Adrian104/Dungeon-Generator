@@ -38,7 +38,7 @@ namespace dg::impl
 
 	RadixSort::~RadixSort() { operator delete[](m_memory); }
 
-	void RadixSort::Sort(Tag* arr, const size_t size)
+	void RadixSort::Sort(Tag* arr, const size_t size) const
 	{
 		size_t* const count = static_cast<size_t*>(m_memory);
 		Tag* temp = reinterpret_cast<Tag*>(count + 256);
@@ -117,7 +117,7 @@ namespace dg::impl
 			m_targetDepth = m_random.Get32() % (m_deltaDepth + 1);
 
 		if (left <= m_targetDepth)
-			return SetupLeafCell(node);
+			return MakeLeafCell(node);
 
 		static constexpr std::pair<int Rect::*, int Rect::*> xw = std::make_pair(&Rect::x, &Rect::w);
 		static constexpr std::pair<int Rect::*, int Rect::*> yh = std::make_pair(&Rect::y, &Rect::h);
@@ -129,7 +129,7 @@ namespace dg::impl
 		const int randSize = static_cast<int>(totalSize * c);
 
 		if (randSize < m_minSpaceSize || totalSize - randSize < m_minSpaceSize)
-			return SetupLeafCell(node);
+			return MakeLeafCell(node);
 
 		node.m_left = static_cast<Node<Cell>*>(operator new[](sizeof(Node<Cell>) * 2));
 		node.m_right = node.m_left + 1;
@@ -151,7 +151,7 @@ namespace dg::impl
 		return l | r;
 	}
 
-	uint32_t Generator::SetupLeafCell(Node<Cell>& node)
+	uint32_t Generator::MakeLeafCell(Node<Cell>& node)
 	{
 		Rect& space = node.m_space;
 
@@ -351,10 +351,10 @@ namespace dg::impl
 			const auto& [xS, yS, wS, hS] = node.m_space;
 			const uint64_t index = static_cast<uint64_t>(node.m_roomOffset);
 
-			m_tags.emplace_back(pos[0].x, yS - d0, 1 << Dir::WEST, Dir::SOUTH, index);
-			m_tags.emplace_back(xS + wS + d1, pos[0].y, 1 << Dir::NORTH, Dir::WEST, index);
-			m_tags.emplace_back(pos[1].x, yS + hS + d1, 1 << Dir::WEST, Dir::NORTH, index);
-			m_tags.emplace_back(xS - d0, pos[1].y, 1 << Dir::NORTH, Dir::EAST, index);
+			m_tags.emplace_back(pos[0].x, yS - d0, static_cast<uint8_t>(1 << Dir::WEST), static_cast<uint8_t>(Dir::SOUTH), index);
+			m_tags.emplace_back(xS + wS + d1, pos[0].y, static_cast<uint8_t>(1 << Dir::NORTH), static_cast<uint8_t>(Dir::WEST), index);
+			m_tags.emplace_back(pos[1].x, yS + hS + d1, static_cast<uint8_t>(1 << Dir::WEST), static_cast<uint8_t>(Dir::NORTH), index);
+			m_tags.emplace_back(xS - d0, pos[1].y, static_cast<uint8_t>(1 << Dir::NORTH), static_cast<uint8_t>(Dir::EAST), index);
 		}
 	}
 
@@ -490,7 +490,7 @@ namespace dg::impl
 			vertex->m_status = m_statusCounter + 1;
 			Room* const room = vertex->ToRoom();
 
-			for (int i = 0; i < 4; i++)
+			for (uint8_t i = 0; i < 4; i++)
 			{
 				Vertex* const adjacent = vertex->m_links[i];
 				if (adjacent->m_status > m_statusCounter)
@@ -632,8 +632,8 @@ namespace dg::impl
 		}
 
 		m_output->m_rooms.shrink_to_fit();
-		m_output->m_paths.reserve(static_cast<size_t>(ne + m_partialPathCount));
-		m_output->m_entrances.reserve(static_cast<size_t>(ne + sw));
+		m_output->m_paths.reserve(static_cast<size_t>(ne) + static_cast<size_t>(m_partialPathCount));
+		m_output->m_entrances.reserve(static_cast<size_t>(ne) + static_cast<size_t>(sw));
 
 		for (Room& room : m_rooms)
 		{

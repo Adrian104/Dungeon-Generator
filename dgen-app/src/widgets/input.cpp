@@ -107,7 +107,7 @@ void Input::HandleEvent(SDL_Event& sdlEvent)
 			break;
 
 		default:
-			m_input += key;
+			m_input += static_cast<char>(key);
 		}
 
 		ScheduleRendering();

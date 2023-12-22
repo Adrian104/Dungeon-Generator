@@ -77,7 +77,7 @@ public:
 
 class Benchmark
 {
-	int m_delay;
+	int m_delay = 0;
 
 	std::string m_outputFile;
 	std::vector<Trial> m_trials;

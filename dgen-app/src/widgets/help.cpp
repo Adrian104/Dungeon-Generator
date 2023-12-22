@@ -17,7 +17,7 @@ void Help::Draw()
 	if (IsElapsedMax())
 		return;
 
-	SDL_SetTextureAlphaMod(m_renderOutput, 0xFF - static_cast<int>(0xFF * GetPhase()));
+	SDL_SetTextureAlphaMod(m_renderOutput, static_cast<Uint8>(0xFF - static_cast<int>(0xFF * GetPhase())));
 	SDL_RenderCopy(m_app.GetRenderer(), m_renderOutput, nullptr, nullptr);
 }
 
@@ -79,7 +79,7 @@ void Help::Render()
 		yPos += std::max(a.GetHeight(), b.GetHeight());
 	}
 
-	dest = { (m_app.GetWidth() - pressText.GetWidth()) >> 1, yPos += g_helpAnyKeyOffset, pressText.GetWidth(), pressText.GetHeight() };
+	dest = { (m_app.GetWidth() - pressText.GetWidth()) >> 1, yPos + g_helpAnyKeyOffset, pressText.GetWidth(), pressText.GetHeight() };
 	SDL_RenderCopy(renderer, pressText.Get(), nullptr, &dest);
 }
 
