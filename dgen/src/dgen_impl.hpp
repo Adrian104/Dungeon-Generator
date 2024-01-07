@@ -54,14 +54,14 @@ namespace dg::impl
 
 	struct Tag
 	{
-		static constexpr uint64_t s_emptyIndex = (1ULL << 58) - 1;
 		uint64_t m_pos = 0;
 
 		struct Data
 		{
-			uint64_t m_index : 58;
+			uint64_t m_index : 57;
 			uint64_t m_origin : 2;
 			uint64_t m_linkBits : 4;
+			uint64_t m_hasIndex : 1;
 		};
 
 		union
@@ -70,7 +70,7 @@ namespace dg::impl
 			Vertex* m_vertex;
 		};
 
-		Tag();
+		Tag() = default;
 		Tag(int high, int low);
 		Tag(int high, int low, uint8_t linkBits, uint8_t origin, uint64_t index);
 	};

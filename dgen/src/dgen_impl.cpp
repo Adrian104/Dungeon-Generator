@@ -20,10 +20,8 @@ namespace dg::impl
 		}
 	}
 
-	Tag::Tag() { m_data.m_index = s_emptyIndex; }
-
 	Tag::Tag(int high, int low)
-		: m_pos((static_cast<uint64_t>(high) << 32) | static_cast<uint64_t>(low)) { m_data.m_index = s_emptyIndex; }
+		: m_pos((static_cast<uint64_t>(high) << 32) | static_cast<uint64_t>(low)) {}
 
 	Tag::Tag(int high, int low, uint8_t linkBits, uint8_t origin, uint64_t index)
 		: Tag(high, low)
@@ -31,6 +29,7 @@ namespace dg::impl
 		m_data.m_index = index;
 		m_data.m_origin = origin;
 		m_data.m_linkBits = linkBits;
+		m_data.m_hasIndex = 1;
 	}
 
 	RadixSort::RadixSort(const size_t maxSize)
@@ -170,17 +169,16 @@ namespace dg::impl
 		m_tags.emplace_back(xMax, yMin).m_data.m_linkBits = 1ULL << Dir::WEST;
 		m_tags.emplace_back(xMin, yMin);
 
-		if (node.m_flags & (1 << Cell::Flag::SPARSE_AREA))
+		uint32_t flagsToReturn = 0;
+		if ((node.m_flags & (1 << Cell::Flag::SPARSE_AREA)) == 0 || m_random.GetFP32() < m_input->m_sparseAreaDens)
 		{
-			if (m_random.GetFP32() >= m_input->m_sparseAreaDens)
-				return 0;
+			flagsToReturn = 1 << Cell::Flag::CONNECT_ROOMS;
+			node.m_flags |= 1 << Cell::Flag::GENERATE_ROOMS;
+			node.m_roomOffset = m_totalRoomCount++;
+			node.m_roomCount = 1;
 		}
 
-		node.m_flags |= 1 << Cell::Flag::GENERATE_ROOMS;
-		node.m_roomOffset = m_totalRoomCount++;
-		node.m_roomCount = 1;
-
-		return 1 << Cell::Flag::CONNECT_ROOMS;
+		return flagsToReturn;
 	}
 
 	void Generator::GenerateRooms()
@@ -402,7 +400,7 @@ namespace dg::impl
 			pri[1] = vertex;
 			sec[1] = m_rooms.data() + tag.m_data.m_index;
 
-			const int exists = tag.m_data.m_index != Tag::s_emptyIndex;
+			const int exists = tag.m_data.m_hasIndex;
 
 			pri[exists]->m_links[tag.m_data.m_origin] = sec[exists];
 			sec[exists]->m_links[tag.m_data.m_origin ^ 0b10] = pri[exists];
