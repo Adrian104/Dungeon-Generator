@@ -7,15 +7,12 @@
 
 namespace dg::impl
 {
-	using state_type = unsigned int;
-	enum class Traversal : state_type { PREORDER, INORDER, POSTORDER };
-
 	template <typename Type>
-	class Node : public Type
+	struct Node : public Type
 	{
-		class Iterator
+		template <int breakAt>
+		struct Iterator
 		{
-		public:
 			using iterator_category = std::forward_iterator_tag;
 			using difference_type = std::ptrdiff_t;
 			using value_type = Node<Type>;
@@ -23,9 +20,8 @@ namespace dg::impl
 			using reference = value_type&;
 
 		private:
-			pointer m_crr;
-			state_type m_breakAt;
-			state_type m_state = 0;
+			pointer m_crr = nullptr;
+			int m_state = 0;
 
 			void GoUp();
 			void GoLeft();
@@ -35,7 +31,8 @@ namespace dg::impl
 		public:
 			int m_counter = 0;
 
-			Iterator(pointer tree, Traversal traversal);
+			Iterator() = default;
+			Iterator(pointer ptr);
 
 			pointer operator->() { return m_crr; }
 			reference operator*() const { return *m_crr; }
@@ -47,8 +44,15 @@ namespace dg::impl
 			bool operator!=(const Iterator& iter) const { return m_crr != iter.m_crr; }
 		};
 
-	public:
-		static Traversal s_defaultTraversal;
+		template <int breakAt>
+		struct Range
+		{
+			Node* const m_ptr;
+			Range(Node* ptr) : m_ptr(ptr) {}
+
+			Iterator<breakAt> begin() { return Iterator<breakAt>(m_ptr); }
+			Iterator<breakAt> end() { return Iterator<breakAt>(); }
+		};
 
 		Node* m_parent;
 		Node* m_left = nullptr;
@@ -64,12 +68,13 @@ namespace dg::impl
 		Node(Node&& ref) noexcept = delete;
 		Node& operator=(Node&& ref) noexcept = delete;
 
-		Iterator begin() { return Iterator(this, s_defaultTraversal); }
-		Iterator end() { return Iterator(nullptr, s_defaultTraversal); }
+		Range<0> Preorder() { return Range<0>(this); }
+		Range<1> Inorder() { return Range<1>(this); }
+		Range<2> Postorder() { return Range<2>(this); }
 	};
 
-	template <typename Type>
-	void Node<Type>::Iterator::GoUp()
+	template <typename Type> template <int breakAt>
+	void Node<Type>::Iterator<breakAt>::GoUp()
 	{
 		pointer const parent = m_crr->m_parent;
 		if (parent != nullptr)
@@ -81,12 +86,12 @@ namespace dg::impl
 		else
 		{
 			m_crr = nullptr;
-			m_state = m_breakAt;
+			m_state = breakAt;
 		}
 	}
 
-	template <typename Type>
-	void Node<Type>::Iterator::GoLeft()
+	template <typename Type> template <int breakAt>
+	void Node<Type>::Iterator<breakAt>::GoLeft()
 	{
 		pointer const left = m_crr->m_left;
 		if (left != nullptr)
@@ -97,8 +102,8 @@ namespace dg::impl
 		else m_state = 1;
 	}
 
-	template <typename Type>
-	void Node<Type>::Iterator::GoRight()
+	template <typename Type> template <int breakAt>
+	void Node<Type>::Iterator<breakAt>::GoRight()
 	{
 		pointer const right = m_crr->m_right;
 		if (right != nullptr)
@@ -110,36 +115,32 @@ namespace dg::impl
 		else m_state = 2;
 	}
 
-	template <typename Type>
-	void Node<Type>::Iterator::Advance()
+	template <typename Type> template <int breakAt>
+	void Node<Type>::Iterator<breakAt>::Advance()
 	{
-		using scope = Node<Type>::Iterator;
+		using scope = Node<Type>::Iterator<breakAt>;
 		using action = void (scope::*)();
 
 		static constexpr action s_actions[3] = { &scope::GoLeft, &scope::GoRight, &scope::GoUp };
 		(this->*s_actions[m_state])();
 	}
 
-	template <typename Type>
-	Node<Type>::Iterator::Iterator(pointer tree, Traversal traversal)
-		: m_crr(tree), m_breakAt(static_cast<state_type>(traversal))
+	template <typename Type> template <int breakAt>
+	Node<Type>::Iterator<breakAt>::Iterator(pointer ptr) : m_crr(ptr)
 	{
 		if (m_crr == nullptr)
 			return;
 
-		while (m_state != m_breakAt)
+		while (m_state != breakAt)
 			Advance();
 	}
 
-	template <typename Type>
-	auto Node<Type>::Iterator::operator++() -> Iterator&
+	template <typename Type> template <int breakAt>
+	auto Node<Type>::Iterator<breakAt>::operator++() -> Iterator&
 	{
 		do { Advance(); }
-		while (m_state != m_breakAt);
+		while (m_state != breakAt);
 
 		return *this;
 	}
-
-	template <typename Type>
-	Traversal Node<Type>::s_defaultTraversal = Traversal::PREORDER;
 }

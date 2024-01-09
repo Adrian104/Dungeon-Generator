@@ -69,8 +69,7 @@ void Application::Render()
 
 	if (m_debugView)
 	{
-		dg::impl::Node<dg::impl::Cell>::s_defaultTraversal = dg::impl::Traversal::PREORDER;
-		for (auto& node : *m_generator.m_rootNode)
+		for (auto& node : m_generator.m_rootNode->Preorder())
 		{
 			if (node.m_left != nullptr || node.m_right != nullptr)
 				continue;

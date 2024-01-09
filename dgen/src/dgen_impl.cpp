@@ -189,8 +189,7 @@ namespace dg::impl
 		m_rooms.reserve(static_cast<size_t>(m_totalRoomCount));
 		m_output->m_rooms.reserve(static_cast<size_t>(m_totalRoomCount) << 1);
 
-		Node<Cell>::s_defaultTraversal = Traversal::POSTORDER;
-		for (auto& node : *m_rootNode)
+		for (auto& node : m_rootNode->Postorder())
 		{
 			if ((node.m_flags & (1 << Cell::Flag::GENERATE_ROOMS)) == 0)
 				continue;
@@ -434,8 +433,7 @@ namespace dg::impl
 
 	void Generator::FindPaths()
 	{
-		Node<Cell>::s_defaultTraversal = Traversal::POSTORDER;
-		for (auto& node : *m_rootNode)
+		for (auto& node : m_rootNode->Postorder())
 		{
 			if ((node.m_flags & (1 << Cell::Flag::CONNECT_ROOMS)) == 0)
 				continue;
