@@ -21,23 +21,18 @@ namespace dg::impl
 
 		private:
 			pointer m_crr = nullptr;
-			int m_state = 0;
-
-			void GoUp();
-			void GoLeft();
-			void GoRight();
-			void Advance();
+			void Advance(int state);
 
 		public:
 			int m_counter = 0;
 
 			Iterator() = default;
-			Iterator(pointer ptr);
+			Iterator(pointer ptr) : m_crr(ptr) { if (m_crr != nullptr && breakAt != 0) Advance(0); }
 
 			pointer operator->() { return m_crr; }
 			reference operator*() const { return *m_crr; }
 
-			auto operator++() -> Iterator&;
+			auto operator++() -> Iterator& { Advance(breakAt); return *this; }
 			Iterator operator++(int) { Iterator iter = *this; ++(*this); return iter; }
 
 			bool operator==(const Iterator& iter) const { return m_crr == iter.m_crr; }
@@ -74,73 +69,77 @@ namespace dg::impl
 	};
 
 	template <typename Type> template <int breakAt>
-	void Node<Type>::Iterator<breakAt>::GoUp()
+	void Node<Type>::Iterator<breakAt>::Advance(int state)
 	{
-		pointer const parent = m_crr->m_parent;
-		if (parent != nullptr)
+		pointer temp;
+		while (true)
 		{
-			m_state = (parent->m_right == m_crr) + 1;
-			m_crr = parent;
-			m_counter--;
+			switch (state)
+			{
+			case 0:
+				if (temp = m_crr->m_left; temp != nullptr)
+				{
+					m_crr = temp;
+					m_counter++;
+
+					if constexpr (breakAt == 0)
+						return;
+					else
+						continue;
+				}
+
+				if constexpr (breakAt == 1)
+					return;
+				[[fallthrough]];
+
+			case 1:
+				if (temp = m_crr->m_right; temp != nullptr)
+				{
+					m_crr = temp;
+					m_counter++;
+
+					if constexpr (breakAt == 0)
+						return;
+					else
+					{
+						state = 0;
+						continue;
+					}
+				}
+
+				if constexpr (breakAt == 2)
+					return;
+				[[fallthrough]];
+
+			default:
+				temp = m_crr;
+				m_crr = m_crr->m_parent;
+				m_counter--;
+
+				if (m_crr == nullptr)
+					return;
+
+				if (m_crr->m_right == temp)
+				{
+					if constexpr (breakAt == 2)
+						return;
+					else
+					{
+						state = 2;
+						continue;
+					}
+				}
+				else
+				{
+					if constexpr (breakAt == 1)
+						return;
+					else
+					{
+						state = 1;
+						continue;
+					}
+				}
+			}
 		}
-		else
-		{
-			m_crr = nullptr;
-			m_state = breakAt;
-		}
-	}
-
-	template <typename Type> template <int breakAt>
-	void Node<Type>::Iterator<breakAt>::GoLeft()
-	{
-		pointer const left = m_crr->m_left;
-		if (left != nullptr)
-		{
-			m_crr = left;
-			m_counter++;
-		}
-		else m_state = 1;
-	}
-
-	template <typename Type> template <int breakAt>
-	void Node<Type>::Iterator<breakAt>::GoRight()
-	{
-		pointer const right = m_crr->m_right;
-		if (right != nullptr)
-		{
-			m_crr = right;
-			m_state = 0;
-			m_counter++;
-		}
-		else m_state = 2;
-	}
-
-	template <typename Type> template <int breakAt>
-	void Node<Type>::Iterator<breakAt>::Advance()
-	{
-		using scope = Node<Type>::Iterator<breakAt>;
-		using action = void (scope::*)();
-
-		static constexpr action s_actions[3] = { &scope::GoLeft, &scope::GoRight, &scope::GoUp };
-		(this->*s_actions[m_state])();
-	}
-
-	template <typename Type> template <int breakAt>
-	Node<Type>::Iterator<breakAt>::Iterator(pointer ptr) : m_crr(ptr)
-	{
-		if (m_crr == nullptr)
-			return;
-
-		while (m_state != breakAt)
-			Advance();
-	}
-
-	template <typename Type> template <int breakAt>
-	auto Node<Type>::Iterator<breakAt>::operator++() -> Iterator&
-	{
-		do { Advance(); }
-		while (m_state != breakAt);
-
-		return *this;
 	}
 }
