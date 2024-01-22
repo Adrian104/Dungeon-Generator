@@ -39,6 +39,7 @@ namespace dg::impl
 
 	void RadixSort::Sort(Tag* arr, const size_t size) const
 	{
+		static constexpr auto s_overflow = static_cast<size_t>(0) - 1;
 		size_t* const count = static_cast<size_t*>(m_memory);
 		Tag* temp = reinterpret_cast<Tag*>(count + 256);
 
@@ -54,7 +55,7 @@ namespace dg::impl
 			for (size_t i = 1; i < 256; i++)
 				prev = (count[i] += prev);
 
-			for (size_t i = size - 1; i != std::numeric_limits<size_t>::max(); i--)
+			for (size_t i = size - 1; i != s_overflow; i--)
 				temp[--count[(arr[i].m_pos >> bits) & 0xFF]] = arr[i];
 
 			std::swap(arr, temp);
@@ -272,7 +273,7 @@ namespace dg::impl
 				const Rect& priRect = m_output->m_rooms[room.m_rectBegin + static_cast<size_t>(randBool)];
 				const Rect& secRect = m_output->m_rooms[room.m_rectBegin + static_cast<size_t>(!randBool)];
 
-				auto CalculatePos = [this](const Rect& priRect, const Rect& secRect, Point& pos) -> void
+				auto CalculatePos = [this, &priRect, &secRect](Point& pos) -> void
 				{
 					const auto [e, f] = m_random.Get32P();
 
@@ -309,8 +310,8 @@ namespace dg::impl
 					}
 				};
 
-				CalculatePos(priRect, secRect, pos[0]);
-				CalculatePos(priRect, secRect, pos[1]);
+				CalculatePos(pos[0]);
+				CalculatePos(pos[1]);
 			}
 
 			auto& ent = room.m_entrances;
