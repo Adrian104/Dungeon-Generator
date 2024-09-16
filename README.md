@@ -2,7 +2,7 @@
 ---
 ![](https://img.shields.io/github/license/Adrian104/Dungeon-Generator?color=blue)
 ![](https://img.shields.io/github/languages/top/Adrian104/Dungeon-Generator?color=blue)
-### Dungeon-Generator is a free and open-source BSP-based procedural 2D map generator, written in C++.
+### Dungeon-Generator is a free and open-source BSP-based procedural 2D map generator. It was designed with roguelike games in mind, but it is not limited to them.
 
 # :star: Features
 * Various settings allow you to precisely customize the appearance of the dungeon.
@@ -34,7 +34,7 @@ int main()
 
 The generator fills object of type `dg::Output` with geometry data
 based on the data from object of type `dg::Input`. The output contains
-coordinates and dimensions of different dungeon structures (e.g., rooms, paths).
+coordinates and dimensions of different dungeon structures, like rooms and paths.
 
 # :gear: How does it work?
 ![](https://github.com/Adrian104/Dungeon-Generator/blob/master/resources/animation.gif)
@@ -50,8 +50,9 @@ combined into one `Vertex` and all resulting vertices are linked together with
 pointers. To do this step, algorithm sorts `Tag` objects beforehand, based on their positions.
 4. Previously created BSP-tree is traversed postorder, recursively connecting 
 `Room` objects by searching path between them, using A* algorithm.
-5. At this point, special method optimizes `Vertex` objects, based on created paths.
-6. Generator produces output data.
+5. At this point, special method optimizes `Vertex` objects, based on created paths. This
+step is not required, but it helps reduce the size of generated data, without affecting its geometry.
+6. Generator produces output data. Now the user can convert it e.g. to a tile map.
 
 # :mag: What is included in this repository?
 Dungeon-Generator project consists of several sub-projects:
@@ -60,8 +61,6 @@ Dungeon-Generator project consists of several sub-projects:
 * `dgen-benchmark` - micro-benchmarking utility. Measures performance of the `dgen` library.
 
 # :hammer_and_wrench: Building
-This project can be built in two different ways: by using Visual Studio or by using CMake.
-
 ## Visual Studio
 ### Prerequisites:
 * Git (only for cloning)
@@ -73,7 +72,7 @@ This project can be built in two different ways: by using Visual Studio or by us
 2. Open `Dungeon-Generator.sln`.
 3. Select startup project (e.g. `dgen-app`) and compile.
 
-Compiled executables are located in `build` directory.
+Compiled executables are located in the `build` directory.
 
 ## CMake
 ### Prerequisites:
@@ -92,7 +91,7 @@ cmake -S . -B build && cmake --build build
 CMake will detect if `Dungeon-Generator` is top level project.
 If so, it will automatically download **SDL2** with **SDL2_ttf** and compile all targets.
 Otherwise, only `dgen` target will be created.
-Compiled executables are located in `build/bin` directory.
+Compiled executables are located in the `build/bin` directory.
 
 # :framed_picture: Images
 ### The following image shows a visual representation of what `dgen` library can produce:
