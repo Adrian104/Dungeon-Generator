@@ -334,6 +334,8 @@ void Application::Generate()
 	{
 		AccessWidget<Info>().Set("seed: " + std::to_string(m_input.m_seed) + ", rooms: - , paths: - , entrances: - ");
 		AccessWidget<Warning>().Set(error.what());
+
+		m_output = {};
 	}
 }
 

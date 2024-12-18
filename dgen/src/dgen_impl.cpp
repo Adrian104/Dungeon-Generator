@@ -78,11 +78,51 @@ namespace dg::impl
 		}
 	}
 
+	void Generator::Verify()
+	{
+		if (m_input == nullptr)
+			throw std::runtime_error("Pointer to the dg::Input object was null");
+
+		if (m_output == nullptr)
+			throw std::runtime_error("Pointer to the dg::Output object was null");
+
+		bool valid = true;
+
+		valid &= m_input->m_width > 0;
+		valid &= m_input->m_height > 0;
+		valid &= m_input->m_minDepth > 0;
+		valid &= m_input->m_maxDepth > 0;
+		valid &= m_input->m_minDepth <= m_input->m_maxDepth;
+		valid &= m_input->m_spaceInterdistance >= 0;
+		valid &= m_input->m_spaceSizeRandomness >= 0.0f;
+		valid &= m_input->m_spaceSizeRandomness <= 1.0f;
+		valid &= m_input->m_sparseAreaDepth >= 0;
+		valid &= m_input->m_sparseAreaDepth <= m_input->m_maxDepth;
+		valid &= m_input->m_sparseAreaDens >= 0.0f;
+		valid &= m_input->m_sparseAreaDens <= 1.0f;
+		valid &= m_input->m_sparseAreaProb >= 0.0f;
+		valid &= m_input->m_sparseAreaProb <= 1.0f;
+		valid &= m_input->m_minRoomSize > 0.0f;
+		valid &= m_input->m_minRoomSize <= 1.0f;
+		valid &= m_input->m_maxRoomSize > 0.0f;
+		valid &= m_input->m_maxRoomSize <= 1.0f;
+		valid &= m_input->m_minRoomSize <= m_input->m_maxRoomSize;
+		valid &= m_input->m_doubleRoomProb >= 0.0f;
+		valid &= m_input->m_doubleRoomProb <= 1.0f;
+		valid &= m_input->m_heuristicFactor >= 0.0f;
+		valid &= m_input->m_heuristicFactor <= 1.0f;
+		valid &= m_input->m_pathCostFactor >= 0.0f;
+		valid &= m_input->m_pathCostFactor <= 1.0f;
+		valid &= m_input->m_extraPathCount >= 0;
+		valid &= m_input->m_extraPathDepth >= 0;
+		valid &= m_input->m_extraPathDepth <= m_input->m_maxDepth;
+
+		if (!valid)
+			throw std::runtime_error("Invalid input data");
+	}
+
 	void Generator::Prepare()
 	{
-		if (m_input->m_maxRoomSize <= 0)
-			throw std::runtime_error("Variable 'maxRoomSize' is not a positive number");
-
 		*m_output = {};
 		m_random.Seed(m_input->m_seed);
 
@@ -628,7 +668,6 @@ namespace dg::impl
 			sw += ((room.m_path >> Dir::SOUTH) & 1) + ((room.m_path >> Dir::WEST) & 1);
 		}
 
-		m_output->m_rooms.shrink_to_fit();
 		m_output->m_paths.reserve(static_cast<size_t>(ne) + static_cast<size_t>(m_partialPathCount));
 		m_output->m_entrances.reserve(static_cast<size_t>(ne) + static_cast<size_t>(sw));
 
@@ -730,6 +769,7 @@ namespace dg::impl
 		m_output = output;
 
 		Clear();
+		Verify();
 		Prepare();
 		GenerateTree(*m_rootNode, m_input->m_maxDepth);
 		GenerateRooms();

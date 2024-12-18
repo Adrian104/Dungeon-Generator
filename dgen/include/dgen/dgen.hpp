@@ -69,10 +69,10 @@ namespace dg
 		/// @brief Value in range [0, 1]. Describes the probability of marking area as "sparse".
 		float m_sparseAreaProb;
 
-		/// @brief Value in range [0, 1]. Describes minimum width and height factor of all rooms.
+		/// @brief Value in range (0, 1]. Describes minimum width and height factor of all rooms.
 		float m_minRoomSize;
 
-		/// @brief Value in range [0, 1]. Describes maximum width and height factor of all rooms.
+		/// @brief Value in range (0, 1]. Describes maximum width and height factor of all rooms.
 		float m_maxRoomSize;
 
 		/// @brief Value in range [0, 1]. Describes the probability of producing double rooms.
