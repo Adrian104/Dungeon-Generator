@@ -1,37 +1,58 @@
-message(">>> Processing CMakeLists.txt in dgen-app directory...")
 project(dgen-app LANGUAGES CXX)
 include(FetchContent)
+find_package(SDL3 QUIET)
 
-set(FETCHCONTENT_QUIET OFF)
-set(SDL2_TTF_INSTALL OFF)
-option(SDL2_DISABLE_INSTALL "" OFF)
-option(SDL2TTF_VENDORED "Use vendored third-party libraries" ON)
+if(SDL3_FOUND)
+	message(STATUS "${PROJECT_NAME}: Library 'SDL3' is installed, no need to download.")
+else()
+	message(STATUS "${PROJECT_NAME}: Library 'SDL3' is not installed, downloading...")
+	FetchContent_Declare(
+		SDL3
+		GIT_REPOSITORY https://github.com/libsdl-org/SDL
+		GIT_TAG release-3.4.16
+		GIT_SHALLOW ON
+	)
+
+	FetchContent_MakeAvailable(SDL3)
+endif()
 
 FetchContent_Declare(
-	SDL2
-	GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-	GIT_TAG release-2.30.4
+	imgui
+	GIT_REPOSITORY https://github.com/ocornut/imgui.git
+	GIT_TAG v1.92.9b
 	GIT_SHALLOW ON
 )
 
-FetchContent_Declare(
-	SDL2_ttf
-	GIT_REPOSITORY https://github.com/libsdl-org/SDL_ttf.git
-	GIT_TAG release-2.22.0
-	GIT_SHALLOW ON
+message(STATUS "${PROJECT_NAME}: Downloading 'imgui' library...")
+FetchContent_MakeAvailable(imgui)
+
+add_library(
+	imgui
+	"${imgui_SOURCE_DIR}/imgui.cpp"
+	"${imgui_SOURCE_DIR}/imgui_demo.cpp"
+	"${imgui_SOURCE_DIR}/imgui_draw.cpp"
+	"${imgui_SOURCE_DIR}/imgui_tables.cpp"
+	"${imgui_SOURCE_DIR}/imgui_widgets.cpp"
+	"${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp"
+	"${imgui_SOURCE_DIR}/backends/imgui_impl_sdlgpu3.cpp"
+	"${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer3.cpp"
 )
 
-FetchContent_MakeAvailable(SDL2)
-FetchContent_MakeAvailable(SDL2_ttf)
+target_include_directories(
+	imgui
+	PUBLIC
+	"${imgui_SOURCE_DIR}"
+	"${imgui_SOURCE_DIR}/backends"
+)
 
-file(MAKE_DIRECTORY "${sdl2_ttf_SOURCE_DIR}/include/SDL2")
-file(COPY "${sdl2_ttf_SOURCE_DIR}/SDL_ttf.h" DESTINATION "${sdl2_ttf_SOURCE_DIR}/include/SDL2")
-set(SDL_TTF_INCLUDE_FIX "${sdl2_ttf_SOURCE_DIR}/include")
+target_link_libraries(imgui PUBLIC SDL3::SDL3)
 
 file(GLOB_RECURSE DGEN_APP_CPP CONFIGURE_DEPENDS "src/*.cpp")
 file(GLOB_RECURSE DGEN_APP_HPP CONFIGURE_DEPENDS "src/*.hpp")
 file(GLOB_RECURSE DGEN_APP_RES CONFIGURE_DEPENDS "res/*.*")
 
 add_executable(${PROJECT_NAME} ${DGEN_APP_CPP} ${DGEN_APP_HPP} ${DGEN_APP_RES})
-target_include_directories(${PROJECT_NAME} PRIVATE ${dgen_SOURCE_DIR}/src ${SDL_TTF_INCLUDE_FIX})
-target_link_libraries(${PROJECT_NAME} PRIVATE dgen SDL2 SDL2main SDL2_ttf)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE dgen SDL3::SDL3 imgui)
+target_include_directories(${PROJECT_NAME} PRIVATE "${dgen_SOURCE_DIR}/src")
+target_precompile_headers(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/src/pch.hpp")
