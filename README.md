@@ -64,7 +64,7 @@ Dungeon-Generator project consists of several sub-projects:
 ### Prerequisites:
 * Git (only for cloning)
 * C++17 compiler
-* CMake (version >= 3.21)
+* CMake 3.25 or newer
 
 ### Steps:
 1. Clone this repository (or download by clicking Code -> Download ZIP).
