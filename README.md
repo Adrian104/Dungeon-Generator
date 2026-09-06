@@ -61,30 +61,16 @@ Dungeon-Generator project consists of several sub-projects:
 * `dgen-benchmark` - micro-benchmarking utility. Measures performance of the `dgen` library.
 
 # :hammer_and_wrench: Building
-## Visual Studio
 ### Prerequisites:
 * Git (only for cloning)
-* Microsoft Visual Studio 2022
-* vcpkg (for `dgen-app` - make sure **SDL2** and **SDL2_ttf** are installed)
-
-### Steps:
-1. Clone this repository (or download by clicking Code -> Download ZIP).
-2. Open `Dungeon-Generator.sln`.
-3. Select startup project (e.g. `dgen-app`) and compile.
-
-Compiled executables are located in the `build` directory.
-
-## CMake
-### Prerequisites:
-* Git (only for cloning)
-* Compiler that supports C++17
+* C++17 compiler
 * CMake (version >= 3.21)
 
 ### Steps:
 1. Clone this repository (or download by clicking Code -> Download ZIP).
 2. Open terminal in `Dungeon-Generator` directory.
 3. Run the following command:
-```console
+```bash
 cmake -S . -B build && cmake --build build
 ```
 
