@@ -3,3 +3,5 @@ bin/
 build/
 *.dll
 *.7z
+.kdev4/
+*.kdev4
