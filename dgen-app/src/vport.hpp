@@ -1,78 +1,121 @@
-// SPDX-FileCopyrightText: Copyright (c) 2023 Adrian Kulawik
+// SPDX-FileCopyrightText: Copyright (c) 2026 Adrian Kulawik
 // SPDX-License-Identifier: MIT
 
 #pragma once
-#include <SDL2/SDL.h>
+#include "pch.hpp"
 
-template <typename Type>
+template <typename T>
 class ViewportBase
 {
 protected:
-	Type m_scale = 1;
-	Type m_xOffset = 0;
-	Type m_yOffset = 0;
+	T m_scale = static_cast<T>(1);
+	T m_xdisp = static_cast<T>(0);
+	T m_ydisp = static_cast<T>(0);
 
 public:
-	Type GetScale() const { return m_scale; }
-	Type GetXOffset() const { return m_xOffset; }
-	Type GetYOffset() const { return m_yOffset; }
+	T get_scale() const;
+	std::pair<T, T> get_displacement() const;
 
-	template <typename WRectType, typename SRectType>
-	void RectToScreen(const WRectType& from, SRectType& to) const;
+	template <typename U, typename V = U>
+	V to_world(const U& screen) const;
 
-	template <typename SType, typename WType>
-	void ToWorld(SType xScreen, SType yScreen, WType& xWorld, WType& yWorld) const;
-
-	template <typename WType, typename SType>
-	void ToScreen(WType xWorld, WType yWorld, SType& xScreen, SType& yScreen) const;
+	template <typename U, typename V = U>
+	V to_screen(const U& world) const;
 };
 
 class Viewport : public ViewportBase<float>
 {
-	int m_xStart = 0;
-	int m_yStart = 0;
-	bool m_pressed = false;
+private:
+	float m_xstart = 0;
+	float m_ystart = 0;
 	float m_defScale = 1.0f;
-	float m_scaleStep = 0.25f;
+	float m_scaleStep = 0.2f;
+	bool m_pressed = false;
 
-	void Move(int xMouse, int yMouse);
-	void Scale(int xMouse, int yMouse, float factor);
+	void move(float xmouse, float ymouse);
+	void scale(float xmouse, float ymouse, float factor);
 
 public:
-	void Reset();
-	bool Update(SDL_Event& sdlEvent);
-
-	void SetScaleStep(float scaleStep) { m_scaleStep = scaleStep; }
-	void SetDefaultScale(float defScale) { if (defScale != 0) m_defScale = defScale; }
+	void reset();
+	bool update(SDL_Event& event);
+	void set_scale_step(float step);
+	void set_default_scale(float scale);
 };
 
-template <typename Type> template <typename WRectType, typename SRectType>
-void ViewportBase<Type>::RectToScreen(const WRectType& from, SRectType& to) const
+template <typename T>
+inline T ViewportBase<T>::get_scale() const
 {
-	to.x = static_cast<decltype(to.x)>((from.x - m_xOffset) * m_scale);
-	to.y = static_cast<decltype(to.y)>((from.y - m_yOffset) * m_scale);
-
-	to.w = static_cast<decltype(to.w)>(from.w * m_scale);
-	to.h = static_cast<decltype(to.h)>(from.h * m_scale);
+	return m_scale;
 }
 
-template <typename Type> template <typename SType, typename WType>
-void ViewportBase<Type>::ToWorld(SType xScreen, SType yScreen, WType& xWorld, WType& yWorld) const
+template <typename T>
+inline std::pair<T, T> ViewportBase<T>::get_displacement() const
 {
-	xWorld = static_cast<WType>(xScreen / m_scale + m_xOffset);
-	yWorld = static_cast<WType>(yScreen / m_scale + m_yOffset);
+	return { m_xdisp, m_ydisp };
 }
 
-template <typename Type> template <typename WType, typename SType>
-void ViewportBase<Type>::ToScreen(WType xWorld, WType yWorld, SType& xScreen, SType& yScreen) const
+template <typename T> template <typename U, typename V>
+inline V ViewportBase<T>::to_world(const U& screen) const
 {
-	xScreen = static_cast<SType>((xWorld - m_xOffset) * m_scale);
-	yScreen = static_cast<SType>((yWorld - m_yOffset) * m_scale);
+	V world;
+
+	constexpr static bool s_point =
+		(std::is_same_v<U, SDL_Point> || std::is_same_v<U, SDL_FPoint> || std::is_same_v<U, dg::Vec>) &&
+		(std::is_same_v<V, SDL_Point> || std::is_same_v<V, SDL_FPoint> || std::is_same_v<V, dg::Vec>);
+
+	constexpr static bool s_rect =
+		(std::is_same_v<U, SDL_Rect> || std::is_same_v<U, SDL_FRect> || std::is_same_v<U, dg::Rect>) &&
+		(std::is_same_v<V, SDL_Rect> || std::is_same_v<V, SDL_FRect> || std::is_same_v<V, dg::Rect>);
+
+	if constexpr (s_point || s_rect)
+	{
+		world.x = static_cast<decltype(V::x)>(screen.x / m_scale + m_xdisp);
+		world.y = static_cast<decltype(V::y)>(screen.y / m_scale + m_ydisp);
+	}
+
+	if constexpr (s_rect)
+	{
+		world.w = static_cast<decltype(V::w)>(screen.w / m_scale);
+		world.h = static_cast<decltype(V::h)>(screen.h / m_scale);
+	}
+
+	if constexpr (!s_point && !s_rect)
+	{
+		static_assert(!sizeof(V*));
+	}
+
+	return world;
 }
 
-inline void Viewport::Reset()
+template <typename T> template <typename U, typename V>
+inline V ViewportBase<T>::to_screen(const U& world) const
 {
-	m_scale = m_defScale;
-	m_xOffset = 0;
-	m_yOffset = 0;
+	V screen;
+
+	constexpr static bool s_point =
+		(std::is_same_v<U, SDL_Point> || std::is_same_v<U, SDL_FPoint> || std::is_same_v<U, dg::Vec>) &&
+		(std::is_same_v<V, SDL_Point> || std::is_same_v<V, SDL_FPoint> || std::is_same_v<V, dg::Vec>);
+
+	constexpr static bool s_rect =
+		(std::is_same_v<U, SDL_Rect> || std::is_same_v<U, SDL_FRect> || std::is_same_v<U, dg::Rect>) &&
+		(std::is_same_v<V, SDL_Rect> || std::is_same_v<V, SDL_FRect> || std::is_same_v<V, dg::Rect>);
+
+	if constexpr (s_point || s_rect)
+	{
+		screen.x = static_cast<decltype(V::x)>((world.x - m_xdisp) * m_scale);
+		screen.y = static_cast<decltype(V::y)>((world.y - m_ydisp) * m_scale);
+	}
+
+	if constexpr (s_rect)
+	{
+		screen.w = static_cast<decltype(V::w)>(world.w * m_scale);
+		screen.h = static_cast<decltype(V::h)>(world.h * m_scale);
+	}
+
+	if constexpr (!s_point && !s_rect)
+	{
+		static_assert(!sizeof(V*));
+	}
+
+	return screen;
 }

@@ -1,52 +1,62 @@
-// SPDX-FileCopyrightText: Copyright (c) 2023 Adrian Kulawik
+// SPDX-FileCopyrightText: Copyright (c) 2026 Adrian Kulawik
 // SPDX-License-Identifier: MIT
 
+#include "pch.hpp"
 #include "vport.hpp"
 
-void Viewport::Move(int xMouse, int yMouse)
+void Viewport::move(float xmouse, float ymouse)
 {
-	m_xOffset += (m_xStart - xMouse) / m_scale;
-	m_yOffset += (m_yStart - yMouse) / m_scale;
+	m_xdisp += (m_xstart - xmouse) / m_scale;
+	m_ydisp += (m_ystart - ymouse) / m_scale;
 
-	m_xStart = xMouse;
-	m_yStart = yMouse;
+	m_xstart = xmouse;
+	m_ystart = ymouse;
 }
 
-void Viewport::Scale(int xMouse, int yMouse, float factor)
+void Viewport::scale(float xmouse, float ymouse, float factor)
 {
-	const float before = 1 / m_scale;
-	m_scale *= (m_scaleStep * factor) + 1;
+	const float before = 1.0f / m_scale;
+	m_scale *= (m_scaleStep * factor) + 1.0f;
 
-	const float diff = before - (1 / m_scale);
+	const float diff = before - (1.0f / m_scale);
 
-	m_xOffset += xMouse * diff;
-	m_yOffset += yMouse * diff;
+	m_xdisp += xmouse * diff;
+	m_ydisp += ymouse * diff;
 }
 
-bool Viewport::Update(SDL_Event& sdlEvent)
+void Viewport::reset()
 {
-	int xMouse, yMouse;
-	SDL_GetMouseState(&xMouse, &yMouse);
+	m_scale = m_defScale;
+	m_xdisp = 0.0f;
+	m_ydisp = 0.0f;
+}
 
-	switch (sdlEvent.type)
+bool Viewport::update(SDL_Event& event)
+{
+	float xmouse, ymouse;
+	SDL_GetMouseState(&xmouse, &ymouse);
+
+	switch (event.type)
 	{
-	case SDL_MOUSEBUTTONDOWN:
-		m_xStart = xMouse;
-		m_yStart = yMouse;
+	case SDL_EVENT_MOUSE_BUTTON_DOWN:
+		m_xstart = xmouse;
+		m_ystart = ymouse;
 		m_pressed = true;
 		break;
 
-	case SDL_MOUSEBUTTONUP:
+	case SDL_EVENT_MOUSE_BUTTON_UP:
 		m_pressed = false;
 		break;
 
-	case SDL_MOUSEMOTION:
-		if (!m_pressed) return false;
-		Move(xMouse, yMouse);
+	case SDL_EVENT_MOUSE_MOTION:
+		if (!m_pressed)
+			return false;
+
+		move(xmouse, ymouse);
 		break;
 
-	case SDL_MOUSEWHEEL:
-		Scale(xMouse, yMouse, static_cast<float>(sdlEvent.wheel.y));
+	case SDL_EVENT_MOUSE_WHEEL:
+		scale(xmouse, ymouse, event.wheel.y);
 		break;
 
 	default:
@@ -54,4 +64,14 @@ bool Viewport::Update(SDL_Event& sdlEvent)
 	}
 
 	return true;
+}
+
+void Viewport::set_scale_step(float step)
+{
+	m_scaleStep = step;
+}
+
+void Viewport::set_default_scale(float scale)
+{
+	m_defScale = scale;
 }
