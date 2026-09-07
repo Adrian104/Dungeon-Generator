@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: MIT
 
 #include "pch.hpp"
+#include "app.hpp"
 
 int main(int, char**)
 {
 	try
 	{
-
+		Application app;
+		app.run();
 	}
 	catch (const std::exception& error)
 	{
