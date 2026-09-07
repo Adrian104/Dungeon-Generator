@@ -49,9 +49,8 @@ target_link_libraries(imgui PUBLIC SDL3::SDL3)
 
 file(GLOB_RECURSE DGEN_APP_CPP CONFIGURE_DEPENDS "src/*.cpp")
 file(GLOB_RECURSE DGEN_APP_HPP CONFIGURE_DEPENDS "src/*.hpp")
-file(GLOB_RECURSE DGEN_APP_RES CONFIGURE_DEPENDS "res/*.*")
 
-add_executable(${PROJECT_NAME} ${DGEN_APP_CPP} ${DGEN_APP_HPP} ${DGEN_APP_RES})
+add_executable(${PROJECT_NAME} ${DGEN_APP_CPP} ${DGEN_APP_HPP})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE dgen SDL3::SDL3 imgui)
 target_include_directories(${PROJECT_NAME} PRIVATE "${dgen_SOURCE_DIR}/src")
