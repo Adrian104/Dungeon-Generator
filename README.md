@@ -1,4 +1,4 @@
-![](https://github.com/Adrian104/Dungeon-Generator/blob/master/resources/logo.png)
+![](resources/logo.png)
 ---
 ![](https://img.shields.io/github/license/Adrian104/Dungeon-Generator?color=blue)
 ![](https://img.shields.io/github/languages/top/Adrian104/Dungeon-Generator?color=blue)
@@ -6,9 +6,9 @@
 
 # :star: Features
 * Various settings allow you to precisely customize the appearance of the dungeon.
-* Generator receives seed value, so the outcome is always predictable.
-* Rooms can be composed of two rectangular surfaces, creating unique structures.
-* Algorithm can reduce room density in some areas, thus ensuring output looks more realistic.
+* It receives a seed value, so the outcome is always predictable.
+* A single room can be composed of two rectangular surfaces.
+* The algorithm can reduce room density in some areas, thus ensuring output looks more realistic.
 * And a lot more!
 
 # :bulb: Example usage
@@ -18,46 +18,49 @@
 int main()
 {
     dg::Input input = dg::GetExampleInput();
-    dg::Output output{};
 
-    // In reality, you should set input member variables to your liking
-    // and not depend on dg::GetExampleInput().
+    // In reality, you should set member variables to your liking
+    // and not depend on dg::GetExampleInput(). For example:
+    input.m_seed = 42;
+    input.m_maxDepth = 7;
+    // ...and many more options
 
+    // To generate a dungeon simply write:
+    dg::Tilemap tilemap = dg::Generate(&input);
+
+    // That's it! Now you can access data like this:
+    dg::Tile tile = tilemap.at(3, 7); // returns the tile at x=3, y=7
+
+    // If you do not want a tilemap, you can generate raw 2D geometry like so:
+    dg::Output output{}; // will contain vector data (positions and sizes).
     dg::Generate(&input, &output);
-
-    // Geometry of a dungeon is now generated, it should be processed
-    // further (e.g., converting it to a tile map, postprocessing).
 
     return 0;
 }
 ```
 
-The generator fills object of type `dg::Output` with geometry data
-based on the data from object of type `dg::Input`. The output contains
-coordinates and dimensions of different dungeon structures, like rooms and paths.
-
 # :gear: How does it work?
-![](https://github.com/Adrian104/Dungeon-Generator/blob/master/resources/animation.gif)
+![](resources/animation.gif)
 ---
 Function `dg::Generate()` performs internally several steps:
-1. Algorithm recursively divides entire space into smaller cells, keeping the parent-cells
-in memory. This method is known as BSP, which produces binary-tree structure. In 
+1. The algorithm recursively divides entire space into smaller cells, keeping the parent-cells
+in memory. This method is known as BSP, which produces a binary-tree structure. In
 addition, leaf cells create `Tag` objects at the corners of them.
 2. In some cells, `Room` objects are placed. Here `Tag` objects are also placed,
 but this time, on the room entrance axes, in between cells.
-3. Algorithm creates `Vertex` objects based on `Tag` objects. Multiple tags are
+3. Next, `Vertex` objects are created based on `Tag` objects. Multiple tags are
 combined into one `Vertex` and all resulting vertices are linked together with
 pointers. To do this step, algorithm sorts `Tag` objects beforehand, based on their positions.
 4. Previously created BSP-tree is traversed postorder, recursively connecting 
 `Room` objects by searching path between them, using A* algorithm.
-5. At this point, special method optimizes `Vertex` objects, based on created paths. This
+5. At this point, a special method optimizes `Vertex` objects, based on created paths. This
 step is not required, but it helps reduce the size of generated data, without affecting its geometry.
-6. Generator produces output data. Now the user can convert it e.g. to a tile map.
+6. Generator produces geometry data, which is optionally converted into a tilemap.
 
 # :mag: What is included in this repository?
 Dungeon-Generator project consists of several sub-projects:
 * `dgen` - generator library itself. Has no dependencies other than STL.
-* `dgen-app` - application that uses `dgen` library. Requires **SDL2** and **SDL2_ttf**.
+* `dgen-app` - application that uses the `dgen` library. Depends on **SDL3** and **Dear ImGui**.
 * `dgen-benchmark` - micro-benchmarking utility. Measures performance of the `dgen` library.
 
 # :hammer_and_wrench: Building
@@ -68,21 +71,17 @@ Dungeon-Generator project consists of several sub-projects:
 
 ### Steps:
 1. Clone this repository (or download by clicking Code -> Download ZIP).
-2. Open terminal in `Dungeon-Generator` directory.
+2. Open a terminal in the project directory.
 3. Run the following command:
 ```bash
 cmake -S . -B build && cmake --build build
 ```
 
-CMake will detect if `Dungeon-Generator` is top level project.
-If so, it will automatically download **SDL2** with **SDL2_ttf** and compile all targets.
-Otherwise, only `dgen` target will be created.
-Compiled executables are located in the `build/bin` directory.
+CMake will detect if `Dungeon-Generator` is a top level project.
+If so, it will automatically enable `dgen-app` and `dgen-benchmark`. If **SDL3** is not present on the system, it will automatically download it via `FetchContent`. **Dear ImGui** is always downloaded.
 
 # :framed_picture: Images
-### The following image shows a visual representation of what `dgen` library can produce:
-![](https://github.com/Adrian104/Dungeon-Generator/blob/master/resources/geometry.png)
-### This geometry can be easily transformed into a tile map¹. For example:
-![](https://github.com/Adrian104/Dungeon-Generator/blob/master/resources/map.png)
-
-¹Currently, the `dgen` library itself doesn't have this implemented yet.
+### Example geometry generated using the `dgen` library:
+![](resources/geometry.png)
+### After converting it into a tilemap:
+![](resources/map.png)
