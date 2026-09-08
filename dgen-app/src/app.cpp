@@ -143,6 +143,20 @@ void Application::build_tile_cache()
 	m_tileCache.clear();
 	for (int y = 0; y < m_tilemap.m_height; y++)
 	{
+		if (const dg::Tile crr = m_tilemap.at(0, y); crr != dg::Tile::VOID)
+		{
+			std::uint8_t r, g, b;
+			switch (crr)
+			{
+				case dg::Tile::WALL: r = g = b = 170; break;
+				case dg::Tile::GROUND: r = g = b = 51; break;
+				case dg::Tile::ENTRANCE: r = 170; g = 51; b = 0; break;
+				default: r = g = b = 0;
+			}
+
+			m_tileCache.emplace_back(SDL_FRect{ 0.0f, static_cast<float>(y), 1.0f, 1.0f }, r, g, b);
+		}
+
 		for (int x = 1; x < m_tilemap.m_width; x++)
 		{
 			dg::Tile crr = m_tilemap.at(x, y);
