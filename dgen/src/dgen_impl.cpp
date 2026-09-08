@@ -88,8 +88,8 @@ namespace dg::impl
 
 		bool valid = true;
 
-		valid &= m_input->m_width > 0;
-		valid &= m_input->m_height > 0;
+		valid &= m_input->m_width > 3;
+		valid &= m_input->m_height > 3;
 		valid &= m_input->m_minDepth > 0;
 		valid &= m_input->m_maxDepth > 0;
 		valid &= m_input->m_minDepth <= m_input->m_maxDepth;
@@ -135,7 +135,7 @@ namespace dg::impl
 		if (m_input->m_width <= m_minSpaceSize || m_input->m_height <= m_minSpaceSize)
 			throw std::runtime_error("Root node is too small");
 
-		m_rootNode = new Node<Cell>(nullptr, Cell(m_input->m_width - 1, m_input->m_height - 1));
+		m_rootNode = new Node<Cell>(nullptr, Cell(m_input->m_width - 3, m_input->m_height - 3));
 
 		m_targetDepth = 0;
 		m_statusCounter = 1;
@@ -812,5 +812,96 @@ namespace dg
 	{
 		impl::Generator generator;
 		generator.Generate(input, output);
+	}
+
+	Tilemap Generate(const Input* input)
+	{
+		Output geometry;
+		Tilemap tilemap;
+
+		impl::Generator generator;
+		generator.Generate(input, &geometry);
+
+		tilemap.m_width = input->m_width;
+		tilemap.m_height = input->m_height;
+		tilemap.m_data.resize(tilemap.m_width * tilemap.m_height, Tile::VOID);
+
+		for (auto [crr, disp] : geometry.m_paths)
+		{
+			const int xsign = (0 < disp.x) - (disp.x < 0);
+			const int ysign = (0 < disp.y) - (disp.y < 0);
+
+			tilemap.at(crr.x - 1, crr.y - 1) = Tile::WALL;
+			tilemap.at(crr.x + 1, crr.y - 1) = Tile::WALL;
+			tilemap.at(crr.x - 1, crr.y + 1) = Tile::WALL;
+			tilemap.at(crr.x + 1, crr.y + 1) = Tile::WALL;
+
+			disp.x += xsign;
+			disp.y += ysign;
+
+			while (disp.x)
+			{
+				tilemap.at(crr.x, crr.y - 1) = Tile::WALL;
+				tilemap.at(crr.x, crr.y + 1) = Tile::WALL;
+
+				crr.x += xsign;
+				disp.x -= xsign;
+			}
+
+			while (disp.y)
+			{
+				tilemap.at(crr.x - 1, crr.y) = Tile::WALL;
+				tilemap.at(crr.x + 1, crr.y) = Tile::WALL;
+
+				crr.y += ysign;
+				disp.y -= ysign;
+			}
+
+			crr.x -= xsign;
+			crr.y -= ysign;
+
+			tilemap.at(crr.x - 1, crr.y - 1) = Tile::WALL;
+			tilemap.at(crr.x + 1, crr.y - 1) = Tile::WALL;
+			tilemap.at(crr.x - 1, crr.y + 1) = Tile::WALL;
+			tilemap.at(crr.x + 1, crr.y + 1) = Tile::WALL;
+		}
+
+		for (auto [crr, disp] : geometry.m_paths)
+		{
+			const int xsign = (0 < disp.x) - (disp.x < 0);
+			const int ysign = (0 < disp.y) - (disp.y < 0);
+
+			tilemap.at(crr.x, crr.y) = Tile::GROUND;
+			while (disp.x | disp.y)
+			{
+				disp.x -= xsign; disp.y -= ysign;
+				tilemap.at(crr.x += xsign, crr.y += ysign) = Tile::GROUND;
+			}
+		}
+
+		for (const Rect& room : geometry.m_rooms)
+		{
+			for (int x = 0; x < room.w; x++)
+			{
+				tilemap.at(room.x + x, room.y) = Tile::WALL;
+				tilemap.at(room.x + x, room.y + room.h - 1) = Tile::WALL;
+			}
+
+			for (int y = 0; y < room.h; y++)
+			{
+				tilemap.at(room.x, room.y + y) = Tile::WALL;
+				tilemap.at(room.x + room.w - 1, room.y + y) = Tile::WALL;
+			}
+		}
+
+		for (const Rect& room : geometry.m_rooms)
+			for (int y = 1; y < room.h - 1; y++)
+				for (int x = 1; x < room.w - 1; x++)
+					tilemap.at(room.x + x, room.y + y) = Tile::GROUND;
+
+		for (const Point& entrance : geometry.m_entrances)
+			tilemap.at(entrance.x, entrance.y) = Tile::ENTRANCE;
+
+		return tilemap;
 	}
 }

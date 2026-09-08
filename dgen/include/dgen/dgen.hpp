@@ -34,6 +34,21 @@ namespace dg
 		Rect(int pX, int pY, int pW, int pH) : x(pX), y(pY), w(pW), h(pH) {}
 	};
 
+	enum class Tile : std::uint8_t
+	{
+		VOID, WALL, GROUND, ENTRANCE
+	};
+
+	struct Tilemap
+	{
+		int m_width;
+		int m_height;
+		std::vector<Tile> m_data;
+
+		Tile& at(int x, int y) { return m_data[y * m_width + x]; }
+		const Tile& at(int x, int y) const { return m_data[y * m_width + x]; }
+	};
+
 	using Vec = Point;
 
 	/// @brief Structure containing the input data for the generator.
@@ -111,8 +126,13 @@ namespace dg
 	/// @return Object that holds input data for the generator.
 	Input GetExampleInput();
 
-	/// @brief Generates a dungeon.
+	/// @brief Generates a dungeon in the form of raw geometry data.
 	/// @param input Pointer to existing Input structure, already containing input information.
 	/// @param output Pointer to existing Output structure. Generated data about dungeon will be stored inside.
 	void Generate(const Input* input, Output* output);
+
+	/// @brief Generates a dungeon in the form of a tilemap.
+	/// @param input Pointer to existing Input structure, already containing input information.
+	/// @return Generated tilemap of the dungeon.
+	Tilemap Generate(const Input* input);
 }

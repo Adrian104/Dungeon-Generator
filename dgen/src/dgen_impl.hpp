@@ -27,7 +27,7 @@ namespace dg::impl
 		int m_roomCount = 0;
 
 		Cell() = default;
-		Cell(int w, int h) : m_space(0, 0, w, h) {}
+		Cell(int w, int h) : m_space(1, 1, w, h) {}
 	};
 
 	struct Vertex

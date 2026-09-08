@@ -105,18 +105,65 @@ void Application::handle_events()
 
 void Application::generate()
 {
+	clk_t::time_point a, b, c;
+
 	m_input.m_width = static_cast<int>(m_width / m_factor);
 	m_input.m_height = static_cast<int>(m_height / m_factor);
 
 	try
 	{
-		m_generator.Generate(&m_input, &m_output);
 		m_error.clear();
+		a = clk_t::now();
+
+		if (m_view == View::TILEMAP)
+		{
+			m_tilemap = dg::Generate(&m_input);
+			b = clk_t::now();
+			build_tile_cache();
+			c = clk_t::now();
+		}
+		else
+		{
+			m_generator.Generate(&m_input, &m_output);
+			b = c = clk_t::now();
+		}
+
+		m_dungeonGenTime = b - a;
+		m_cacheGenTime = c - b;
 	}
 	catch (const std::exception& error)
 	{
 		m_output = {};
 		m_error = error.what();
+	}
+}
+
+void Application::build_tile_cache()
+{
+	m_tileCache.clear();
+	for (int y = 0; y < m_tilemap.m_height; y++)
+	{
+		for (int x = 1; x < m_tilemap.m_width; x++)
+		{
+			dg::Tile crr = m_tilemap.at(x, y);
+			dg::Tile prev = m_tilemap.at(x - 1, y);
+
+			if (crr != prev)
+			{
+				std::uint8_t r, g, b;
+				switch (crr)
+				{
+				case dg::Tile::WALL: r = g = b = 170; break;
+				case dg::Tile::GROUND: r = g = b = 51; break;
+				case dg::Tile::ENTRANCE: r = 170; g = 51; b = 0; break;
+				default: continue;
+				}
+
+				m_tileCache.emplace_back(SDL_FRect{ static_cast<float>(x), static_cast<float>(y), 1.0f, 1.0f }, r, g, b);
+			}
+			else if (crr != dg::Tile::VOID)
+				std::get<0>(m_tileCache.back()).w++;
+		}
 	}
 }
 
@@ -154,7 +201,7 @@ void Application::render()
 			SDL_RenderLine(m_renderer, p1.x, y, p2.x, y);
 	}
 
-	if (m_debugView)
+	if (m_view == View::DEBUG)
 	{
 		for (auto& node : m_generator.m_rootNode->Preorder())
 		{
@@ -242,7 +289,7 @@ void Application::render()
 			}
 		}
 	}
-	else
+	else if (m_view == View::GEOMETRY)
 	{
 		if (m_visRooms)
 		{
@@ -279,6 +326,15 @@ void Application::render()
 			}
 		}
 	}
+	else if (m_view == View::TILEMAP)
+	{
+		for (auto [rect, r, g, b] : m_tileCache)
+		{
+			rect = m_viewport.to_screen(rect);
+			SDL_SetRenderDrawColor(m_renderer, r, g, b, 0xFF);
+			SDL_RenderFillRect(m_renderer, &rect);
+		}
+	}
 }
 
 void Application::draw()
@@ -287,33 +343,18 @@ void Application::draw()
 	ImGui_ImplSDL3_NewFrame();
 
 	ImGui::NewFrame();
-	ImGui::Begin("Generator");
+	ImGui::Begin("Control Panel");
 
-	if (ImGui::Button("Reset"))
-	{
-		load_defaults();
-		m_viewport.reset();
-		m_generateReq = true;
-	}
-
-	ImGui::SameLine();
-	if (ImGui::Button("Next"))
-	{
-		m_input.m_seed++;
-		m_generateReq = true;
-	}
-
-	ImGui::Spacing();
-	ImGui::Separator();
+	ImGui::SeparatorText("Generator");
 	ImGui::Spacing();
 
 	m_generateReq |= ImGui::InputScalar("Seed", ImGuiDataType_U64, &m_input.m_seed);
-	m_generateReq |= ImGui::SliderFloat("Size factor", &m_factor, 0.1f, 10.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-	m_generateReq |= ImGui::SliderInt("Minimum depth", &m_input.m_minDepth, 1, 12);
-	m_generateReq |= ImGui::SliderInt("Maximum depth", &m_input.m_maxDepth, 1, 12);
+	m_generateReq |= ImGui::SliderFloat("Size factor", &m_factor, 0.5f, 10.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+	m_generateReq |= ImGui::SliderInt("Minimum depth", &m_input.m_minDepth, 1, 14);
+	m_generateReq |= ImGui::SliderInt("Maximum depth", &m_input.m_maxDepth, 1, 14);
 	m_generateReq |= ImGui::SliderInt("Space interdistance", &m_input.m_spaceInterdistance, 0, 10);
 	m_generateReq |= ImGui::SliderFloat("Space randomness", &m_input.m_spaceSizeRandomness, 0.0f, 1.0f);
-	m_generateReq |= ImGui::SliderInt("Sparse area depth", &m_input.m_sparseAreaDepth, 1, 12);
+	m_generateReq |= ImGui::SliderInt("Sparse area depth", &m_input.m_sparseAreaDepth, 1, 14);
 	m_generateReq |= ImGui::SliderFloat("Sparse area density", &m_input.m_sparseAreaDens, 0.0f, 1.0f);
 	m_generateReq |= ImGui::SliderFloat("Sparse area probability", &m_input.m_sparseAreaProb, 0.0f, 1.0f);
 	m_generateReq |= ImGui::SliderFloat("Minimum room size", &m_input.m_minRoomSize, 0.0f, 1.0f);
@@ -322,31 +363,81 @@ void Application::draw()
 	m_generateReq |= ImGui::SliderFloat("Heuristic", &m_input.m_heuristicFactor, 0.0f, 1.0f);
 	m_generateReq |= ImGui::SliderFloat("Path cost factor", &m_input.m_pathCostFactor, 0.0f, 1.0f);
 	m_generateReq |= ImGui::SliderInt("Extra path count", &m_input.m_extraPathCount, 0, 50);
-	m_generateReq |= ImGui::SliderInt("Extra path depth", &m_input.m_extraPathDepth, 1, 12);
+	m_generateReq |= ImGui::SliderInt("Extra path depth", &m_input.m_extraPathDepth, 1, 14);
 
 	ImGui::Spacing();
-	ImGui::Separator();
+	ImGui::SeparatorText("Visualization");
+	ImGui::Spacing();
+
+	const char* views[] = { "Debug", "Geometry", "Tilemap" };
+	if (ImGui::BeginCombo("View", views[static_cast<std::size_t>(m_view)]))
+	{
+		for (int i = 0; i < sizeof(views) / sizeof(*views); i++)
+		{
+			const bool val = static_cast<std::size_t>(m_view) == i;
+			if (ImGui::Selectable(views[i], val))
+			{
+				m_view = static_cast<View>(i);
+				m_generateReq = true;
+			}
+
+			if (val)
+				ImGui::SetItemDefaultFocus();
+		}
+
+		ImGui::EndCombo();
+	}
+
+	if (m_view == View::GEOMETRY)
+	{
+		m_renderReq |= ImGui::Checkbox("Room visibility", &m_visRooms);
+		m_renderReq |= ImGui::Checkbox("Path visibility", &m_visPaths);
+		m_renderReq |= ImGui::Checkbox("Entrance visibility", &m_visEntrances);
+	}
+
+	ImGui::Spacing();
+	ImGui::SeparatorText("Information");
 	ImGui::Spacing();
 
 	if (m_error.empty())
 	{
 		ImGui::Text("Status: OK");
-		ImGui::Text("Rooms: %d", static_cast<int>(m_output.m_rooms.size()));
-		ImGui::Text("Paths: %d", static_cast<int>(m_output.m_paths.size()));
-		ImGui::Text("Entrances: %d", static_cast<int>(m_output.m_entrances.size()));
+
+		float dungeonGenTime = std::chrono::duration<float, std::ratio<1, 1000>>(m_dungeonGenTime).count();
+		float cacheGenTime = std::chrono::duration<float, std::ratio<1, 1000>>(m_cacheGenTime).count();
+
+		ImGui::Text("Size: %dx%d", m_input.m_width, m_input.m_height);
+		ImGui::Text("Generation took %.2f ms", dungeonGenTime);
+
+		if (m_view != View::TILEMAP)
+		{
+			ImGui::Text("Rooms: %d", static_cast<int>(m_output.m_rooms.size()));
+			ImGui::Text("Paths: %d", static_cast<int>(m_output.m_paths.size()));
+			ImGui::Text("Entrances: %d", static_cast<int>(m_output.m_entrances.size()));
+		}
+		else
+			ImGui::Text("Tilemap cache generation took additional %.2f ms", cacheGenTime);
 	}
 	else
 		ImGui::TextColored(ImVec4(1.0, 0.0, 0.0, 1.0), "Status: Invalid configuration");
 
-	ImGui::End();
-	ImGui::Begin("Visualization");
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
 
-	m_renderReq |= ImGui::Checkbox("Debug view", &m_debugView);
-	if (!m_debugView)
+	if (ImGui::Button("Reset"))
 	{
-		m_renderReq |= ImGui::Checkbox("Room visibility", &m_visRooms);
-		m_renderReq |= ImGui::Checkbox("Path visibility", &m_visPaths);
-		m_renderReq |= ImGui::Checkbox("Entrance visibility", &m_visEntrances);
+		load_defaults();
+		m_viewport.reset();
+		m_generateReq = true;
+		m_view = View::GEOMETRY;
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Next"))
+	{
+		m_input.m_seed++;
+		m_generateReq = true;
 	}
 
 	ImGui::End();
