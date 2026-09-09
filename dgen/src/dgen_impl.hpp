@@ -33,6 +33,7 @@ namespace dg::impl
 	struct Vertex
 	{
 		static Vertex s_sentinel;
+		Room* const m_room = nullptr;
 
 		float m_gcost = 0;
 		float m_hcost = 0;
@@ -45,11 +46,10 @@ namespace dg::impl
 		Vertex* m_links[4]{ &s_sentinel, &s_sentinel, &s_sentinel, &s_sentinel };
 
 		Vertex() = default;
+		Vertex(Room* room) : m_room(room) {}
 		Vertex(uint32_t status) : m_status(status) {}
-		virtual ~Vertex() {}
 
 		void Unlink();
-		virtual Room* ToRoom() { return nullptr; }
 	};
 
 	struct Tag
@@ -85,15 +85,14 @@ namespace dg::impl
 		void Sort(Tag* arr, const size_t size) const;
 	};
 
-	struct Room final : public Vertex
+	struct Room : public Vertex
 	{
 		Node<Cell>& m_node;
 		Point m_entrances[4]{};
 		size_t m_rectBegin = 0;
 		size_t m_rectEnd = 0;
 
-		Room(Node<Cell>& node) : m_node(node) {}
-		Room* ToRoom() override { return this; }
+		Room(Node<Cell>& node) : Vertex(this), m_node(node) {}
 	};
 
 	struct Generator

@@ -124,7 +124,7 @@ namespace dg::impl
 	void Generator::Prepare()
 	{
 		*m_output = {};
-		m_random.Seed(m_input->m_seed);
+		m_random.init(m_input->m_seed);
 
 		m_spaceOffset = m_input->m_spaceInterdistance + 1;
 		m_spaceShrink = (m_spaceOffset << 1) - 1;
@@ -151,10 +151,10 @@ namespace dg::impl
 		node.m_flags |= static_cast<uint32_t>(left <= m_randPathDepth) << Cell::Flag::RANDOM_PATH;
 
 		if (left <= m_input->m_sparseAreaDepth)
-			node.m_flags |= static_cast<uint32_t>(m_random.GetFP32() < m_input->m_sparseAreaProb) << Cell::Flag::SPARSE_AREA;
+			node.m_flags |= static_cast<uint32_t>(m_random.prob(m_input->m_sparseAreaProb)) << Cell::Flag::SPARSE_AREA;
 
-		if (left == m_deltaDepth && m_deltaDepth > 0)
-			m_targetDepth = m_random.Get32() % (m_deltaDepth + 1);
+		if (left == m_deltaDepth)
+			m_targetDepth = m_random.rd32(m_deltaDepth + 1);
 
 		if (left <= m_targetDepth)
 			return MakeLeafCell(node);
@@ -163,7 +163,7 @@ namespace dg::impl
 		static constexpr std::pair<int Rect::*, int Rect::*> yh = std::make_pair(&Rect::y, &Rect::h);
 
 		const auto& [xy, wh] = node.m_space.w >= node.m_space.h ? xw : yh;
-		const float c = m_random.GetFP32() * (m_input->m_spaceSizeRandomness) + m_minSpaceRand;
+		const float c = m_random.fp32() * (m_input->m_spaceSizeRandomness) + m_minSpaceRand;
 
 		const int totalSize = node.m_space.*wh;
 		const int randSize = static_cast<int>(totalSize * c);
@@ -211,7 +211,7 @@ namespace dg::impl
 		m_tags.emplace_back(xMin, yMin);
 
 		uint32_t flagsToReturn = 0;
-		if ((node.m_flags & (1 << Cell::Flag::SPARSE_AREA)) == 0 || m_random.GetFP32() < m_input->m_sparseAreaDens)
+		if ((node.m_flags & (1 << Cell::Flag::SPARSE_AREA)) == 0 || m_random.prob(m_input->m_sparseAreaDens))
 		{
 			flagsToReturn = 1 << Cell::Flag::CONNECT_ROOMS;
 			node.m_flags |= 1 << Cell::Flag::GENERATE_ROOMS;
@@ -235,8 +235,8 @@ namespace dg::impl
 			if ((node.m_flags & (1 << Cell::Flag::GENERATE_ROOMS)) == 0)
 				continue;
 
-			const float a = m_random.GetFP32() * diffRoomSize + minRoomSize;
-			const float b = m_random.GetFP32() * diffRoomSize + minRoomSize;
+			const float a = m_random.fp32() * diffRoomSize + minRoomSize;
+			const float b = m_random.fp32() * diffRoomSize + minRoomSize;
 
 			Vec priSize(static_cast<int>(node.m_space.w * a), static_cast<int>(node.m_space.h * b));
 
@@ -252,7 +252,7 @@ namespace dg::impl
 			Vec secPos(-1, 0);
 			Vec secSize(0, 0);
 
-			if (m_random.GetFP32() < m_input->m_doubleRoomProb)
+			if (m_random.prob(m_input->m_doubleRoomProb))
 			{
 				static constexpr std::pair<int Vec::*, int Vec::*> xy = std::make_pair(&Vec::x, &Vec::y);
 				static constexpr std::pair<int Vec::*, int Vec::*> yx = std::make_pair(&Vec::y, &Vec::x);
@@ -262,26 +262,26 @@ namespace dg::impl
 
 				if (secSize.*decAxis >= s_roomSizeLimit)
 				{
-					const int extra = static_cast<int>(remSize.*incAxis * (m_random.GetFP32() * diffRoomSize + minRoomSize));
+					const int extra = static_cast<int>(remSize.*incAxis * (m_random.fp32() * diffRoomSize + minRoomSize));
 					if (extra > 0)
 					{
 						secSize.*incAxis = priSize.*incAxis + extra;
 						remSize.*incAxis -= extra;
 						secPos = priPos;
 
-						auto [c, d] = m_random.Get32P();
+						auto [c, d] = m_random.rd32x2(3, 3);
 
-						if (c %= 3; c < 2)
+						if (c < 2)
 							priPos.*incAxis += extra >> c;
 
-						if (d %= 3; d < 2)
+						if (d < 2)
 							secPos.*decAxis += (priSize.*decAxis - secSize.*decAxis) >> d;
 					}
 				}
 			}
 
-			const auto [c, d] = m_random.Get32P();
-			const Vec offset(c % (remSize.x + 1), d % (remSize.y + 1));
+			const auto [c, d] = m_random.rd32x2(remSize.x + 1, remSize.y + 1);
+			const Vec offset(c, d);
 
 			Point pos[2]{};
 			Room& room = m_rooms.emplace_back(node);
@@ -296,27 +296,25 @@ namespace dg::impl
 			{
 				const Rect& rect = m_output->m_rooms[room.m_rectBegin];
 
-				const auto [e, f] = m_random.Get32P();
-				const auto [g, h] = m_random.Get32P();
+				const auto [e, f] = m_random.rd32x2(rect.w - 2, rect.h - 2);
+				const auto [g, h] = m_random.rd32x2(rect.w - 2, rect.h - 2);
 
-				pos[0].x = rect.x + 1 + (e % (rect.w - 2));
-				pos[0].y = rect.y + 1 + (f % (rect.h - 2));
-				pos[1].x = rect.x + 1 + (g % (rect.w - 2));
-				pos[1].y = rect.y + 1 + (h % (rect.h - 2));
+				pos[0].x = rect.x + e + 1;
+				pos[0].y = rect.y + f + 1;
+				pos[1].x = rect.x + g + 1;
+				pos[1].y = rect.y + h + 1;
 			}
 			else
 			{
 				m_output->m_rooms.emplace_back(secPos.x + offset.x, secPos.y + offset.y, secSize.x, secSize.y);
 				room.m_rectEnd = m_output->m_rooms.size();
 
-				const bool randBool = m_random.GetBit();
+				const bool randBool = m_random.flip();
 				const Rect& priRect = m_output->m_rooms[room.m_rectBegin + static_cast<size_t>(randBool)];
 				const Rect& secRect = m_output->m_rooms[room.m_rectBegin + static_cast<size_t>(!randBool)];
 
 				auto CalculatePos = [this, &priRect, &secRect](Point& pos) -> void
 				{
-					const auto [e, f] = m_random.Get32P();
-
 					pos.x = priRect.x + 1;
 					pos.y = priRect.y + 1;
 
@@ -324,9 +322,10 @@ namespace dg::impl
 					{
 						const int flag1 = static_cast<int>(secRect.x > priRect.x);
 						const int flag2 = static_cast<int>(secRect.x + secRect.w < priRect.x + priRect.w);
+						const auto [e, f] = m_random.rd32x2(priRect.w - 2 - flag1 - flag2, priRect.h - 2);
 
-						pos.x += e % (priRect.w - 2 - flag1 - flag2);
-						pos.y += f % (priRect.h - 2);
+						pos.x += e;
+						pos.y += f;
 
 						if (pos.x >= secRect.x)
 						{
@@ -338,9 +337,10 @@ namespace dg::impl
 					{
 						const int flag1 = static_cast<int>(secRect.y > priRect.y);
 						const int flag2 = static_cast<int>(secRect.y + secRect.h < priRect.y + priRect.h);
+						const auto [e, f] = m_random.rd32x2(priRect.w - 2, priRect.h - 2 - flag1 - flag2);
 
-						pos.x += e % (priRect.w - 2);
-						pos.y += f % (priRect.h - 2 - flag1 - flag2);
+						pos.x += e;
+						pos.y += f;
 
 						if (pos.y >= secRect.y)
 						{
@@ -481,19 +481,14 @@ namespace dg::impl
 
 			if (node.m_flags & (1 << Cell::Flag::RANDOM_PATH))
 			{
-				int leftIndex = node.m_left->m_roomOffset;
+				const int leftOffset = node.m_left->m_roomOffset;
 				const int leftCount = node.m_left->m_roomCount;
 
-				int rightIndex = node.m_right->m_roomOffset;
+				const int rightOffset = node.m_right->m_roomOffset;
 				const int rightCount = node.m_right->m_roomCount;
 
-				if (leftCount > 1)
-					leftIndex += m_random.Get32() % leftCount;
-
-				if (rightCount > 1)
-					rightIndex += m_random.Get32() % rightCount;
-
-				FindPath(m_rooms.data() + leftIndex, m_rooms.data() + rightIndex);
+				const auto [l, r] = m_random.rd32x2(leftCount, rightCount);
+				FindPath(m_rooms.data() + leftOffset + l, m_rooms.data() + rightOffset + r);
 			}
 			else
 			{
@@ -525,7 +520,7 @@ namespace dg::impl
 		do
 		{
 			vertex->m_status = m_statusCounter + 1;
-			Room* const room = vertex->ToRoom();
+			Room* const room = vertex->m_room;
 
 			for (uint8_t i = 0; i < 4; i++)
 			{
@@ -536,7 +531,7 @@ namespace dg::impl
 				Point p1, p2;
 				if (room == nullptr)
 				{
-					Room* const adjRoom = adjacent->ToRoom();
+					Room* const adjRoom = adjacent->m_room;
 
 					p1 = vertex->m_pos;
 					p2 = (adjRoom != nullptr) ? adjRoom->m_entrances[i ^ 0b10] : adjacent->m_pos;
@@ -618,7 +613,7 @@ namespace dg::impl
 				Vertex* const east = links[Dir::EAST];
 				Vertex* const west = links[Dir::WEST];
 
-				if (east->ToRoom() == nullptr || west->ToRoom() == nullptr)
+				if (east->m_room == nullptr || west->m_room == nullptr)
 				{
 					east->m_links[Dir::WEST] = west;
 					west->m_links[Dir::EAST] = east;
@@ -639,7 +634,7 @@ namespace dg::impl
 				Vertex* const north = links[Dir::NORTH];
 				Vertex* const south = links[Dir::SOUTH];
 
-				if (north->ToRoom() == nullptr || south->ToRoom() == nullptr)
+				if (north->m_room == nullptr || south->m_room == nullptr)
 				{
 					north->m_links[Dir::SOUTH] = south;
 					south->m_links[Dir::NORTH] = north;

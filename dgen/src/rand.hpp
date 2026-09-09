@@ -1,77 +1,86 @@
-// SPDX-FileCopyrightText: Copyright (c) 2023 Adrian Kulawik
+// SPDX-FileCopyrightText: Copyright (c) 2026 Adrian Kulawik
 // SPDX-License-Identifier: MIT
 
 #pragma once
-#include <stdint.h>
+#include <cassert>
+#include <cstdint>
+#include <ctime>
 #include <utility>
 
 namespace dg::impl
 {
+	template <typename T>
+	inline T rotl(T x, int k)
+	{
+		return (x << k) | (x >> (64 - k));
+	}
+
 	class Random
 	{
-		using uint32p_t = std::pair<uint32_t, uint32_t>;
-		uint64_t m_state[4];
+	private:
+		std::uint64_t m_state[4];
 
 	public:
-		Random() { Seed(); }
-		Random(const uint64_t seed) { Seed(seed); }
+		Random();
+		Random(std::uint64_t seed);
 
-		void Seed(uint64_t seed = 0);
+		void init(std::uint64_t seed);
 
-		bool GetBit();
-		float GetFP32();
-		double GetFP64();
-		uint32_t Get32();
-		uint64_t Get64();
-		uint32p_t Get32P();
+		bool flip();
+		bool prob(float p);
+		float fp32();
+
+		std::uint64_t random();
+		std::uint32_t rd32(std::uint64_t b);
+		std::pair<std::uint32_t, std::uint32_t> rd32x2(std::uint64_t b1, std::uint64_t b2);
 	};
 
-	inline void Random::Seed(uint64_t seed)
+	inline Random::Random()
+	{
+		init(std::time(nullptr));
+	}
+
+	inline Random::Random(std::uint64_t seed)
+	{
+		init(seed);
+	}
+
+	inline void Random::init(std::uint64_t seed)
 	{
 		// Algorithm: SplitMix64
 		// Source: https://prng.di.unimi.it/splitmix64.c
 
-		for (uint64_t& state : m_state)
+		for (std::uint64_t& state : m_state)
 		{
-			uint64_t z = (seed += 0x9e3779b97f4a7c15);
+			std::uint64_t z = (seed += 0x9e3779b97f4a7c15);
 			z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
 			z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
 			state = z ^ (z >> 31);
 		}
 	}
 
-	inline bool Random::GetBit()
+	inline bool Random::flip()
 	{
-		const auto [a, b] = Get32P();
-		return a < b;
+		return static_cast<bool>(random() & 1);
 	}
 
-	inline float Random::GetFP32()
+	inline bool Random::prob(float p)
 	{
-		union { uint32_t i; float f; } u{};
-		u.i = (Get32() >> 9) | 0x3F800000;
-		return u.f - 1.0f;
+		return fp32() < p;
 	}
 
-	inline double Random::GetFP64()
+	inline float Random::fp32()
 	{
-		union { uint64_t i; double d; } u{};
-		u.i = (Get64() >> 12) | 0x3FF0000000000000;
-		return u.d - 1.0;
+		return (random() >> 40) * 0x1.0p-24;
 	}
 
-	inline uint32_t Random::Get32()
+	inline std::uint64_t Random::random()
 	{
-		return static_cast<uint32_t>(Get64());
-	}
+		// Algorithm: xoshiro256++
+		// Source: https://prng.di.unimi.it/xoshiro256plusplus.c
 
-	inline uint64_t Random::Get64()
-	{
-		// Algorithm: xoshiro256+
-		// Source: https://prng.di.unimi.it/xoshiro256plus.c
-
-		const uint64_t result = m_state[0] + m_state[3];
-		const uint64_t t = m_state[1] << 17;
+		const std::uint64_t result = rotl(m_state[0] + m_state[3], 23) + m_state[0];
+		const std::uint64_t t = m_state[1] << 17;
 
 		m_state[2] ^= m_state[0];
 		m_state[3] ^= m_state[1];
@@ -79,14 +88,27 @@ namespace dg::impl
 		m_state[0] ^= m_state[3];
 
 		m_state[2] ^= t;
-		m_state[3] = (m_state[3] << 45) | (m_state[3] >> (64 - 45));
+		m_state[3] = rotl(m_state[3], 45);
 
 		return result;
 	}
 
-	inline Random::uint32p_t Random::Get32P()
+	inline std::uint32_t Random::rd32(std::uint64_t b)
 	{
-		const uint64_t r = Get64();
-		return uint32p_t(static_cast<uint32_t>(r >> 32), static_cast<uint32_t>(r));
+		assert(b < (1ULL << 32));
+		const std::uint64_t r = random() & 0xFFFFFFFF;
+		return static_cast<std::uint32_t>((r * b) >> 32);
+	}
+
+	inline std::pair<std::uint32_t, std::uint32_t> Random::rd32x2(std::uint64_t b1, std::uint64_t b2)
+	{
+		assert(b1 < (1ULL << 32));
+		assert(b2 < (1ULL << 32));
+
+		const std::uint64_t r = random();
+		const std::uint64_t r1 = r & 0xFFFFFFFF;
+		const std::uint64_t r2 = r >> 32;
+
+		return { static_cast<std::uint32_t>((r1 * b1) >> 32), static_cast<std::uint32_t>((r2 * b2) >> 32) };
 	}
 }

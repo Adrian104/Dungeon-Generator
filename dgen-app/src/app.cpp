@@ -262,7 +262,7 @@ void Application::render()
 			for (int i = m_input.m_seed & 0b10; i < end; i++)
 			{
 				dg::impl::Vertex* const vertex2 = vertex.m_links[i];
-				if (vertex2 == &dg::impl::Vertex::s_sentinel || vertex2->ToRoom() != nullptr)
+				if (vertex2 == &dg::impl::Vertex::s_sentinel || vertex2->m_room != nullptr)
 					continue;
 
 				SDL_FPoint p2 = m_viewport.to_screen(SDL_FPoint{ static_cast<float>(vertex2->m_pos.x + 0.5f), static_cast<float>(vertex2->m_pos.y + 0.5f) });
