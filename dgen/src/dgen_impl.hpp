@@ -18,7 +18,7 @@ namespace dg::impl
 
 	struct Cell
 	{
-		enum Flag : uint32_t { RANDOM_PATH, SPARSE_AREA, GENERATE_ROOMS, CONNECT_ROOMS };
+		enum Flag : uint32_t { RANDOM_PATH, SPARSE_AREA, CONNECT_ROOMS };
 
 		uint32_t m_flags = 0;
 		Rect m_space{};
@@ -87,12 +87,11 @@ namespace dg::impl
 
 	struct Room : public Vertex
 	{
-		Node<Cell>& m_node;
 		Point m_entrances[4]{};
 		size_t m_rectBegin = 0;
 		size_t m_rectEnd = 0;
 
-		Room(Node<Cell>& node) : Vertex(this), m_node(node) {}
+		Room() : Vertex(this) {}
 	};
 
 	struct Generator
@@ -116,6 +115,7 @@ namespace dg::impl
 		std::vector<Tag> m_tags;
 		std::vector<Room> m_rooms;
 		std::vector<Vertex> m_vertices;
+		std::vector<Node<Cell>*> m_roomQueue;
 
 		Random m_random;
 		Node<Cell>* m_rootNode = nullptr;

@@ -67,6 +67,7 @@ namespace dg::impl
 		m_tags.clear();
 		m_rooms.clear();
 		m_vertices.clear();
+		m_roomQueue.clear();
 		m_vertexHeap.Clear();
 
 		if (m_rootNode != nullptr)
@@ -144,6 +145,7 @@ namespace dg::impl
 
 		m_deltaDepth = m_input->m_maxDepth - m_input->m_minDepth;
 		m_randPathDepth = m_input->m_maxDepth - m_input->m_extraPathDepth;
+		m_roomQueue.reserve(static_cast<std::size_t>(1) << m_input->m_maxDepth);
 	}
 
 	uint32_t Generator::GenerateTree(Node<Cell>& node, int left)
@@ -213,10 +215,11 @@ namespace dg::impl
 		uint32_t flagsToReturn = 0;
 		if ((node.m_flags & (1 << Cell::Flag::SPARSE_AREA)) == 0 || m_random.prob(m_input->m_sparseAreaDens))
 		{
-			flagsToReturn = 1 << Cell::Flag::CONNECT_ROOMS;
-			node.m_flags |= 1 << Cell::Flag::GENERATE_ROOMS;
 			node.m_roomOffset = m_totalRoomCount++;
 			node.m_roomCount = 1;
+
+			m_roomQueue.emplace_back(&node);
+			flagsToReturn = 1 << Cell::Flag::CONNECT_ROOMS;
 		}
 
 		return flagsToReturn;
@@ -230,15 +233,12 @@ namespace dg::impl
 		m_rooms.reserve(static_cast<size_t>(m_totalRoomCount));
 		m_output->m_rooms.reserve(static_cast<size_t>(m_totalRoomCount) << 1);
 
-		for (auto& node : m_rootNode->Postorder())
+		for (Node<Cell>* const node : m_roomQueue)
 		{
-			if ((node.m_flags & (1 << Cell::Flag::GENERATE_ROOMS)) == 0)
-				continue;
-
 			const float a = m_random.fp32() * diffRoomSize + minRoomSize;
 			const float b = m_random.fp32() * diffRoomSize + minRoomSize;
 
-			Vec priSize(static_cast<int>(node.m_space.w * a), static_cast<int>(node.m_space.h * b));
+			Vec priSize(static_cast<int>(node->m_space.w * a), static_cast<int>(node->m_space.h * b));
 
 			if (priSize.x < s_roomSizeLimit)
 				priSize.x = s_roomSizeLimit;
@@ -246,8 +246,8 @@ namespace dg::impl
 			if (priSize.y < s_roomSizeLimit)
 				priSize.y = s_roomSizeLimit;
 
-			Vec priPos(node.m_space.x, node.m_space.y);
-			Vec remSize(node.m_space.w - priSize.x, node.m_space.h - priSize.y);
+			Vec priPos(node->m_space.x, node->m_space.y);
+			Vec remSize(node->m_space.w - priSize.x, node->m_space.h - priSize.y);
 
 			Vec secPos(-1, 0);
 			Vec secSize(0, 0);
@@ -284,7 +284,7 @@ namespace dg::impl
 			const Vec offset(c, d);
 
 			Point pos[2]{};
-			Room& room = m_rooms.emplace_back(node);
+			Room& room = m_rooms.emplace_back();
 
 			room.m_rectBegin = m_output->m_rooms.size();
 			m_output->m_rooms.emplace_back(priPos.x + offset.x, priPos.y + offset.y, priSize.x, priSize.y);
@@ -386,8 +386,8 @@ namespace dg::impl
 			const int d0 = m_spaceOffset;
 			const int d1 = m_spaceOffset - 1;
 
-			const auto& [xS, yS, wS, hS] = node.m_space;
-			const uint64_t index = static_cast<uint64_t>(node.m_roomOffset);
+			const auto& [xS, yS, wS, hS] = node->m_space;
+			const uint64_t index = static_cast<uint64_t>(node->m_roomOffset);
 
 			m_tags.emplace_back(pos[0].x, yS - d0, static_cast<uint8_t>(1 << Dir::WEST), static_cast<uint8_t>(Dir::SOUTH), index);
 			m_tags.emplace_back(xS + wS + d1, pos[0].y, static_cast<uint8_t>(1 << Dir::NORTH), static_cast<uint8_t>(Dir::WEST), index);
